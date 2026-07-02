@@ -7,7 +7,8 @@ import { GameCard } from '../components/GameCard';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 function bestScoreFor(gameId: string): number | null {
-  const results = storage.getResults(gameId);
+  // Solo partidas completadas: una abandonada (score 0) no cuenta como récord.
+  const results = storage.getResults(gameId).filter((r) => r.completed);
   if (results.length === 0) return null;
   return Math.max(...results.map((r) => r.score));
 }
