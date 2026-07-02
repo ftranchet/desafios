@@ -34,6 +34,26 @@ function pieceColor(type: PieceType): string {
   return PIECE_COLORS[PIECE_ORDER.indexOf(type)] ?? COLOR_SURFACE_ALT;
 }
 
+interface ControlButtonProps {
+  label: string;
+  ariaLabel: string;
+  onPress: () => void;
+  className?: string;
+}
+
+function ControlButton({ label, ariaLabel, onPress, className = '' }: ControlButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      aria-label={ariaLabel}
+      className={`min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary active:bg-accent-primary active:text-bg ${className}`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function drawState(ctx: CanvasRenderingContext2D, state: CascadaState) {
   ctx.fillStyle = COLOR_SURFACE;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -214,7 +234,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     <div
       className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
-      aria-label="Tablero de Cascada: usá las flechas o deslizá para mover, arriba o tocá para rotar"
+      aria-label="Tablero de Cascada: usá los botones, las flechas o deslizá para mover, arriba o tocá para rotar"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -232,8 +252,31 @@ export function CascadaGame({ config, onFinish }: GameProps) {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       />
+      <div className="flex w-full max-w-xs items-center justify-between gap-4">
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label="Mover pieza">
+          <ControlButton
+            label="◀"
+            ariaLabel="Mover a la izquierda"
+            onPress={() => applyAction((s) => tryMove(s, -1, 0))}
+          />
+          <ControlButton
+            label="▼"
+            ariaLabel="Bajar"
+            onPress={() => applyAction((s) => tryMove(s, 0, 1))}
+          />
+          <ControlButton
+            label="▶"
+            ariaLabel="Mover a la derecha"
+            onPress={() => applyAction((s) => tryMove(s, 1, 0))}
+          />
+        </div>
+        <div className="flex gap-2" role="group" aria-label="Acciones de la pieza">
+          <ControlButton label="↻" ariaLabel="Rotar" onPress={() => applyAction(tryRotate)} />
+          <ControlButton label="⤓" ariaLabel="Caída rápida" onPress={() => applyAction(hardDrop)} />
+        </div>
+      </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
-        Deslizá para mover, hacia abajo para caída rápida, tocá para rotar.
+        Tocá los botones, deslizá para mover, hacia abajo para caída rápida, o tocá el tablero para rotar.
       </p>
     </div>
   );
