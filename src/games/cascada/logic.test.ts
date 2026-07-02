@@ -124,6 +124,25 @@ describe('hardDrop', () => {
     const occupiedCount = dropped.board.flat().filter((c) => c !== 0).length;
     expect(occupiedCount).toBeGreaterThan(0);
   });
+
+  it('puede provocar game over cuando la próxima pieza no entra (regresión: la UI debe finalizar en este caso)', () => {
+    const base = createInitialState(1, 1);
+    // Zona de aparición (columnas 3-6, filas 0-1) tapada, pero sin ninguna fila
+    // completa (columnas 0-2 y 7-9 vacías arriba) para que no se limpie nada.
+    const board = base.board.map((row) => [...row]);
+    for (let x = 3; x <= 6; x += 1) {
+      board[0]![x] = 1;
+      board[1]![x] = 1;
+    }
+    // Pieza actual O en las columnas 0-1: al soltar cae al fondo sin completar
+    // filas, se fija, y la próxima pieza no puede aparecer → game over.
+    const state: CascadaState = {
+      ...base,
+      board,
+      current: { type: 'O', rotation: 0, x: 0, y: 0 },
+    };
+    expect(hardDrop(state).gameOver).toBe(true);
+  });
 });
 
 describe('game over', () => {
