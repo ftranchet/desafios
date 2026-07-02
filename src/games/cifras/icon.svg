@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Fichas apiladas, minimalista -->
+  <rect x="4" y="10" width="12" height="10" rx="2.5" fill="#8a6dff" />
+  <rect x="9" y="4" width="12" height="10" rx="2.5" fill="#8a6dff" fill-opacity="0.55" />
+</svg>

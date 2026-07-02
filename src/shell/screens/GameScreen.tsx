@@ -88,12 +88,12 @@ export function GameScreen() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="flex min-h-touch items-center justify-between border-b-2 border-surface-alt px-4">
-        <h1 className="font-display text-xs text-text-primary">{game.metadata.name}</h1>
+      <header className="flex min-h-touch items-center justify-between border-b border-surface-alt px-4">
+        <h1 className="font-display text-base font-bold text-text-primary">{game.metadata.name}</h1>
         {phase === 'playing' && (
           <button
             type="button"
-            className="min-h-touch px-3 text-sm text-accent-error"
+            className="min-h-touch rounded-lg px-3 text-sm font-medium text-accent-error"
             onClick={() => setShowQuitConfirm(true)}
           >
             {strings.game.quit}

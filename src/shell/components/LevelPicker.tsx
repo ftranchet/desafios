@@ -11,16 +11,18 @@ interface LevelPickerProps {
 export function LevelPicker({ levels, selectedLevel, onSelect, onPlay }: LevelPickerProps) {
   return (
     <div className="flex flex-col items-center gap-6 p-6">
-      <h2 className="font-display text-sm text-text-primary">{strings.levelPicker.title}</h2>
+      <h2 className="font-display text-lg font-bold text-text-primary">
+        {strings.levelPicker.title}
+      </h2>
       <div className="flex flex-wrap justify-center gap-2">
         {levels.map((level) => (
           <button
             key={level.level}
             type="button"
-            className={`min-h-touch min-w-touch border-2 px-3 font-display text-xs ${
+            className={`min-h-touch min-w-touch rounded-lg border px-3 text-sm font-medium transition-colors ${
               level.level === selectedLevel
                 ? 'border-accent-primary bg-accent-primary text-bg'
-                : 'border-surface-alt bg-surface text-text-primary'
+                : 'border-surface-alt bg-surface text-text-primary hover:border-accent-primary/60'
             }`}
             onClick={() => onSelect(level.level)}
           >
@@ -30,7 +32,7 @@ export function LevelPicker({ levels, selectedLevel, onSelect, onPlay }: LevelPi
       </div>
       <button
         type="button"
-        className="min-h-touch bg-accent-primary px-8 font-display text-xs text-bg"
+        className="min-h-touch rounded-lg bg-accent-primary px-8 font-display text-base font-bold text-bg"
         onClick={onPlay}
       >
         {strings.levelPicker.play}

@@ -1,7 +1,7 @@
 {
   "name": "desafios-mentales",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -15,12 +15,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "zustand": "^4.5.5",
-    "@fontsource/press-start-2p": "^5.1.0",
-    "@fontsource/inter": "^5.1.0"
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

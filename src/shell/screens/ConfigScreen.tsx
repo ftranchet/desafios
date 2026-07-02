@@ -14,7 +14,7 @@ function ToggleRow({ label, value, onToggle }: ToggleRowProps) {
   return (
     <button
       type="button"
-      className="flex min-h-touch w-full items-center justify-between border-2 border-surface-alt bg-surface px-4 text-left"
+      className="flex min-h-touch w-full items-center justify-between rounded-lg border border-surface-alt bg-surface px-4 text-left"
       onClick={onToggle}
       role="switch"
       aria-checked={value}
@@ -55,7 +55,9 @@ export function ConfigScreen() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <h1 className="font-display text-lg text-text-primary">{strings.config.title}</h1>
+      <h1 className="font-display text-xl font-extrabold text-text-primary">
+        {strings.config.title}
+      </h1>
 
       <div className="flex flex-col gap-2">
         <ToggleRow label={strings.config.sound} value={sound} onToggle={toggleSound} />
@@ -70,7 +72,7 @@ export function ConfigScreen() {
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          className="min-h-touch bg-surface-alt px-4 text-left text-base text-text-primary"
+          className="min-h-touch rounded-lg bg-surface-alt px-4 text-left text-base text-text-primary"
           onClick={exportData}
         >
           {strings.config.exportData}
@@ -80,7 +82,7 @@ export function ConfigScreen() {
 
       <button
         type="button"
-        className="min-h-touch border-2 border-accent-error px-4 text-left text-base text-accent-error"
+        className="min-h-touch rounded-lg border border-accent-error px-4 text-left text-base text-accent-error"
         onClick={() => setClearStep('first')}
       >
         {strings.config.clearData}

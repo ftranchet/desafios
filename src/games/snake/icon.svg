@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Serpiente minimalista: una sola curva -->
+  <path
+    d="M4 9c4 0 4 6 8 6s4-6 8-6"
+    stroke="#6bcf63"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <circle cx="19.5" cy="9" r="1.5" fill="#6bcf63" />
+</svg>

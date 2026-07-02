@@ -1,26 +1,19 @@
 /* Solo subconjuntos latin/latin-ext (suficiente para español) — evita
    precachear cirílico, griego y vietnamita, que la app nunca usa. */
-@import '@fontsource/press-start-2p/latin.css';
-@import '@fontsource/press-start-2p/latin-ext.css';
 @import '@fontsource/inter/latin-400.css';
 @import '@fontsource/inter/latin-ext-400.css';
 @import '@fontsource/inter/latin-600.css';
 @import '@fontsource/inter/latin-ext-600.css';
+@import '@fontsource/inter/latin-700.css';
+@import '@fontsource/inter/latin-ext-700.css';
+@import '@fontsource/inter/latin-800.css';
+@import '@fontsource/inter/latin-ext-800.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  * {
-    border-radius: 0; /* Bordes duros y rectos — sin esquinas redondeadas (PRD 10.3) */
-  }
-
-  img,
-  canvas {
-    image-rendering: pixelated;
-  }
-
   /* Respeta la preferencia del sistema operativo además del toggle manual (RNF-06) */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -41,5 +34,17 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* Barra de cuenta regresiva compartida (Aritmética contra reloj, Cifras):
+   se anima de 100% a 0% de ancho; "reducir animaciones" la neutraliza igual
+   que cualquier otra animación (regla de arriba). */
+@keyframes shrink-width {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
   }
 }

@@ -1,6 +1,6 @@
 # ADR-003 — Paleta, tipografía y sonido definitivos
 
-**Estado:** aceptado · Fase 0
+**Estado:** parcialmente superseded por ADR-004 (julio 2026) — la sección "Tipografía" de esta ADR ya no aplica (se abandonó la fuente pixel); la sección "Paleta" sigue vigente sin cambios. Se deja el documento intacto como registro histórico de la decisión original de Fase 0.
 
 ## Contexto
 

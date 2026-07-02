@@ -3,6 +3,8 @@ import type { Config } from 'tailwindcss';
 // Tokens de diseño — contrato visual del proyecto (PRD sección 10.1).
 // Ningún juego define colores, fuentes ni escalas fuera de este archivo.
 // Paleta validada contra contraste AA (WCAG) sobre bg/surface — ver ADR-003.
+// Tipografía y geometría: minimalismo moderno sobre tema oscuro — ver ADR-004
+// (reemplaza el pixel art de la ADR-003; la paleta de colores sigue vigente).
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   darkMode: 'class',
@@ -24,7 +26,9 @@ export default {
       'game-4': '#3fa7d6',
     },
     fontFamily: {
-      display: ['"Press Start 2P"', 'cursive'],
+      // Una sola familia (Inter): "display" y "body" son roles de peso/tamaño,
+      // no tipografías distintas.
+      display: ['Inter', 'system-ui', 'sans-serif'],
       body: ['Inter', 'system-ui', 'sans-serif'],
     },
     fontSize: {
@@ -33,9 +37,6 @@ export default {
       base: ['1rem', { lineHeight: '1.5' }],
       lg: ['1.25rem', { lineHeight: '1.4' }],
       xl: ['2rem', { lineHeight: '1.3' }],
-    },
-    borderRadius: {
-      none: '0px',
     },
     extend: {
       spacing: {

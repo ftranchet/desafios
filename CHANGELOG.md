@@ -2,6 +2,20 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.2.0] — Fase 1: MVP y replanteo visual
+
+### Cambiado
+
+- Identidad visual: se abandona el pixel art de 8 bits (ADR-003) a favor de un **minimalismo moderno** (ADR-004) — una sola tipografía (Inter, en varios pesos), esquinas redondeadas, bordes finos, íconos vectoriales simples en vez de sprites en grilla 16×16. La paleta de colores de ADR-003 se mantiene sin cambios. `docs/PRD.md` actualizado (sección 10, v0.3).
+- Íconos de PWA regenerados como una marca circular lisa con antialiasing, en vez de una grilla de píxeles escalada.
+
+### Agregado
+
+- Juego **"Aritmética contra reloj"**: operaciones (suma → las 4, según nivel) contra un temporizador por pregunta, con bono de puntaje por tiempo restante.
+- Juego **"Cifras"**: formato numbers round de Countdown — combinar 6 números (grandes + chicos) con las 4 operaciones para llegar cerca de un objetivo de 3 cifras, con interacción por pares al estilo "24 game".
+- Juego **"Snake"**: bucle de juego en tiempo real sobre canvas, velocidad creciente por comida, obstáculos desde nivel 3, controles por teclado y deslizamiento — valida la infraestructura de tiempo real que hereda Cascada en Fase 2.
+- Los tres juegos completan el MVP de la Fase 1 del PRD (sección 14): 5 niveles cada uno, tests de lógica con semilla fija, íconos propios.
+
 ## [0.1.0] — Fase 0: fundaciones
 
 ### Agregado

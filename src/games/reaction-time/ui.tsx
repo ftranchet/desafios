@@ -156,7 +156,7 @@ export function ReactionTimeGame({ config, onFinish }: GameProps) {
           </p>
           <button
             type="button"
-            className="min-h-touch min-w-touch bg-accent-primary px-6 py-3 font-display text-xs text-bg"
+            className="min-h-touch min-w-touch rounded-lg bg-accent-primary px-6 py-3 font-display text-base font-bold text-bg"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={beginGame}
           >
@@ -166,13 +166,15 @@ export function ReactionTimeGame({ config, onFinish }: GameProps) {
       )}
 
       {phase !== 'intro' && (
-        <p className="font-display text-xs text-text-secondary">
+        <p className="font-display text-sm font-semibold text-text-secondary">
           Ronda {roundIndex + 1} / {params.rounds}
         </p>
       )}
 
       {phase === 'feedback' && lastOutcome && (
-        <p className="font-display text-lg text-text-primary">{feedbackText(lastOutcome)}</p>
+        <p className="font-display text-xl font-extrabold text-text-primary">
+          {feedbackText(lastOutcome)}
+        </p>
       )}
     </div>
   );
