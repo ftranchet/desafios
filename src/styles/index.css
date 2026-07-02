@@ -36,3 +36,15 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Barra de cuenta regresiva compartida (Aritmética contra reloj, Cifras):
+   se anima de 100% a 0% de ancho; "reducir animaciones" la neutraliza igual
+   que cualquier otra animación (regla de arriba). */
+@keyframes shrink-width {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
