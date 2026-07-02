@@ -74,12 +74,17 @@ export function SimonGame({ config, onFinish }: GameProps) {
     stateRef.current = next;
 
     if (next.gameOver) {
+      setPhase('playback'); // deshabilita los pads mientras se cierra la partida
       schedule(() => finishGame(), 300);
       return;
     }
 
     if (next.round !== previousRound) {
       setRound(next.round);
+      // Cerrar la ventana de entrada de inmediato: si los pads siguieran
+      // habilitados durante los 400 ms previos al replay, un tap se evaluaría
+      // contra la ronda siguiente y podría terminar la partida injustamente.
+      setPhase('playback');
       schedule(() => playSequence(), 400);
     }
   }
