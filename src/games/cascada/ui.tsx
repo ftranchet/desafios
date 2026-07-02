@@ -138,7 +138,12 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     const current = stateRef.current;
     if (!current || current.gameOver) return;
     const next = mutate(current);
-    if (next) render(next);
+    if (!next) return;
+    render(next);
+    // Una acción (hard drop) puede provocar el fin del juego al no poder
+    // aparecer la próxima pieza. El tick de gravedad pendiente vería gameOver
+    // y saldría sin finalizar, congelando la partida — hay que finalizar acá.
+    if (next.gameOver) finishGame();
   }
 
   useEffect(() => {

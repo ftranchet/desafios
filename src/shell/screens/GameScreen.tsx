@@ -32,6 +32,7 @@ export function GameScreen() {
   const [level, setLevel] = useState(initialLevel);
   const [result, setResult] = useState<GameResult | null>(null);
   const [previousBest, setPreviousBest] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [sessionStart, setSessionStart] = useState(0);
 
@@ -54,11 +55,14 @@ export function GameScreen() {
 
   function handleFinish(gameResult: GameResult) {
     storage.saveResult(gameResult);
-    const isRecord = previousBest === null || gameResult.score > previousBest;
+    // Récord solo si supera el mejor puntaje previo (o 0 si es la primera vez):
+    // así una primera partida perdida con 0 no se marca como récord nuevo.
+    const isRecord = gameResult.score > (previousBest ?? 0);
     if (soundEnabled) {
       playSound(isRecord ? 'record' : gameResult.completed ? 'success' : 'error');
     }
     if (vibrationEnabled && isRecord) vibrate([40, 30, 40]);
+    setIsNewRecord(isRecord);
     setResult(gameResult);
     setPhase('result');
   }
@@ -118,7 +122,7 @@ export function GameScreen() {
         <ResultPanel
           result={result}
           previousBest={previousBest}
-          isNewRecord={previousBest === null || result.score > previousBest}
+          isNewRecord={isNewRecord}
           onRetry={handleRetry}
           onBackToCatalog={() => navigate('/')}
         />

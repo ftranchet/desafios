@@ -35,6 +35,9 @@ const EFFECTS: Record<SoundEffect, Tone[]> = {
 
 export function playSound(effect: SoundEffect): void {
   const ctx = getAudioContext();
+  // En móvil el contexto puede arrancar suspendido hasta un gesto del usuario;
+  // reanudarlo asegura que el primer efecto suene.
+  if (ctx.state === 'suspended') void ctx.resume();
   const now = ctx.currentTime;
 
   for (const tone of EFFECTS[effect]) {
