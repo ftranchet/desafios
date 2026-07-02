@@ -24,6 +24,26 @@ const KEY_DIRECTIONS: Record<string, Direction> = {
   d: 'right',
 };
 
+interface DPadButtonProps {
+  label: string;
+  ariaLabel: string;
+  onPress: () => void;
+  className?: string;
+}
+
+function DPadButton({ label, ariaLabel, onPress, className = '' }: DPadButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      aria-label={ariaLabel}
+      className={`min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary active:bg-accent-primary active:text-bg ${className}`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
   const cell = CANVAS_SIZE / state.gridSize;
   const gap = Math.max(1, cell * 0.08);
@@ -143,7 +163,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
     <div
       className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
-      aria-label="Tablero de Snake: usá las flechas o deslizá para moverte"
+      aria-label="Tablero de Snake: usá los botones, las flechas o deslizá para moverte"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -155,8 +175,38 @@ export function SnakeGame({ config, onFinish }: GameProps) {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       />
+      <div
+        className="grid grid-cols-3 grid-rows-3 gap-2"
+        role="group"
+        aria-label="Controles direccionales"
+      >
+        <DPadButton
+          label="▲"
+          ariaLabel="Mover arriba"
+          onPress={() => requestDirection('up')}
+          className="col-start-2 row-start-1"
+        />
+        <DPadButton
+          label="◀"
+          ariaLabel="Mover a la izquierda"
+          onPress={() => requestDirection('left')}
+          className="col-start-1 row-start-2"
+        />
+        <DPadButton
+          label="▶"
+          ariaLabel="Mover a la derecha"
+          onPress={() => requestDirection('right')}
+          className="col-start-3 row-start-2"
+        />
+        <DPadButton
+          label="▼"
+          ariaLabel="Mover abajo"
+          onPress={() => requestDirection('down')}
+          className="col-start-2 row-start-3"
+        />
+      </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
-        Deslizá sobre el tablero o usá las flechas del teclado para moverte.
+        Tocá los botones, deslizá sobre el tablero o usá las flechas del teclado para moverte.
       </p>
     </div>
   );
