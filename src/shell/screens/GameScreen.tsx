@@ -89,9 +89,7 @@ export function GameScreen() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="flex min-h-touch items-center justify-between border-b border-surface-alt px-4">
-        <h1 className="font-display text-base font-bold text-text-primary">
-          {game.metadata.name}
-        </h1>
+        <h1 className="font-display text-base font-bold text-text-primary">{game.metadata.name}</h1>
         {phase === 'playing' && (
           <button
             type="button"

@@ -8,7 +8,7 @@
 | ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                         |
 | 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro |
-| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios |
+| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                         |
 
 ---
 
@@ -34,13 +34,13 @@ La evidencia científica disponible indica que los juegos de "entrenamiento cere
 
 ### 2.1 Objetivos de la versión 1
 
-| ID  | Objetivo                                                                                                                            |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| O1  | Shell funcional: catálogo de juegos, ejecución, 5 niveles de dificultad, puntajes y estadísticas locales                            |
-| O2  | Arquitectura donde **agregar un juego nuevo no requiere modificar el shell** (solo crear una carpeta y registrar una línea)         |
-| O3  | Tres juegos publicados que validen el contrato técnico y las prioridades del catálogo                                               |
-| O4  | Instalable en el celular como aplicación web progresiva (Progressive Web App), funcionando sin conexión                             |
-| O5  | Repositorio público con documentación suficiente para que un tercero replique el flujo completo con Claude Code                     |
+| ID  | Objetivo                                                                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| O1  | Shell funcional: catálogo de juegos, ejecución, 5 niveles de dificultad, puntajes y estadísticas locales                              |
+| O2  | Arquitectura donde **agregar un juego nuevo no requiere modificar el shell** (solo crear una carpeta y registrar una línea)           |
+| O3  | Tres juegos publicados que validen el contrato técnico y las prioridades del catálogo                                                 |
+| O4  | Instalable en el celular como aplicación web progresiva (Progressive Web App), funcionando sin conexión                               |
+| O5  | Repositorio público con documentación suficiente para que un tercero replique el flujo completo con Claude Code                       |
 | O6  | Identidad visual minimalista consistente entre juegos construidos en sesiones distintas, garantizada por tokens de diseño compartidos |
 
 ### 2.2 No-objetivos de la versión 1 (control de alcance)
@@ -240,7 +240,7 @@ export interface StorageService {
 
 | ID    | Requisito                                                                                                                  |
 | ----- | -------------------------------------------------------------------------------------------------------------------------- |
-| RF-01 | El catálogo muestra todos los juegos registrados con ícono, nombre, categoría, descripción y récord personal        |
+| RF-01 | El catálogo muestra todos los juegos registrados con ícono, nombre, categoría, descripción y récord personal               |
 | RF-02 | El catálogo permite filtrar por categoría                                                                                  |
 | RF-03 | Antes de iniciar, el usuario elige nivel (1 a 5); el último nivel jugado queda preseleccionado                             |
 | RF-04 | Durante la partida hay botón de pausa (si el juego lo admite) y de salir con confirmación                                  |
@@ -284,18 +284,18 @@ Post-MVP: **modo progresivo** opcional por juego (la dificultad sube dentro de l
 
 ## 9. Requisitos no funcionales
 
-| ID     | Requisito                                                                                                                                                |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RNF-01 | Funciona sin conexión tras la primera carga                                                                                                              |
-| RNF-02 | Carga inicial menor a 2 segundos en un celular de gama media con conexión 4G                                                                             |
-| RNF-03 | Respuesta táctil menor a 100 milisegundos en interacciones de juego                                                                                      |
-| RNF-04 | Objetivos táctiles de al menos 44 píxeles                                                                                                                |
+| ID     | Requisito                                                                                                                                      |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| RNF-01 | Funciona sin conexión tras la primera carga                                                                                                    |
+| RNF-02 | Carga inicial menor a 2 segundos en un celular de gama media con conexión 4G                                                                   |
+| RNF-03 | Respuesta táctil menor a 100 milisegundos en interacciones de juego                                                                            |
+| RNF-04 | Objetivos táctiles de al menos 44 píxeles                                                                                                      |
 | RNF-05 | Contraste de color nivel AA; la información nunca depende solo del color. La paleta se valida contra este requisito antes de fijarse (ADR-003) |
-| RNF-06 | Opción de reducir animaciones (respeta también la preferencia del sistema operativo)                                                                     |
-| RNF-07 | Idioma español (Argentina); todos los textos centralizados en un archivo para facilitar futura traducción                                                |
-| RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                                        |
-| RNF-09 | Compatible con Chrome y Safari móviles (últimas dos versiones); usable también en escritorio                                                             |
-| RNF-10 | Licencia GNU General Public License v3.0 ✓                                                                                                               |
+| RNF-06 | Opción de reducir animaciones (respeta también la preferencia del sistema operativo)                                                           |
+| RNF-07 | Idioma español (Argentina); todos los textos centralizados en un archivo para facilitar futura traducción                                      |
+| RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                              |
+| RNF-09 | Compatible con Chrome y Safari móviles (últimas dos versiones); usable también en escritorio                                                   |
+| RNF-10 | Licencia GNU General Public License v3.0 ✓                                                                                                     |
 
 ---
 
@@ -529,11 +529,11 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 
 ### 17.3 Decisiones revisadas (v0.3, julio 2026)
 
-| #   | Decisión                         | Resolución v0.2                          | Resolución v0.3                                                                                     |
-| --- | --------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 1   | Dirección visual                  | Pixel art minimalista                     | **Minimalismo moderno** (sección 10, ADR-004) — el pixel art no funcionaba estéticamente             |
-| 2   | Tipografía de display/HUD         | "Press Start 2P" (fuente pixel)           | Una sola familia (Inter), con roles de peso en vez de una fuente pixel separada                       |
-| 3   | Paleta de colores (ADR-003)       | Subconjunto de Sweetie 16, validado AA    | Sin cambios — se mantiene la misma paleta, funciona igual de bien en el nuevo lenguaje visual         |
+| #   | Decisión                    | Resolución v0.2                        | Resolución v0.3                                                                               |
+| --- | --------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 1   | Dirección visual            | Pixel art minimalista                  | **Minimalismo moderno** (sección 10, ADR-004) — el pixel art no funcionaba estéticamente      |
+| 2   | Tipografía de display/HUD   | "Press Start 2P" (fuente pixel)        | Una sola familia (Inter), con roles de peso en vez de una fuente pixel separada               |
+| 3   | Paleta de colores (ADR-003) | Subconjunto de Sweetie 16, validado AA | Sin cambios — se mantiene la misma paleta, funciona igual de bien en el nuevo lenguaje visual |
 
 ---
 
