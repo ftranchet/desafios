@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.3.0] — Fase 2: Cascada y expansión matemática
+
+### Agregado
+
+- Juego **"Cascada"**: clon de Tetris sobre el mismo bucle de tiempo real que valida Snake — tablero 10×20, las 7 piezas estándar con randomizador de "bolsa de 7", rotación, pieza fantasma, hard drop, limpieza de líneas y velocidad creciente. Controles por teclado y por deslizamiento (sin d-pad en pantalla).
+- Juego **"Secuencias numéricas"**: adivinar el próximo término de una secuencia (aritmética, geométrica o combinada según el nivel) contra un temporizador por pregunta.
+- Juego **"Estimación relámpago"**: elegir cuál de dos expresiones vale más, con presión de tiempo y racha de aciertos.
+- Juego **"Simon"**: repetir una secuencia de colores en una grilla 2×2 que crece una ronda a la vez, con los 4 colores del sistema.
+- Los cuatro juegos completan la Fase 2 del PRD (sección 14): 5 niveles cada uno, tests de lógica con semilla fija, íconos propios. Sin cambios de contrato, tokens ni arquitectura del shell.
+
 ## [0.2.0] — Fase 1: MVP y replanteo visual
 
 ### Cambiado
