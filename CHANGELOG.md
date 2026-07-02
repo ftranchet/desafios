@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.4.0] — Controles táctiles en pantalla para Snake y Cascada
+
+### Agregado
+
+- **RNF-11** (`docs/PRD.md`): todo juego debe ser jugable de punta a punta con teclado en escritorio, y los juegos en tiempo real deben ofrecer controles táctiles directos en pantalla en vez de depender solo del gesto de deslizar.
+- **Snake**: D-pad de 4 botones (arriba/abajo/izquierda/derecha) debajo del tablero, con el mismo tamaño táctil (44px) y estilo del resto de la app. El deslizamiento y el teclado siguen funcionando igual que antes.
+- **Cascada**: controles en pantalla con mover izquierda/derecha/abajo, rotar y caída rápida. El deslizamiento, el tocar el tablero para rotar y el teclado siguen funcionando igual que antes.
+
 ## [0.3.1] — Correcciones post-revisión
 
 ### Corregido
