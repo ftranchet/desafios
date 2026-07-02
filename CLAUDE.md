@@ -5,7 +5,7 @@ Instrucciones permanentes para trabajar en **Desafíos Mentales** con Claude Cod
 ## Antes de tocar código
 
 - Leé `docs/PRD.md` antes de cualquier tarea de producto (qué juego construir, qué prioridad, qué queda fuera de alcance en la sección 2.2).
-- Revisá `docs/decisions/` (ADR-001, ADR-002, ADR-003) antes de cambiar stack, contrato o tokens visuales — documentan por qué se decidió lo que hay.
+- Revisá `docs/decisions/` (ADR-001 a ADR-004) antes de cambiar stack, contrato o tokens visuales — documentan por qué se decidió lo que hay. La identidad visual vigente es la de ADR-004 (minimalismo moderno); ADR-003 queda como registro histórico salvo por su sección de paleta, que sigue vigente.
 
 ## Contrato y tokens: no se tocan sin una decisión explícita
 
@@ -32,7 +32,7 @@ Instrucciones permanentes para trabajar en **Desafíos Mentales** con Claude Cod
 
 1. Crear `src/games/<game-id>/`.
 2. `logic.ts` (puro, con semilla), `ui.tsx` (implementa `GameProps`), `index.ts` (exporta el `GameModule`).
-3. `icon.svg`: pixel art 16×16 como grilla de `<rect>` (`shape-rendering="crispEdges"`), con los colores del sistema — ver `src/games/reaction-time/icon.svg` como referencia.
+3. `icon.svg`: glifo vectorial simple (paths/curvas, sin grilla de píxeles), chico, con los colores del sistema — ver `src/games/reaction-time/icon.svg` como referencia.
 4. `logic.test.ts` con semilla fija (mínimo: generación de partida, validación de jugada, cálculo de puntaje).
 5. Registrar en `src/core/registry.ts` (una línea).
 6. Repasar la checklist de terminado (PRD 12.3) antes de dar la tarea por cerrada.

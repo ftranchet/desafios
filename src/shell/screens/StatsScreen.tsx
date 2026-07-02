@@ -35,14 +35,18 @@ export function StatsScreen() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <h1 className="font-display text-lg text-text-primary">{strings.stats.title}</h1>
+      <h1 className="font-display text-xl font-extrabold text-text-primary">
+        {strings.stats.title}
+      </h1>
 
       <p className="text-sm text-text-primary">
         {streak === 0 ? strings.stats.streakEmpty : strings.stats.streak(streak)}
       </p>
 
       <section className="flex flex-col gap-2">
-        <h2 className="font-display text-xs text-text-secondary">{strings.stats.records}</h2>
+        <h2 className="font-display text-sm font-semibold text-text-secondary">
+          {strings.stats.records}
+        </h2>
         {records.length === 0 ? (
           <p className="text-sm text-text-secondary">{strings.stats.historyEmpty}</p>
         ) : (
@@ -50,7 +54,7 @@ export function StatsScreen() {
             {records.map((entry, i) => (
               <li
                 key={i}
-                className="flex justify-between border-2 border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
+                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
               >
                 <span>
                   {entry.gameName} · {entry.levelLabel}
@@ -63,7 +67,9 @@ export function StatsScreen() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="font-display text-xs text-text-secondary">{strings.stats.history}</h2>
+        <h2 className="font-display text-sm font-semibold text-text-secondary">
+          {strings.stats.history}
+        </h2>
         {history.length === 0 ? (
           <p className="text-sm text-text-secondary">{strings.stats.historyEmpty}</p>
         ) : (
@@ -71,7 +77,7 @@ export function StatsScreen() {
             {history.map((result, i) => (
               <li
                 key={i}
-                className="flex justify-between border-2 border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
+                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
               >
                 <span>
                   {formatDate(result.timestamp)} · {gameName(result.gameId)} · Nivel {result.level}

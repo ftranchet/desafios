@@ -24,22 +24,22 @@ export function ConfirmDialog({
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
     >
-      <div className="w-full max-w-xs border-2 border-surface-alt bg-surface p-5">
-        <h2 id="confirm-dialog-title" className="mb-2 font-display text-sm text-text-primary">
+      <div className="w-full max-w-xs rounded-xl border border-surface-alt bg-surface p-5 shadow-lg">
+        <h2 id="confirm-dialog-title" className="mb-2 font-display text-base font-bold text-text-primary">
           {title}
         </h2>
         <p className="mb-5 text-sm text-text-secondary">{body}</p>
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            className="min-h-touch bg-accent-error px-4 font-body text-base font-semibold text-bg"
+            className="min-h-touch rounded-lg bg-accent-error px-4 font-body text-base font-semibold text-bg"
             onClick={onAccept}
           >
             {acceptLabel}
           </button>
           <button
             type="button"
-            className="min-h-touch bg-surface-alt px-4 font-body text-base text-text-primary"
+            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary"
             onClick={onCancel}
           >
             {cancelLabel}

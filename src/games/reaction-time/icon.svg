@@ -1,19 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <!-- Rayo pixel art 16x16, colores del sistema de tokens (accent-primary + text-primary) -->
-  <rect x="8" y="1" width="2" height="1" fill="#f4f4f2" />
-  <rect x="7" y="2" width="2" height="1" fill="#f4f4f2" />
-  <rect x="6" y="3" width="2" height="1" fill="#3fd0c9" />
-  <rect x="5" y="4" width="2" height="1" fill="#3fd0c9" />
-  <rect x="4" y="5" width="2" height="1" fill="#3fd0c9" />
-  <rect x="3" y="6" width="2" height="1" fill="#3fd0c9" />
-  <rect x="2" y="7" width="6" height="1" fill="#3fd0c9" />
-  <rect x="8" y="7" width="2" height="1" fill="#f4f4f2" />
-  <rect x="7" y="8" width="2" height="1" fill="#f4f4f2" />
-  <rect x="6" y="9" width="2" height="1" fill="#3fd0c9" />
-  <rect x="9" y="9" width="2" height="1" fill="#3fd0c9" />
-  <rect x="8" y="10" width="2" height="1" fill="#3fd0c9" />
-  <rect x="7" y="11" width="2" height="1" fill="#3fd0c9" />
-  <rect x="6" y="12" width="2" height="1" fill="#3fd0c9" />
-  <rect x="5" y="13" width="2" height="1" fill="#3fd0c9" />
-  <rect x="7" y="14" width="1" height="1" fill="#f4f4f2" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Rayo minimalista: un solo trazo suave, sin grilla pixel (ver ADR-004) -->
+  <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="#3fd0c9" />
 </svg>

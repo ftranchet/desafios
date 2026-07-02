@@ -18,10 +18,14 @@ export function ResultPanel({
 }: ResultPanelProps) {
   return (
     <div className="flex flex-col items-center gap-4 p-6 text-center">
-      <h2 className="font-display text-sm text-text-primary">{strings.result.title}</h2>
-      <p className="font-display text-xl text-accent-primary">{result.score}</p>
+      <h2 className="font-display text-lg font-bold text-text-primary">{strings.result.title}</h2>
+      <p className="font-display text-xl font-extrabold tracking-tight text-accent-primary">
+        {result.score}
+      </p>
       {isNewRecord ? (
-        <p className="font-display text-xs text-accent-success">{strings.result.newRecord}</p>
+        <p className="font-display text-sm font-semibold text-accent-success">
+          {strings.result.newRecord}
+        </p>
       ) : (
         <p className="text-sm text-text-secondary">
           {previousBest === null
@@ -32,14 +36,14 @@ export function ResultPanel({
       <div className="mt-4 flex w-full max-w-xs flex-col gap-2">
         <button
           type="button"
-          className="min-h-touch bg-accent-primary px-4 font-display text-xs text-bg"
+          className="min-h-touch rounded-lg bg-accent-primary px-4 font-display text-base font-bold text-bg"
           onClick={onRetry}
         >
           {strings.result.retry}
         </button>
         <button
           type="button"
-          className="min-h-touch bg-surface-alt px-4 font-body text-base text-text-primary"
+          className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary"
           onClick={onBackToCatalog}
         >
           {strings.result.backToCatalog}

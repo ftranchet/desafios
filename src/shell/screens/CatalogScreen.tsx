@@ -30,12 +30,14 @@ export function CatalogScreen() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h1 className="font-display text-lg text-text-primary">{strings.catalog.title}</h1>
+      <h1 className="font-display text-xl font-extrabold text-text-primary">
+        {strings.catalog.title}
+      </h1>
 
       {lastPlayedGame && (
         <Link
           to={`/game/${lastPlayedGame.metadata.id}`}
-          className="min-h-touch flex items-center justify-center border-2 border-accent-primary bg-surface px-4 text-sm text-accent-primary"
+          className="min-h-touch flex items-center justify-center rounded-lg border border-accent-primary bg-surface px-4 text-sm text-accent-primary"
         >
           {strings.catalog.continueLast}: {lastPlayedGame.metadata.name}
         </Link>
@@ -44,7 +46,7 @@ export function CatalogScreen() {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className={`min-h-touch px-3 text-xs ${
+          className={`min-h-touch rounded-lg px-3 text-sm font-medium transition-colors ${
             category === 'all' ? 'bg-accent-primary text-bg' : 'bg-surface text-text-secondary'
           }`}
           onClick={() => setCategory('all')}
@@ -55,7 +57,7 @@ export function CatalogScreen() {
           <button
             key={cat}
             type="button"
-            className={`min-h-touch px-3 text-xs ${
+            className={`min-h-touch rounded-lg px-3 text-sm font-medium transition-colors ${
               category === cat ? 'bg-accent-primary text-bg' : 'bg-surface text-text-secondary'
             }`}
             onClick={() => setCategory(cat)}

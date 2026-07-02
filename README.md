@@ -1,6 +1,6 @@
 # Desafíos Mentales
 
-Colección de juegos mentales para celular —matemática, lógica, memoria, velocidad y razonamiento espacial— con estética **pixel art minimalista**. Sin publicidad, sin cuentas, sin promesas de mejora cognitiva: solo entretenimiento desafiante.
+Colección de juegos mentales para celular —matemática, lógica, memoria, velocidad y razonamiento espacial— con una estética **minimalista y moderna**. Sin publicidad, sin cuentas, sin promesas de mejora cognitiva: solo entretenimiento desafiante.
 
 Es también un caso documentado de desarrollo con [Claude Code](https://claude.com/claude-code) ("vibe coding"): cada juego se construye como un módulo independiente que se enchufa a una plataforma común, en general en una sola sesión de agente. El documento completo de producto vive en [`docs/PRD.md`](docs/PRD.md).
 
@@ -32,7 +32,7 @@ Cada juego es una carpeta independiente en `src/games/` que implementa el contra
 
 1. Creá `src/games/<game-id>/`.
 2. Implementá `logic.ts` (funciones puras, sin React ni DOM, con toda la aleatoriedad pasando por `src/core/random.ts`), `ui.tsx` (el componente, implementa `GameProps`) e `index.ts` (exporta el `GameModule`).
-3. Dibujá el sprite-ícono 16×16 del juego como SVG en grilla de píxeles (mirá `src/games/reaction-time/icon.svg` como referencia), usando solo los colores de `tailwind.config.ts`.
+3. Dibujá el ícono del juego como SVG (glifo vectorial simple, sin grilla de píxeles — mirá `src/games/reaction-time/icon.svg` como referencia), usando solo los colores de `tailwind.config.ts`.
 4. Escribí `logic.test.ts` con semilla fija.
 5. Registrá el módulo en `src/core/registry.ts` — una línea.
 6. Corré `npm run lint && npm run typecheck && npm run test && npm run build` antes de dar la tarea por terminada.

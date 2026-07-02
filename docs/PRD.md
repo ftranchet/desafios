@@ -1,19 +1,20 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.2 · Julio 2026
-**Estado:** decisiones fundamentales validadas por el product owner. Listo para Fase 0.
+**Documento de requisitos de producto (PRD)** · Versión 0.3 · Julio 2026
+**Estado:** decisiones fundamentales validadas por el product owner. Fase 0 entregada; en curso la Fase 1.
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
 | Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                  |
 | ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                         |
 | 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro |
+| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios |
 
 ---
 
 ## 1. Visión
 
-**Desafíos Mentales** es una colección de juegos mentales para celular —matemática, lógica, memoria, velocidad, razonamiento espacial— con estética **pixel art minimalista**, construida como **sistema modular y extensible**: cada juego es un módulo independiente que se enchufa a una plataforma común (el "shell") que resuelve navegación, niveles de dificultad, puntajes y estadísticas.
+**Desafíos Mentales** es una colección de juegos mentales para celular —matemática, lógica, memoria, velocidad, razonamiento espacial— con una estética **minimalista y moderna**, construida como **sistema modular y extensible**: cada juego es un módulo independiente que se enchufa a una plataforma común (el "shell") que resuelve navegación, niveles de dificultad, puntajes y estadísticas.
 
 El proyecto persigue tres propósitos simultáneos:
 
@@ -40,7 +41,7 @@ La evidencia científica disponible indica que los juegos de "entrenamiento cere
 | O3  | Tres juegos publicados que validen el contrato técnico y las prioridades del catálogo                                               |
 | O4  | Instalable en el celular como aplicación web progresiva (Progressive Web App), funcionando sin conexión                             |
 | O5  | Repositorio público con documentación suficiente para que un tercero replique el flujo completo con Claude Code                     |
-| O6  | Identidad visual pixel art consistente entre juegos construidos en sesiones distintas, garantizada por tokens de diseño compartidos |
+| O6  | Identidad visual minimalista consistente entre juegos construidos en sesiones distintas, garantizada por tokens de diseño compartidos |
 
 ### 2.2 No-objetivos de la versión 1 (control de alcance)
 
@@ -127,7 +128,7 @@ Casos de uso centrales:
 └─────────────────────────────────────────────┘
 ```
 
-- **Catálogo (home):** grilla de juegos con su sprite-ícono, filtro por categoría y acceso al último jugado.
+- **Catálogo (home):** grilla de juegos con su ícono, filtro por categoría y acceso al último jugado.
 - **Pantalla de juego:** monta el componente del juego, muestra encabezado común (nombre, nivel, pausa, salir).
 - **Resultado de partida:** puntaje obtenido, récord previo, indicación de récord nuevo, botón de revancha.
 - **Estadísticas:** récords por juego y nivel, historial de últimas partidas, racha de días.
@@ -156,7 +157,7 @@ export interface GameMetadata {
   version: string;
   levels: DifficultyLevel[]; // Exactamente 5
   estimatedSeconds: number; // Duración típica de una partida
-  icon: string; // Ruta al sprite-ícono 16×16 del juego
+  icon: string; // Ruta al ícono vectorial del juego
 }
 
 export interface GameConfig {
@@ -226,7 +227,7 @@ export interface StorageService {
 
 1. Crear la carpeta `src/games/<game-id>/`.
 2. Implementar `logic.ts` (funciones puras, con semilla), `ui.tsx` (componente que implementa `GameProps`) e `index.ts` (exporta el `GameModule`).
-3. Dibujar el sprite-ícono 16×16 del juego (sección 10.4).
+3. Dibujar el ícono vectorial del juego (sección 10.4).
 4. Escribir `logic.test.ts` con semilla fija.
 5. Registrar el módulo en `src/core/registry.ts` (una línea).
 6. Verificar la checklist de terminado (sección 12.3).
@@ -239,7 +240,7 @@ export interface StorageService {
 
 | ID    | Requisito                                                                                                                  |
 | ----- | -------------------------------------------------------------------------------------------------------------------------- |
-| RF-01 | El catálogo muestra todos los juegos registrados con sprite-ícono, nombre, categoría, descripción y récord personal        |
+| RF-01 | El catálogo muestra todos los juegos registrados con ícono, nombre, categoría, descripción y récord personal        |
 | RF-02 | El catálogo permite filtrar por categoría                                                                                  |
 | RF-03 | Antes de iniciar, el usuario elige nivel (1 a 5); el último nivel jugado queda preseleccionado                             |
 | RF-04 | Durante la partida hay botón de pausa (si el juego lo admite) y de salir con confirmación                                  |
@@ -289,7 +290,7 @@ Post-MVP: **modo progresivo** opcional por juego (la dificultad sube dentro de l
 | RNF-02 | Carga inicial menor a 2 segundos en un celular de gama media con conexión 4G                                                                             |
 | RNF-03 | Respuesta táctil menor a 100 milisegundos en interacciones de juego                                                                                      |
 | RNF-04 | Objetivos táctiles de al menos 44 píxeles                                                                                                                |
-| RNF-05 | Contraste de color nivel AA; la información nunca depende solo del color. La paleta pixel art se valida contra este requisito antes de fijarse (ADR-003) |
+| RNF-05 | Contraste de color nivel AA; la información nunca depende solo del color. La paleta se valida contra este requisito antes de fijarse (ADR-003) |
 | RNF-06 | Opción de reducir animaciones (respeta también la preferencia del sistema operativo)                                                                     |
 | RNF-07 | Idioma español (Argentina); todos los textos centralizados en un archivo para facilitar futura traducción                                                |
 | RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                                        |
@@ -300,36 +301,35 @@ Post-MVP: **modo progresivo** opcional por juego (la dificultad sube dentro de l
 
 ## 10. Dirección visual y sonora
 
-**Identidad: pixel art minimalista.** La personalidad retro viene de la tipografía, la paleta limitada y los sprites; la sensación de calidad viene de la disciplina minimalista: pocos elementos por pantalla, mucho espacio vacío, jerarquía clara. La audacia se gasta en un solo lugar (los sprites y el momento de juego); todo lo demás se mantiene quieto y preciso.
+**Identidad: minimalismo moderno sobre tema oscuro.** ✓ (v0.3 — reemplaza el pixel art de la v0.2, que no funcionaba estéticamente; ver ADR-004). La personalidad viene de una paleta acotada y una tipografía sobria con jerarquía clara por peso; la sensación de calidad viene de la disciplina minimalista: pocos elementos por pantalla, mucho espacio vacío, geometría suave y consistente. Nada de ruido visual: ni sprites recargados, ni bordes duros, ni decoración que no aporte información.
 
 ### 10.1 Sistema de tokens (contrato visual)
 
 Los tokens viven en la configuración de Tailwind (`tailwind.config`). Ningún juego usa colores, fuentes ni tamaños fuera de este sistema: es lo que garantiza que módulos construidos en sesiones distintas de Claude Code parezcan de la misma familia (O6).
 
-- **Paleta:** máximo 12 colores nombrados. Punto de partida sugerido: un subconjunto de una paleta retro reconocida (Sweetie 16 o PICO-8), ajustado hasta cumplir contraste AA sobre el fondo elegido. Se fija en Fase 0 como ADR-003.
-- **Roles de color:** fondo, superficie, texto principal, texto secundario, acento primario (interacción), acento de éxito, acento de error, y 4-5 colores de juego para sprites.
-- **Tema:** v1 con **tema oscuro único** (el pixel art rinde mejor sobre fondo oscuro y simplifica la validación de contraste). Tema claro como mejora posterior.
+- **Paleta:** máximo 12 colores nombrados, validada contra contraste AA sobre el fondo (ADR-003) — sigue vigente sin cambios en v0.3, los colores nunca fueron el problema.
+- **Roles de color:** fondo, superficie, texto principal, texto secundario, acento primario (interacción), acento de éxito, acento de error, y 4 colores de juego para íconos y elementos de juego.
+- **Tema:** v1 con **tema oscuro único** (simplifica la validación de contraste). Tema claro como mejora posterior.
 
 ### 10.2 Tipografía por roles
 
-- **Display y HUD:** una fuente pixel (candidata: "Press Start 2P" de Google Fonts) exclusivamente para títulos, números grandes, puntajes y marcadores dentro del juego.
-- **Cuerpo:** una fuente sans legible para descripciones, instrucciones y configuración. Las fuentes pixel fatigan en texto corrido y comprometen la accesibilidad; no se usan para párrafos.
+- **Una sola familia** (candidata: "Inter", de Google Fonts, self-hosted). "Display/HUD" y "cuerpo" son roles de peso y tamaño dentro de la misma tipografía, no fuentes distintas — títulos, puntajes y marcadores en pesos bold/extrabold; descripciones, instrucciones y configuración en peso regular/semibold.
 - Escala tipográfica corta y explícita (4-5 tamaños), definida en los tokens.
 
 ### 10.3 Renderizado y movimiento
 
-- `image-rendering: pixelated` en todo sprite y canvas escalado.
-- Sprites diseñados en grilla base **16×16** y escalados solo en múltiplos enteros (×2, ×3, ×4); nunca escalas fraccionarias.
-- Sin gradientes, sin sombras difusas, sin esquinas redondeadas: bordes duros y rectos, coherentes con la estética.
-- Animaciones por pasos (`steps()`) en lugar de curvas suaves, para conservar el carácter pixel. Siempre subordinadas a RNF-06: con "reducir animaciones" activo, se desactivan.
+- Geometría suave: esquinas redondeadas consistentes en tarjetas, botones y diálogos (sin bordes duros a 0).
+- Superficies livianas: bordes finos o directamente diferencia de tono entre fondo/superficie, sin recargar de contorno.
+- Sin gradientes ni sombras difusas — como mucho, una sombra sutil para separar un panel flotante (por ejemplo un diálogo de confirmación) del resto.
+- Animaciones con curvas suaves (`ease`), no a pasos. Siempre subordinadas a RNF-06: con "reducir animaciones" activo, se desactivan.
 
 ### 10.4 Elemento distintivo (signature)
 
-Cada juego tiene un **sprite-ícono propio de 16×16** que lo representa en el catálogo, dibujado con la paleta del sistema. El catálogo es entonces una vitrina de pixel art coherente y reconocible: la identidad del producto en una sola pantalla. El campo `icon` del contrato (sección 5.2) lo hace obligatorio.
+Cada juego tiene un **ícono vectorial propio** que lo representa en el catálogo: un glifo simple (paths/curvas, sin grilla de píxeles), chico, dibujado con la paleta del sistema. El catálogo es entonces una vitrina prolija y reconocible: la identidad del producto en una sola pantalla. El campo `icon` del contrato (sección 5.2) lo hace obligatorio.
 
 ### 10.5 Sonido
 
-- Efectos estilo chiptune (8 bits), **siempre originales** (regla 11.2): generados proceduralmente (por ejemplo con jsfxr) o creados ad hoc.
+- Efectos breves y discretos, **siempre originales** (regla 11.2): generados proceduralmente (Web Audio) o creados ad hoc — no dependen de la estética visual.
 - Controlados desde configuración (RF-08). Sin música de fondo en v1; solo efectos breves de acierto, error, récord y fin de partida.
 
 ### 10.6 Voz y textos de la interfaz
@@ -375,7 +375,7 @@ Eliminados del catálogo por decisión del product owner (v0.2): 2048, Buscamina
 
 1. **Aritmética contra reloj** — valida temporizadores, entrada numérica rápida y el flujo de niveles paramétricos. El módulo ideal para estrenar el contrato.
 2. **Cifras** — el juego matemático de mejor relación diversión/desafío del catálogo; valida generación y verificación de expresiones aritméticas, sin presión de tiempo real.
-3. **Snake** — introduce el **bucle de juego en tiempo real** sobre canvas con grilla (encaje natural con el pixel art), controles por deslizamiento y detección de colisiones.
+3. **Snake** — introduce el **bucle de juego en tiempo real** sobre canvas con grilla, controles por deslizamiento y detección de colisiones.
 
 La secuencia es deliberada: la prioridad del product owner es Tetris, Snake y matemática, y la forma de honrarla sin asumir el riesgo documentado en la sección 16 (encarar el juego más complejo sin fundaciones) es que **Snake valide en el MVP toda la infraestructura de tiempo real que Cascada hereda en Fase 2**. Cascada es la primera entrega post-MVP y la meta insignia del proyecto.
 
@@ -408,7 +408,7 @@ Las **mecánicas** de juego en general no gozan de protección de derechos de au
 
 - [ ] Implementa el contrato completo (`GameModule`, `GameProps`, emite `GameResult` válido).
 - [ ] Cinco niveles configurados, jugables y perceptiblemente distintos.
-- [ ] Sprite-ícono 16×16 propio, dibujado con la paleta del sistema.
+- [ ] Ícono vectorial propio, dibujado con la paleta del sistema.
 - [ ] Usa exclusivamente los tokens de diseño (sin colores ni fuentes ad hoc).
 - [ ] Funciona con toque y con mouse/teclado.
 - [ ] Sin errores de tipos ni de linter; build de producción pasa.
@@ -442,7 +442,7 @@ desafios-mentales/
 │   │   │   ├── index.ts       # Exporta el GameModule
 │   │   │   ├── logic.ts       # Lógica pura, testeable
 │   │   │   ├── ui.tsx         # Componente (implementa GameProps)
-│   │   │   ├── icon.png       # Sprite-ícono 16×16
+│   │   │   ├── icon.svg       # Ícono vectorial
 │   │   │   └── logic.test.ts
 │   │   ├── cifras/
 │   │   └── snake/
@@ -497,7 +497,7 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 | Deriva de alcance ("una funcionalidad más...")                          | Proyecto eterno, nunca publicado                | Lista de no-objetivos (2.2); toda propuesta nueva entra por el backlog, no por impulso                                      |
 | Inconsistencia de código entre sesiones de vibe coding                  | Base de código incoherente, difícil de mantener | `CLAUDE.md` + contrato tipado estricto + tokens de diseño + linter en CI + ADR que fijan decisiones                         |
 | Encarar Cascada (tiempo real, complejidad Alta) sin fundaciones         | Frustración, retrabajos                         | **Snake dentro del MVP valida el bucle de tiempo real**; Cascada se construye sobre esa base como primera entrega de Fase 2 |
-| Paleta retro que no cumple contraste AA / fuente pixel ilegible         | Accesibilidad comprometida                      | Fuente pixel solo en títulos y HUD (10.2); la paleta se valida contra RNF-05 antes de fijarse en ADR-003                    |
+| Paleta que no cumple contraste AA                                       | Accesibilidad comprometida                      | La paleta se valida contra RNF-05 antes de fijarse en ADR-003 (revalidada en ADR-004 al cambiar la tipografía)              |
 | Generación de puzzles con solución única (Sudoku, Nonograma) es difícil | Bloqueo en un juego                             | v1 con banco de puzzles precargados y verificados; generador propio como mejora posterior                                   |
 | Problemas de marcas por nombres o estética de clones                    | Reclamo legal en repo público                   | Regla de la sección 11.2: nombres, arte y sonidos originales                                                                |
 | Rendimiento pobre en celulares de gama baja                             | Mala experiencia                                | Presupuesto de rendimiento (RNF-02/03) verificado en dispositivo real desde Fase 0                                          |
@@ -526,6 +526,14 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 | 1   | Paleta exacta (≤ 12 colores)                                 | Subconjunto de Sweetie 16 o PICO-8, ajustado a contraste AA sobre tema oscuro |
 | 2   | Fuente pixel definitiva para display/HUD                     | "Press Start 2P" (Google Fonts) como candidata inicial                        |
 | 3   | Sonido en v1: ¿efectos chiptune desde el MVP o desde Fase 2? | Incluir en MVP solo si no demora la entrega; son 4 efectos básicos            |
+
+### 17.3 Decisiones revisadas (v0.3, julio 2026)
+
+| #   | Decisión                         | Resolución v0.2                          | Resolución v0.3                                                                                     |
+| --- | --------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | Dirección visual                  | Pixel art minimalista                     | **Minimalismo moderno** (sección 10, ADR-004) — el pixel art no funcionaba estéticamente             |
+| 2   | Tipografía de display/HUD         | "Press Start 2P" (fuente pixel)           | Una sola familia (Inter), con roles de peso en vez de una fuente pixel separada                       |
+| 3   | Paleta de colores (ADR-003)       | Subconjunto de Sweetie 16, validado AA    | Sin cambios — se mantiene la misma paleta, funciona igual de bien en el nuevo lenguaje visual         |
 
 ---
 

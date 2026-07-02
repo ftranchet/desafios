@@ -1,6 +1,8 @@
-// Genera los íconos PWA (192, 512, 512 maskable) a partir de una grilla pixel
-// art 16x16, sin dependencias externas (ni sharp ni canvas): arma el PNG a
-// mano con zlib (built-in de Node). Se ejecuta con `node scripts/generate-icons.mjs`.
+// Genera los íconos PWA (192, 512, 512 maskable): una marca circular lisa,
+// renderizada con antialiasing directo a cada resolución (sin escalar una
+// grilla chica, que es lo que daba el look "pixel art" — ver ADR-004).
+// Sin dependencias externas (ni sharp ni canvas): arma el PNG a mano con
+// zlib (built-in de Node). Se ejecuta con `node scripts/generate-icons.mjs`.
 
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -16,57 +18,70 @@ const BG = [0x0f, 0x0e, 0x17];
 const ACCENT_PRIMARY = [0x3f, 0xd0, 0xc9];
 const GAME_1 = [0xff, 0xcd, 0x4b];
 
-const GRID = 16;
-const CENTER = (GRID - 1) / 2;
+// Cobertura de un círculo en el pixel (cx,cy): 1 adentro, 0 afuera, con una
+// banda de un píxel de antialiasing en el borde.
+function circleCoverage(px, py, cx, cy, radius) {
+  const dist = Math.hypot(px - cx, py - cy);
+  return Math.max(0, Math.min(1, radius - dist + 0.5));
+}
 
-function buildGrid({ opaqueBackground, radius, highlightRadius }) {
-  const pixels = new Uint8ClampedArray(GRID * GRID * 4);
-  for (let y = 0; y < GRID; y += 1) {
-    for (let x = 0; x < GRID; x += 1) {
-      const dx = x - CENTER;
-      const dy = y - CENTER;
-      const dist = Math.abs(dx) + Math.abs(dy); // grilla en forma de diamante
-      const hdx = x - (CENTER - 2);
-      const hdy = y - (CENTER - 2);
-      const highlightDist = Math.abs(hdx) + Math.abs(hdy);
+function compositeOver(dst, src) {
+  // dst/src: {r,g,b,a} con a en [0,1]. Alpha compositing estándar ("over").
+  const outA = src.a + dst.a * (1 - src.a);
+  if (outA === 0) return { r: 0, g: 0, b: 0, a: 0 };
+  const mix = (ch) => (src[ch] * src.a + dst[ch] * dst.a * (1 - src.a)) / outA;
+  return { r: mix('r'), g: mix('g'), b: mix('b'), a: outA };
+}
 
-      let rgb = null;
-      let alpha = 0;
-      if (dist <= radius) {
-        rgb = highlightDist <= highlightRadius ? GAME_1 : ACCENT_PRIMARY;
-        alpha = 255;
-      } else if (opaqueBackground) {
-        rgb = BG;
-        alpha = 255;
+function renderIcon(size, { opaqueBackground, mainRadiusRatio, highlightRadiusRatio }) {
+  const pixels = new Uint8ClampedArray(size * size * 4);
+  const cx = size / 2;
+  const cy = size / 2;
+  const mainRadius = size * mainRadiusRatio;
+  const highlightRadius = size * highlightRadiusRatio;
+  const highlightCx = cx - mainRadius * 0.35;
+  const highlightCy = cy - mainRadius * 0.35;
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let pixel = opaqueBackground
+        ? { r: BG[0], g: BG[1], b: BG[2], a: 1 }
+        : { r: 0, g: 0, b: 0, a: 0 };
+
+      const mainCoverage = circleCoverage(x + 0.5, y + 0.5, cx, cy, mainRadius);
+      if (mainCoverage > 0) {
+        pixel = compositeOver(pixel, {
+          r: ACCENT_PRIMARY[0],
+          g: ACCENT_PRIMARY[1],
+          b: ACCENT_PRIMARY[2],
+          a: mainCoverage,
+        });
       }
 
-      const i = (y * GRID + x) * 4;
-      if (rgb) {
-        pixels[i] = rgb[0];
-        pixels[i + 1] = rgb[1];
-        pixels[i + 2] = rgb[2];
-        pixels[i + 3] = alpha;
+      const highlightCoverage = circleCoverage(
+        x + 0.5,
+        y + 0.5,
+        highlightCx,
+        highlightCy,
+        highlightRadius,
+      );
+      if (highlightCoverage > 0) {
+        pixel = compositeOver(pixel, {
+          r: GAME_1[0],
+          g: GAME_1[1],
+          b: GAME_1[2],
+          a: highlightCoverage,
+        });
       }
+
+      const i = (y * size + x) * 4;
+      pixels[i] = Math.round(pixel.r);
+      pixels[i + 1] = Math.round(pixel.g);
+      pixels[i + 2] = Math.round(pixel.b);
+      pixels[i + 3] = Math.round(pixel.a * 255);
     }
   }
   return pixels;
-}
-
-function upscaleNearestNeighbor(srcPixels, srcSize, destSize) {
-  const dest = new Uint8ClampedArray(destSize * destSize * 4);
-  for (let y = 0; y < destSize; y += 1) {
-    const srcY = Math.floor((y * srcSize) / destSize);
-    for (let x = 0; x < destSize; x += 1) {
-      const srcX = Math.floor((x * srcSize) / destSize);
-      const srcI = (srcY * srcSize + srcX) * 4;
-      const destI = (y * destSize + x) * 4;
-      dest[destI] = srcPixels[srcI];
-      dest[destI + 1] = srcPixels[srcI + 1];
-      dest[destI + 2] = srcPixels[srcI + 2];
-      dest[destI + 3] = srcPixels[srcI + 3];
-    }
-  }
-  return dest;
 }
 
 function crc32(buf) {
@@ -124,17 +139,26 @@ function encodePng(width, height, rgba) {
 }
 
 function generate(name, size, opts) {
-  const grid = buildGrid(opts);
-  const upscaled = upscaleNearestNeighbor(grid, GRID, size);
-  const png = encodePng(size, size, upscaled);
+  const pixels = renderIcon(size, opts);
+  const png = encodePng(size, size, pixels);
   writeFileSync(resolve(outDir, name), png);
   console.log(`✓ ${name} (${size}x${size})`);
 }
 
-generate('icon-192.png', 192, { opaqueBackground: false, radius: 6.5, highlightRadius: 2.5 });
-generate('icon-512.png', 512, { opaqueBackground: false, radius: 6.5, highlightRadius: 2.5 });
+generate('icon-192.png', 192, {
+  opaqueBackground: false,
+  mainRadiusRatio: 0.38,
+  highlightRadiusRatio: 0.16,
+});
+generate('icon-512.png', 512, {
+  opaqueBackground: false,
+  mainRadiusRatio: 0.38,
+  highlightRadiusRatio: 0.16,
+});
+// Maskable: el contenido tiene que caber en la "safe zone" central (~80% del
+// lienzo), por eso el radio es más chico y el fondo va opaco de punta a punta.
 generate('icon-512-maskable.png', 512, {
   opaqueBackground: true,
-  radius: 4.5,
-  highlightRadius: 1.5,
+  mainRadiusRatio: 0.3,
+  highlightRadiusRatio: 0.13,
 });
