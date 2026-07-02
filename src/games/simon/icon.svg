@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Grilla 2x2 de paneles, ecoando los 4 pads del juego (ver ADR-004) -->
+  <rect x="2" y="2" width="9" height="9" rx="2.5" fill="#ffcd4b" />
+  <rect x="13" y="2" width="9" height="9" rx="2.5" fill="#8a6dff" />
+  <rect x="2" y="13" width="9" height="9" rx="2.5" fill="#3fa7d6" />
+  <rect x="13" y="13" width="9" height="9" rx="2.5" fill="#6bcf63" />
+</svg>
