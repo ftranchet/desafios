@@ -2,6 +2,17 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.3.1] — Correcciones post-revisión
+
+### Corregido
+
+- **Cascada** ya no se congela al perder por top-out con caída rápida: la acción que provoca el fin del juego ahora finaliza la partida y conserva el puntaje, en vez de quedar trabada hasta salir (que además descartaba el puntaje como abandono).
+- La pantalla de resultado ya no marca "¡Récord nuevo!" en la primera partida perdida con puntaje 0: solo es récord si supera el mejor puntaje previo.
+- **Simon** ya no puede terminar injustamente por un toque en la transición entre rondas: los paneles se deshabilitan de inmediato hasta que empieza la próxima reproducción.
+- La racha de días se mantiene viva si se jugó ayer pero todavía no hoy; solo se corta al saltear un día completo.
+- Los récords (catálogo y estadísticas) ya no cuentan partidas abandonadas (puntaje 0): un juego solo abandonado vuelve a mostrar "Sin partidas todavía".
+- El contexto de audio se reanuda si está suspendido, para que el primer efecto suene en móvil.
+
 ## [0.3.0] — Fase 2: Cascada y expansión matemática
 
 ### Agregado
