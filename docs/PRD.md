@@ -1,7 +1,7 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.3 · Julio 2026
-**Estado:** decisiones fundamentales validadas por el product owner. Fase 0 entregada; en curso la Fase 1.
+**Documento de requisitos de producto (PRD)** · Versión 0.4 · Julio 2026
+**Estado:** Fase 0, Fase 1 y Fase 2 entregadas (`main`, v0.3.1). En definición: revisión de controles (v0.4).
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
 | Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                  |
@@ -9,6 +9,7 @@
 | 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                         |
 | 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro |
 | 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                         |
+| 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular          |
 
 ---
 
@@ -296,6 +297,7 @@ Post-MVP: **modo progresivo** opcional por juego (la dificultad sube dentro de l
 | RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                              |
 | RNF-09 | Compatible con Chrome y Safari móviles (últimas dos versiones); usable también en escritorio                                                   |
 | RNF-10 | Licencia GNU General Public License v3.0 ✓                                                                                                     |
+| RNF-11 | Todo juego es jugable de punta a punta solo con teclado en escritorio (foco visible, sin trampas de tabulación) — no exclusivamente con mouse/touch. Los juegos en tiempo real (Snake, Cascada y los que sigan ese patrón) ofrecen controles táctiles directos en pantalla (botones) como entrada principal en celular; el gesto de deslizar puede coexistir como atajo, pero nunca es la única forma de jugar (v0.4) |
 
 ---
 
@@ -534,6 +536,13 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 | 1   | Dirección visual            | Pixel art minimalista                  | **Minimalismo moderno** (sección 10, ADR-004) — el pixel art no funcionaba estéticamente      |
 | 2   | Tipografía de display/HUD   | "Press Start 2P" (fuente pixel)        | Una sola familia (Inter), con roles de peso en vez de una fuente pixel separada               |
 | 3   | Paleta de colores (ADR-003) | Subconjunto de Sweetie 16, validado AA | Sin cambios — se mantiene la misma paleta, funciona igual de bien en el nuevo lenguaje visual |
+
+### 17.4 Decisiones revisadas (v0.4, julio 2026)
+
+| #   | Decisión                                   | Resolución Fase 2                                                          | Resolución v0.4                                                                                                                          |
+| --- | ------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Controles táctiles de Snake y Cascada       | Solo gestos de deslizamiento (sin d-pad en pantalla, PRD 5.2 / Fase 2)       | Se agregan controles táctiles directos en pantalla (botones) como entrada principal en celular (RNF-11); el deslizamiento queda como atajo opcional, no obligatorio |
+| 2   | Operabilidad por teclado                    | Implícita en cada juego, sin requisito explícito                             | RNF-11 la vuelve requisito explícito para todos los juegos, presentes y futuros                                                             |
 
 ---
 
