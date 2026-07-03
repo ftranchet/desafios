@@ -69,6 +69,10 @@ describe('closestToTarget', () => {
   it('funciona con un solo valor', () => {
     expect(closestToTarget([42], 100)).toBe(42);
   });
+
+  it('lanza con una lista vacía en vez de un TypeError sin controlar', () => {
+    expect(() => closestToTarget([], 100)).toThrow();
+  });
 });
 
 describe('computeScore', () => {

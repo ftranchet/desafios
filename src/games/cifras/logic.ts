@@ -87,8 +87,15 @@ export function combine(x: number, y: number, op: Op): number | null {
 }
 
 export function closestToTarget(values: number[], target: number): number {
-  return values.reduce((best, current) =>
-    Math.abs(target - current) < Math.abs(target - best) ? current : best,
+  const first = values[0];
+  if (first === undefined) {
+    // En la práctica siempre hay al menos una ficha; el guard evita el TypeError
+    // de reduce() sobre un array vacío y satisface noUncheckedIndexedAccess.
+    throw new Error('closestToTarget: no se puede elegir de una lista vacía');
+  }
+  return values.reduce(
+    (best, current) => (Math.abs(target - current) < Math.abs(target - best) ? current : best),
+    first,
   );
 }
 
