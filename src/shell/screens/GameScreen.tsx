@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameResult } from '../../core/contract';
 import { getGameById } from '../../core/registry';
-import { playSound } from '../../core/sound';
+import { playSound, warmUpAudio } from '../../core/sound';
 import { storage } from '../../core/storage';
 import { vibrate } from '../../core/vibration';
 import { strings } from '../../i18n/es';
@@ -46,6 +46,9 @@ export function GameScreen() {
 
   function handlePlay() {
     if (!game) return;
+    // Este tap es un gesto directo: desbloquea el audio para que los efectos
+    // que se disparan después (desde timers/tick) suenen en iOS/Safari.
+    if (soundEnabled) warmUpAudio();
     const best = storage.getBest(game.metadata.id, level);
     setPreviousBest(best ? best.score : null);
     setLastPlayed({ gameId: game.metadata.id, level });

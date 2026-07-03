@@ -11,6 +11,15 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
+// Desbloquea el audio dentro de un gesto directo del usuario (ej: el tap de
+// "Jugar"). En iOS/Safari, resume() solo surte efecto en el call stack de una
+// interacción; los efectos se disparan después desde timers/tick, donde ya no
+// hay gesto — por eso hay que "despertar" el contexto acá primero (RF-08).
+export function warmUpAudio(): void {
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') void ctx.resume();
+}
+
 interface Tone {
   frequency: number;
   startOffset: number;
