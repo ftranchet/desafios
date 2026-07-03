@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.4.1] — Correcciones de robustez (feedback externo)
+
+### Corregido
+
+- **Snake** ya no descarta inputs: los giros se encolan, así que encadenar dos rápido (ej: arriba y después izquierda) ya no pierde el intermedio ni deja a la serpiente seguir de largo. Afecta a teclado, deslizamiento y botones por igual.
+- El audio se "despierta" en el tap de "Jugar" (un gesto directo), para que los efectos que se disparan después desde temporizadores suenen la primera vez en iOS/Safari, donde reanudar el contexto fuera de un gesto no alcanza.
+- `closestToTarget` (Cifras) usa un valor inicial explícito en el `reduce`: evita un `TypeError` sin controlar si alguna vez recibiera una lista vacía.
+
 ## [0.4.0] — Controles táctiles en pantalla para Snake y Cascada
 
 ### Agregado

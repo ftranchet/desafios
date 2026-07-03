@@ -1,5 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { buildResult, createInitialState, step } from './logic';
+import {
+  buildResult,
+  consumeDirection,
+  createInitialState,
+  step,
+  type Direction,
+} from './logic';
+
+describe('consumeDirection', () => {
+  it('devuelve la dirección actual si la cola está vacía', () => {
+    const queue: Direction[] = [];
+    expect(consumeDirection('right', queue)).toBe('right');
+    expect(queue).toHaveLength(0);
+  });
+
+  it('toma el primer giro válido y deja el resto en la cola', () => {
+    // Yendo a la derecha, el jugador encadena arriba y luego izquierda: este
+    // tick gira arriba; izquierda queda para el próximo (no se pierde).
+    const queue: Direction[] = ['up', 'left'];
+    expect(consumeDirection('right', queue)).toBe('up');
+    expect(queue).toEqual(['left']);
+  });
+
+  it('descarta la dirección opuesta (imposible) y sigue buscando', () => {
+    // Yendo a la derecha: izquierda es opuesta → se descarta; toma abajo.
+    const queue: Direction[] = ['left', 'down'];
+    expect(consumeDirection('right', queue)).toBe('down');
+    expect(queue).toHaveLength(0);
+  });
+
+  it('devuelve la actual si solo hay inputs inválidos', () => {
+    const queue: Direction[] = ['left']; // opuesta a right
+    expect(consumeDirection('right', queue)).toBe('right');
+    expect(queue).toHaveLength(0);
+  });
+});
 
 describe('createInitialState', () => {
   it('es determinística con la misma semilla', () => {
