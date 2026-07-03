@@ -20,7 +20,8 @@ import {
 const CELL_SIZE = 22;
 const CANVAS_WIDTH = BOARD_WIDTH * CELL_SIZE;
 const CANVAS_HEIGHT = BOARD_HEIGHT * CELL_SIZE;
-const SWIPE_THRESHOLD = 24;
+const TAP_THRESHOLD = 10; // px: por debajo de esto un toque cuenta como "tap" (rotar)
+const FLICK_THRESHOLD = 40; // px hacia abajo: un envión que dispara la caída rápida
 
 // Colores del sistema (tailwind.config.ts) — el canvas necesita valores
 // hexadecimales reales. Una entrada por tipo de pieza, en el orden de
@@ -117,7 +118,11 @@ export function CascadaGame({ config, onFinish }: GameProps) {
   const stateRef = useRef<CascadaState | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Estado del arrastre: se sigue la columna del dedo para mover la pieza de
+  // forma relativa (varias columnas en un gesto), y se distingue tap de flick.
+  const dragRef = useRef<{ startX: number; startY: number; lastCol: number; moved: boolean } | null>(
+    null,
+  );
 
   const [score, setScore] = useState(0);
   const [nextType, setNextType] = useState<PieceType | undefined>(undefined);
@@ -206,27 +211,56 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     }
   }
 
+  // Columna del tablero bajo el puntero.
+  function pointerColumn(event: PointerEvent<HTMLCanvasElement>): number | null {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const col = Math.floor((event.clientX - rect.left) / (rect.width / BOARD_WIDTH));
+    return Math.max(0, Math.min(BOARD_WIDTH - 1, col));
+  }
+
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
-    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const col = pointerColumn(event);
+    if (col === null) return;
+    dragRef.current = { startX: event.clientX, startY: event.clientY, lastCol: col, moved: false };
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const col = pointerColumn(event);
+    if (col === null) return;
+    const delta = col - drag.lastCol;
+    if (delta === 0) return;
+    // Mover la pieza tantas columnas como se desplazó el dedo (arrastre relativo).
+    const stepDir = delta > 0 ? 1 : -1;
+    const steps = Math.abs(delta);
+    applyAction((s) => {
+      let cur: CascadaState | null = s;
+      let moved: CascadaState | null = null;
+      for (let i = 0; i < steps && cur; i += 1) {
+        cur = tryMove(cur, stepDir, 0);
+        if (cur) moved = cur;
+      }
+      return moved;
+    });
+    drag.lastCol = col;
+    drag.moved = true;
   }
 
   function handlePointerUp(event: PointerEvent<HTMLCanvasElement>) {
-    const start = pointerStartRef.current;
-    pointerStartRef.current = null;
-    if (!start) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
 
-    if (Math.max(absX, absY) < SWIPE_THRESHOLD) {
-      applyAction(tryRotate);
-      return;
-    }
-    if (absX > absY) {
-      applyAction((s) => tryMove(s, dx > 0 ? 1 : -1, 0));
-    } else if (dy > 0) {
-      applyAction(hardDrop);
+    if (dy > FLICK_THRESHOLD && dy > Math.abs(dx)) {
+      applyAction(hardDrop); // envión hacia abajo = caída rápida
+    } else if (!drag.moved && Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
+      applyAction(tryRotate); // toque sin arrastre = rotar
     }
   }
 
@@ -234,7 +268,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     <div
       className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
-      aria-label="Tablero de Cascada: usá los botones, las flechas o deslizá para mover, arriba o tocá para rotar"
+      aria-label="Tablero de Cascada: arrastrá la pieza con el dedo, tocá para rotar, envión hacia abajo para caída rápida; también botones y flechas"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -250,7 +284,9 @@ export function CascadaGame({ config, onFinish }: GameProps) {
         style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
         className="touch-none rounded-lg border border-surface-alt"
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       />
       <div className="flex w-full max-w-xs items-center justify-between gap-4">
         <div className="grid grid-cols-3 gap-2" role="group" aria-label="Mover pieza">
@@ -276,7 +312,8 @@ export function CascadaGame({ config, onFinish }: GameProps) {
         </div>
       </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
-        Tocá los botones, deslizá para mover, hacia abajo para caída rápida, o tocá el tablero para rotar.
+        Arrastrá la pieza con el dedo, tocá para rotar y hacé un envión hacia abajo para
+        la caída rápida. También podés usar los botones o las flechas.
       </p>
     </div>
   );

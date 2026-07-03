@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.5.0] — Rediseño del control táctil y legibilidad de Simon
+
+### Cambiado
+
+- **Snake**: el control táctil pasa a ser por seguimiento del dedo — mantenés el dedo sobre el tablero y la víbora se orienta hacia ahí de forma continua, en vez de deslizar de a un giro. Teclado y D-pad siguen disponibles.
+- **Cascada**: la pieza se arrastra directamente con el dedo (varias columnas en un solo gesto), tocar rota y un envión hacia abajo hace la caída rápida, en vez de deslizar de a una columna. Teclado y botones en pantalla siguen disponibles.
+- **Simon**: los pads ahora contrastan mucho más — en reposo quedan atenuados y el que se enciende da un salto de brillo, se agranda y tiene un resplandor, así se distingue sin esfuerzo. Cada pad suma un glifo propio (●/■/▲/◆), para no depender solo del color (RNF-05).
+
 ## [0.4.1] — Correcciones de robustez (feedback externo)
 
 ### Corregido

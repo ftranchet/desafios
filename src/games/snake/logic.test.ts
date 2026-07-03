@@ -3,9 +3,36 @@ import {
   buildResult,
   consumeDirection,
   createInitialState,
+  steerToward,
   step,
   type Direction,
 } from './logic';
+
+describe('steerToward', () => {
+  const head = { x: 5, y: 5 };
+
+  it('elige el eje horizontal cuando es el más lejano', () => {
+    expect(steerToward(head, { x: 9, y: 6 }, 'up')).toBe('right');
+    expect(steerToward(head, { x: 1, y: 4 }, 'up')).toBe('left');
+  });
+
+  it('elige el eje vertical cuando es el más lejano', () => {
+    expect(steerToward(head, { x: 6, y: 9 }, 'right')).toBe('down');
+    expect(steerToward(head, { x: 4, y: 1 }, 'right')).toBe('up');
+  });
+
+  it('usa el otro eje si el dominante sería la dirección opuesta', () => {
+    // Yendo a la derecha, el objetivo está a la izquierda (dominante) y abajo:
+    // izquierda es opuesta e imposible → toma abajo.
+    expect(steerToward(head, { x: 0, y: 7 }, 'right')).toBe('down');
+  });
+
+  it('mantiene la dirección actual si ya está alineado con el objetivo', () => {
+    expect(steerToward(head, { x: 5, y: 5 }, 'up')).toBe('up');
+    // Objetivo justo detrás en el único eje con distancia → no puede girar 180°.
+    expect(steerToward(head, { x: 2, y: 5 }, 'right')).toBe('right');
+  });
+});
 
 describe('consumeDirection', () => {
   it('devuelve la dirección actual si la cola está vacía', () => {

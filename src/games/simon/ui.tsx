@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { GameProps } from '../../core/contract';
 import { buildResult, createInitialState, getLevelParams, submitTap, type SimonState } from './logic';
 
-const PAD_COLOR_CLASSES = ['bg-game-1', 'bg-game-2', 'bg-game-3', 'bg-game-4'];
-const PAD_ACTIVE_CLASSES = [
-  'bg-game-1 brightness-125 scale-95',
-  'bg-game-2 brightness-125 scale-95',
-  'bg-game-3 brightness-125 scale-95',
-  'bg-game-4 brightness-125 scale-95',
+// Cada pad tiene color y un glifo propio: la información no depende solo del
+// color (RNF-05) y ayuda a distinguir cuál se enciende.
+const PADS = [
+  { color: 'bg-game-1', glyph: '●' },
+  { color: 'bg-game-2', glyph: '■' },
+  { color: 'bg-game-3', glyph: '▲' },
+  { color: 'bg-game-4', glyph: '◆' },
 ];
 
 const START_DELAY_MS = 500;
@@ -102,8 +103,16 @@ export function SimonGame({ config, onFinish }: GameProps) {
       </div>
 
       <div className="grid w-full max-w-xs grid-cols-2 gap-3" role="group" aria-label="Paneles de Simon">
-        {PAD_COLOR_CLASSES.map((colorClass, index) => {
-          const isActive = activePad === index || pressedPad === index;
+        {PADS.map((pad, index) => {
+          const isFlashing = activePad === index;
+          const isPressed = pressedPad === index;
+          // Reposo bien atenuado; el flash de reproducción da un salto grande de
+          // brillo + agranda + resplandor, inconfundible frente al resto apagado.
+          const stateClass = isFlashing
+            ? 'brightness-110 scale-105 ring-4 ring-text-primary/70 shadow-[0_0_24px_rgba(244,244,242,0.4)] z-10'
+            : isPressed
+              ? 'brightness-110 scale-95'
+              : 'brightness-[.5] saturate-[.85]';
           return (
             <button
               key={index}
@@ -111,10 +120,16 @@ export function SimonGame({ config, onFinish }: GameProps) {
               disabled={phase !== 'input'}
               onClick={() => handlePadTap(index)}
               aria-label={`Panel ${index + 1}`}
-              className={`aspect-square rounded-xl border border-surface-alt transition-all duration-150 ${
-                isActive ? PAD_ACTIVE_CLASSES[index] : colorClass
-              } ${phase !== 'input' ? 'opacity-80' : 'opacity-100'}`}
-            />
+              className={`relative flex aspect-square items-center justify-center rounded-xl border border-surface-alt transition-all duration-150 ${pad.color} ${stateClass}`}
+            >
+              <span
+                className={`font-display text-[1.75rem] font-bold text-bg transition-opacity ${
+                  isFlashing ? 'opacity-90' : 'opacity-40'
+                }`}
+              >
+                {pad.glyph}
+              </span>
+            </button>
           );
         })}
       </div>

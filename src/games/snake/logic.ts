@@ -85,6 +85,28 @@ export function consumeDirection(current: Direction, queue: Direction[]): Direct
   return current;
 }
 
+// Dirección para que la cabeza se acerque a `target` (control por seguimiento
+// del dedo). Elige el eje con mayor distancia; si ese giro fuese la opuesta a la
+// dirección actual (imposible en una grilla), usa el otro eje. Si no hay giro
+// válido (ya alineado o el único eje disponible es el opuesto), mantiene la
+// dirección actual. Pura y determinística.
+export function steerToward(head: Position, target: Position, current: Direction): Direction {
+  const dx = target.x - head.x;
+  const dy = target.y - head.y;
+
+  const horizontal: Direction | null = dx > 0 ? 'right' : dx < 0 ? 'left' : null;
+  const vertical: Direction | null = dy > 0 ? 'down' : dy < 0 ? 'up' : null;
+
+  // Candidatos ordenados por eje dominante (más lejano primero).
+  const preferred = Math.abs(dx) >= Math.abs(dy) ? [horizontal, vertical] : [vertical, horizontal];
+  for (const candidate of preferred) {
+    if (candidate && candidate !== OPPOSITE[current]) {
+      return candidate;
+    }
+  }
+  return current;
+}
+
 function posKey(p: Position): string {
   return `${p.x},${p.y}`;
 }

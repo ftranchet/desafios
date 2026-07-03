@@ -4,8 +4,10 @@ import {
   buildResult,
   consumeDirection,
   createInitialState,
+  steerToward,
   step,
   type Direction,
+  type Position,
   type SnakeState,
 } from './logic';
 
@@ -18,7 +20,6 @@ const COLOR_FOOD = '#f4557a';
 const COLOR_OBSTACLE = '#a6a2bd';
 
 const CANVAS_SIZE = 320;
-const SWIPE_THRESHOLD = 24;
 
 const KEY_DIRECTIONS: Record<string, Direction> = {
   ArrowUp: 'up',
@@ -76,9 +77,11 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   // Cola de inputs pendientes (no una sola dirección): así encadenar dos giros
   // rápidos antes de un tick no pierde el intermedio (ver consumeDirection).
   const directionQueueRef = useRef<Direction[]>([]);
+  // Celda hacia la que apunta el dedo mientras se toca/arrastra el tablero; la
+  // víbora se orienta hacia ahí en cada tick (control por seguimiento).
+  const targetRef = useRef<Position | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const [score, setScore] = useState(0);
 
@@ -97,7 +100,14 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   function tick() {
     const current = stateRef.current;
     if (!current || current.gameOver) return;
-    const direction = consumeDirection(current.direction, directionQueueRef.current);
+    // Con el dedo en el tablero, la víbora se orienta hacia él; si no, se
+    // consumen los giros de la cola (teclado / D-pad).
+    const head = current.snake[0];
+    const target = targetRef.current;
+    const direction =
+      target && head
+        ? steerToward(head, target, current.direction)
+        : consumeDirection(current.direction, directionQueueRef.current);
     const next = step(current, direction);
     stateRef.current = next;
     setScore(next.score);
@@ -126,6 +136,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
     const initial = createInitialState(config.level, config.seed ?? Date.now());
     stateRef.current = initial;
     directionQueueRef.current = [];
+    targetRef.current = null;
     sessionStartRef.current = performance.now();
     setScore(0);
 
@@ -157,29 +168,39 @@ export function SnakeGame({ config, onFinish }: GameProps) {
     requestDirection(direction);
   }
 
-  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
-    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+  // Convierte las coordenadas del puntero a una celda del tablero.
+  function pointerToCell(event: PointerEvent<HTMLCanvasElement>): Position | null {
+    const state = stateRef.current;
+    const canvas = canvasRef.current;
+    if (!state || !canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const cell = rect.width / state.gridSize;
+    const clamp = (v: number) => Math.max(0, Math.min(state.gridSize - 1, v));
+    return {
+      x: clamp(Math.floor((event.clientX - rect.left) / cell)),
+      y: clamp(Math.floor((event.clientY - rect.top) / cell)),
+    };
   }
 
-  function handlePointerUp(event: PointerEvent<HTMLCanvasElement>) {
-    const start = pointerStartRef.current;
-    pointerStartRef.current = null;
-    if (!start) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_THRESHOLD) return;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      requestDirection(dx > 0 ? 'right' : 'left');
-    } else {
-      requestDirection(dy > 0 ? 'down' : 'up');
-    }
+  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    targetRef.current = pointerToCell(event);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
+    if (targetRef.current === null) return; // solo mientras se mantiene el toque
+    targetRef.current = pointerToCell(event);
+  }
+
+  function handlePointerUp() {
+    targetRef.current = null;
   }
 
   return (
     <div
       className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
-      aria-label="Tablero de Snake: usá los botones, las flechas o deslizá para moverte"
+      aria-label="Tablero de Snake: mantené el dedo para que la víbora te siga, o usá los botones o las flechas"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -189,7 +210,9 @@ export function SnakeGame({ config, onFinish }: GameProps) {
         style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
         className="touch-none rounded-lg border border-surface-alt"
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       />
       <div
         className="grid grid-cols-3 grid-rows-3 gap-2"
@@ -222,7 +245,8 @@ export function SnakeGame({ config, onFinish }: GameProps) {
         />
       </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
-        Tocá los botones, deslizá sobre el tablero o usá las flechas del teclado para moverte.
+        Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los
+        botones o las flechas del teclado.
       </p>
     </div>
   );
