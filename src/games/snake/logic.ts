@@ -63,12 +63,27 @@ const DIRECTION_DELTAS: Record<Direction, Position> = {
   right: { x: 1, y: 0 },
 };
 
-const OPPOSITE: Record<Direction, Direction> = {
+export const OPPOSITE: Record<Direction, Direction> = {
   up: 'down',
   down: 'up',
   left: 'right',
   right: 'left',
 };
+
+// Toma el primer giro válido de la cola de inputs pendientes (descartando los
+// que repiten la dirección actual o son su opuesta, imposibles en una grilla),
+// y deja el resto en la cola para el próximo tick. Pura salvo por consumir la
+// cola que se le pasa. Evita el "input dropping": si el jugador encadena dos
+// giros rápidos antes de un tick, no se pierde el intermedio.
+export function consumeDirection(current: Direction, queue: Direction[]): Direction {
+  while (queue.length > 0) {
+    const requested = queue.shift() as Direction;
+    if (requested !== current && requested !== OPPOSITE[current]) {
+      return requested;
+    }
+  }
+  return current;
+}
 
 function posKey(p: Position): string {
   return `${p.x},${p.y}`;

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { buildResult, createInitialState, step, type Direction, type SnakeState } from './logic';
+import {
+  buildResult,
+  consumeDirection,
+  createInitialState,
+  step,
+  type Direction,
+  type SnakeState,
+} from './logic';
 
 // Colores del sistema (tailwind.config.ts) — el canvas necesita valores
 // hexadecimales reales, no puede consumir clases de Tailwind.
@@ -66,7 +73,9 @@ function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
 export function SnakeGame({ config, onFinish }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<SnakeState | null>(null);
-  const directionRef = useRef<Direction>('right');
+  // Cola de inputs pendientes (no una sola dirección): así encadenar dos giros
+  // rápidos antes de un tick no pierde el intermedio (ver consumeDirection).
+  const directionQueueRef = useRef<Direction[]>([]);
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -88,7 +97,8 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   function tick() {
     const current = stateRef.current;
     if (!current || current.gameOver) return;
-    const next = step(current, directionRef.current);
+    const direction = consumeDirection(current.direction, directionQueueRef.current);
+    const next = step(current, direction);
     stateRef.current = next;
     setScore(next.score);
 
@@ -115,7 +125,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
 
     const initial = createInitialState(config.level, config.seed ?? Date.now());
     stateRef.current = initial;
-    directionRef.current = initial.direction;
+    directionQueueRef.current = [];
     sessionStartRef.current = performance.now();
     setScore(0);
 
@@ -131,7 +141,13 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   }, []);
 
   function requestDirection(direction: Direction) {
-    directionRef.current = direction;
+    const queue = directionQueueRef.current;
+    // Dedup del último input y cap de 2 para no acumular un backlog que haga
+    // sentir los controles con lag. consumeDirection valida lo opuesto en el tick.
+    const last = queue.length > 0 ? queue[queue.length - 1] : stateRef.current?.direction;
+    if (direction === last) return;
+    if (queue.length >= 2) return;
+    queue.push(direction);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
