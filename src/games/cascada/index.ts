@@ -11,12 +11,12 @@ export const cascada: GameModule = {
     category: 'spatial',
     description: 'Encajá las piezas que caen y completá líneas.',
     version: '2.0.0',
-    // Tranquilo y Progresivo llegan en una próxima sesión (ADR-007): el juego
-    // declara solo lo que implementa y el selector muestra lo declarado.
     modes: buildModes({
       easy: MODE_PARAMS.easy,
       medium: MODE_PARAMS.medium,
       hard: MODE_PARAMS.hard,
+      zen: MODE_PARAMS.zen,
+      progressive: MODE_PARAMS.progressive,
     }),
     estimatedSeconds: 120,
     icon,

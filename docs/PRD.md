@@ -1,6 +1,6 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.8 · Julio 2026
+**Documento de requisitos de producto (PRD)** · Versión 0.9 · Julio 2026
 **Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6), catálogo listo para escalar (ADR-005/006, generador, E2E) y sistema de dificultad renovado: 3 dificultades + modos Tranquilo y Progresivo (sección 7, ADR-007).
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
@@ -14,6 +14,7 @@
 | 0.6     | Julio 2026 | Robustez del shell como base para escalar el catálogo: **sección 5.6** — aislamiento de fallas por juego (error boundary), frontera desconfiada para `GameResult`, persistencia acotada con retención de récords y esquema versionado, test de contrato + smoke de render sobre el registro (un juego queda cubierto al registrarse), y CI en ramas además del deploy                                                                             |
 | 0.7     | Julio 2026 | Escalabilidad del catálogo: **ADR-005** (kit de interacción `src/core/ui/` — implementación canónica de los patrones 10.7), **ADR-006** (primera ampliación del contrato: `GameProps.audio`, sonido dentro de los juegos gateado por el shell — Simon suena), generador `npm run new-game` (esqueleto compilable, testeado y registrado), y suite E2E de humo en CI                                                                               |
 | 0.8     | Julio 2026 | **ADR-007 — dificultades y modos**: los 5 niveles se reemplazan por 3 dificultades (Fácil/Medio/Difícil) + 2 modos especiales declarados por juego — **Tranquilo** (sin relojes ni game over, no compite) y **Progresivo** (10 grados de fácil a más-que-difícil, récord = hasta dónde llegaste). Sección 7 reescrita, contrato con `modes`/`ModeId`, récords migrados del esquema de niveles (v2), Aritmética y Snake como referencias completas |
+| 0.9     | Julio 2026 | Cobertura completa de modos en el catálogo: Cascada, Simon, Secuencias y Estimación suman Tranquilo y Progresivo; Cifras suma Tranquilo (sin Progresivo: ronda única de pensamiento). Los 8 juegos declaran sus modos definitivos (sección 7)                                                                                                                                                                                                     |
 
 ---
 
@@ -307,7 +308,9 @@ Parámetros que escalan, ejemplos del patrón:
 | Sudoku                   | Cantidad de celdas reveladas / técnica de resolución requerida                                        |
 | Nonograma                | Tamaño de grilla (5×5 a 15×15)                                                                        |
 
-Robustez para juegos nuevos (requisito del product owner): la estructura se declara con `buildModes()` (labels y orden canónicos — imposible desviarse), el test de contrato valida los modos de todo juego registrado, y el smoke de render monta cada juego **en cada modo que declara**. Referencias completas: Aritmética (preguntas) y Snake (tiempo real) implementan los 5 modos; el resto suma Tranquilo/Progresivo juego por juego.
+Robustez para juegos nuevos (requisito del product owner): la estructura se declara con `buildModes()` (labels y orden canónicos — imposible desviarse), el test de contrato valida los modos de todo juego registrado, y el smoke de render monta cada juego **en cada modo que declara**.
+
+Cobertura del catálogo actual: **Aritmética, Snake, Cascada, Simon, Secuencias y Estimación** declaran los 5 modos (en Cascada el top-out de Tranquilo limpia el tablero; en Simon fallar repite la ronda y el Progresivo acelera la reproducción por grado). **Cifras** declara Tranquilo pero no Progresivo (es una ronda única de pensamiento, no un juego de rampa) y **Tiempo de reacción** solo las 3 dificultades (sin reloj no hay juego) — la demostración de que los modos se declaran donde tienen sentido.
 
 ---
 

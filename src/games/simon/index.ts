@@ -15,6 +15,8 @@ export const simon: GameModule = {
       easy: MODE_PARAMS.easy,
       medium: MODE_PARAMS.medium,
       hard: MODE_PARAMS.hard,
+      zen: MODE_PARAMS.zen,
+      progressive: MODE_PARAMS.progressive,
     }),
     estimatedSeconds: 60,
     icon,

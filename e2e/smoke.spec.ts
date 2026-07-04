@@ -56,8 +56,13 @@ test('el selector ofrece las 3 dificultades y los modos declarados por juego', a
   await expect(page.getByRole('button', { name: /Tranquilo/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Progresivo/ })).toBeVisible();
 
-  // Cascada todavía no los implementa: el selector no los muestra.
-  await page.goto('./#/game/cascada');
+  // Cifras declara Tranquilo pero no Progresivo (ronda única pensante).
+  await page.goto('./#/game/cifras');
+  await expect(page.getByRole('button', { name: /Tranquilo/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Progresivo/ })).toHaveCount(0);
+
+  // Tiempo de reacción no declara modos especiales (el juego ES un reloj).
+  await page.goto('./#/game/reaction-time');
   await expect(page.getByRole('button', { name: 'Fácil', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /Tranquilo/ })).toHaveCount(0);
 });

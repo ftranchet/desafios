@@ -1,7 +1,7 @@
 import type { GameModule } from '../../core/contract';
 import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { MODE_PARAMS } from './logic';
+import { MODE_PARAMS, PROGRESSIVE_PARAMS } from './logic';
 import { QuickEstimateGame } from './ui';
 
 export const quickEstimate: GameModule = {
@@ -15,8 +15,10 @@ export const quickEstimate: GameModule = {
       easy: MODE_PARAMS.easy,
       medium: MODE_PARAMS.medium,
       hard: MODE_PARAMS.hard,
+      zen: MODE_PARAMS.zen,
+      progressive: PROGRESSIVE_PARAMS,
     }),
-    estimatedSeconds: 45,
+    estimatedSeconds: 60,
     icon,
   },
   Component: QuickEstimateGame,

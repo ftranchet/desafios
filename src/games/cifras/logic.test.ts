@@ -32,7 +32,7 @@ describe('generatePuzzle', () => {
   });
 
   it('lanza si el nivel es inválido', () => {
-    expect(() => generatePuzzle('zen' as never, 1)).toThrow();
+    expect(() => generatePuzzle('progressive' as never, 1)).toThrow();
   });
 });
 

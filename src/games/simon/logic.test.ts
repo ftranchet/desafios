@@ -6,12 +6,14 @@ import {
   PAD_COUNT,
   submitTap,
   type SimonState,
+  playbackForRound,
+  stageForRound,
 } from './logic';
 
 describe('getModeParams', () => {
   it('lanza si el nivel es inválido', () => {
-    expect(() => getModeParams('zen' as never)).toThrow();
-    expect(() => getModeParams('zen' as never)).toThrow();
+    expect(() => getModeParams('otro' as never)).toThrow();
+    expect(() => getModeParams('otro' as never)).toThrow();
   });
 });
 
@@ -45,6 +47,8 @@ describe('createInitialState', () => {
 describe('submitTap', () => {
   function stateWithSequence(sequence: number[]): SimonState {
     return {
+      mode: 'easy' as const,
+      mistakes: 0,
       sequence,
       round: 1,
       playerIndex: 0,
@@ -95,6 +99,8 @@ describe('submitTap', () => {
 describe('buildResult', () => {
   it('arma un GameResult con completed true siempre (fallar es un final natural)', () => {
     const state: SimonState = {
+      mode: 'easy',
+      mistakes: 0,
       sequence: [0, 1, 2],
       round: 3,
       playerIndex: 1,
@@ -113,6 +119,8 @@ describe('buildResult', () => {
 
   it('cuenta la ronda actual como completada cuando no falló (llegó al tope)', () => {
     const state: SimonState = {
+      mode: 'easy',
+      mistakes: 0,
       sequence: [0, 1],
       round: 2,
       playerIndex: 0,
@@ -123,5 +131,37 @@ describe('buildResult', () => {
     const result = buildResult({ mode: 'easy', seed: 1 }, state, 3000);
     expect(result.metrics.roundsCompleted).toBe(2);
     expect(result.metrics.failed).toBe(0);
+  });
+});
+
+describe('modos especiales (ADR-007)', () => {
+  it('Tranquilo: fallar repite la ronda en vez de terminar', () => {
+    const state = createInitialState('zen', 42);
+    const wrongPad = (state.sequence[0]! + 1) % 4;
+    const next = submitTap(state, wrongPad);
+    expect(next.gameOver).toBe(false);
+    expect(next.mistakes).toBe(1);
+    expect(next.playerIndex).toBe(0);
+    expect(next.round).toBe(state.round);
+  });
+
+  it('progresivo: la reproducción se acelera por grado', () => {
+    expect(stageForRound(1)).toBe(1);
+    expect(stageForRound(3)).toBe(2);
+    expect(stageForRound(19)).toBe(10);
+    const slow = playbackForRound('progressive', 1);
+    const fast = playbackForRound('progressive', 19);
+    expect(fast.flashMs).toBeLessThan(slow.flashMs);
+    expect(fast.flashMs).toBeGreaterThanOrEqual(240);
+    // Los modos fijos no cambian de velocidad con la ronda.
+    expect(playbackForRound('medium', 1)).toEqual(playbackForRound('medium', 15));
+  });
+
+  it('progresivo: el puntaje es acumulativo con el grado como multiplicador', () => {
+    let state = createInitialState('progressive', 42);
+    // Completar la ronda 1 (un solo toque correcto).
+    state = submitTap(state, state.sequence[0]!);
+    expect(state.round).toBe(2);
+    expect(state.score).toBe(10); // grado 1 × 10
   });
 });

@@ -1,4 +1,5 @@
 import type { GameConfig, GameResult, ModeId } from '../../core/contract';
+import { lerp, PROGRESSIVE_STAGES, progressiveT } from '../../core/modes';
 import { createRng, randomInt, type Rng } from '../../core/random';
 
 // Lógica pura de Cascada (clon de Tetris) — sin React ni canvas. Construida
@@ -175,11 +176,35 @@ export interface LevelParams extends Record<string, number> {
 }
 
 // easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
-export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
-  easy: { initialIntervalMs: 800, minIntervalMs: 300, speedStepPerLine: 15 },
-  medium: { initialIntervalMs: 600, minIntervalMs: 200, speedStepPerLine: 20 },
-  hard: { initialIntervalMs: 400, minIntervalMs: 100, speedStepPerLine: 25 },
-};
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard' | 'zen' | 'progressive', LevelParams> =
+  {
+    easy: { initialIntervalMs: 800, minIntervalMs: 300, speedStepPerLine: 15 },
+    medium: { initialIntervalMs: 600, minIntervalMs: 200, speedStepPerLine: 20 },
+    hard: { initialIntervalMs: 400, minIntervalMs: 100, speedStepPerLine: 25 },
+    // Tranquilo: caída fija y suave, sin aceleración; el top-out limpia el
+    // tablero en vez de terminar (ADR-007).
+    zen: { initialIntervalMs: 700, minIntervalMs: 700, speedStepPerLine: 0 },
+    // Progresivo: la velocidad la pone el grado (stage), no las líneas sueltas.
+    progressive: { initialIntervalMs: 800, minIntervalMs: 150, speedStepPerLine: 0 },
+  };
+
+// --- Modo progresivo ---------------------------------------------------------
+
+const LINES_PER_STAGE = 2;
+
+/** Grado según líneas completadas: sube uno cada 2 líneas, tope 10. */
+export function stageForLines(linesCleared: number): number {
+  return Math.min(PROGRESSIVE_STAGES, Math.floor(linesCleared / LINES_PER_STAGE) + 1);
+}
+
+/** Velocidad del grado: interpola fácil→difícil y extrapola en 9-10 (ADR-007). */
+export function intervalForStage(stage: number): number {
+  const t = progressiveT(stage);
+  return Math.max(
+    MODE_PARAMS.progressive.minIntervalMs,
+    Math.round(lerp(MODE_PARAMS.easy.initialIntervalMs, 300, t)),
+  );
+}
 
 export function getModeParams(mode: ModeId): LevelParams {
   const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
@@ -188,6 +213,7 @@ export function getModeParams(mode: ModeId): LevelParams {
 }
 
 export interface CascadaState {
+  mode: ModeId;
   board: number[][]; // BOARD_HEIGHT x BOARD_WIDTH, 0=vacío, 1-7=pieza bloqueada
   current: ActivePiece;
   queue: PieceType[];
@@ -198,7 +224,13 @@ export interface CascadaState {
   intervalMs: number;
   speedStepPerLine: number;
   minIntervalMs: number;
+  stage: number; // grado del modo progresivo; 1 en el resto
+  topOuts: number; // limpiezas por top-out en Tranquilo (no terminan la partida)
   gameOver: boolean;
+}
+
+function createEmptyBoard(): number[][] {
+  return Array.from({ length: BOARD_HEIGHT }, () => Array<number>(BOARD_WIDTH).fill(0));
 }
 
 function spawnPiece(state: CascadaState): CascadaState {
@@ -210,17 +242,30 @@ function spawnPiece(state: CascadaState): CascadaState {
     x: Math.floor((BOARD_WIDTH - shape.size) / 2),
     y: 0,
   };
-  const gameOver = !isValidPosition(state.board, piece);
-  return { ...state, current: piece, queue, bagIndex, gameOver };
+  if (!isValidPosition(state.board, piece)) {
+    if (state.mode === 'zen') {
+      // Tranquilo: el top-out limpia el tablero en vez de terminar (ADR-007);
+      // el puntaje se conserva y la pieza aparece sobre el tablero vacío.
+      return {
+        ...state,
+        board: createEmptyBoard(),
+        current: piece,
+        queue,
+        bagIndex,
+        topOuts: state.topOuts + 1,
+        gameOver: false,
+      };
+    }
+    return { ...state, current: piece, queue, bagIndex, gameOver: true };
+  }
+  return { ...state, current: piece, queue, bagIndex, gameOver: false };
 }
 
 export function createInitialState(mode: ModeId, seed: number): CascadaState {
   const params = getModeParams(mode);
-  const board: number[][] = Array.from({ length: BOARD_HEIGHT }, () =>
-    Array<number>(BOARD_WIDTH).fill(0),
-  );
   const base: CascadaState = {
-    board,
+    mode,
+    board: createEmptyBoard(),
     current: { type: 'I', rotation: 0, x: 0, y: 0 }, // spawnPiece lo reemplaza enseguida
     queue: [],
     seed,
@@ -230,6 +275,8 @@ export function createInitialState(mode: ModeId, seed: number): CascadaState {
     intervalMs: params.initialIntervalMs,
     speedStepPerLine: params.speedStepPerLine,
     minIntervalMs: params.minIntervalMs,
+    stage: 1,
+    topOuts: 0,
     gameOver: false,
   };
   return spawnPiece(base);
@@ -276,12 +323,16 @@ export function lockPiece(state: CascadaState): CascadaState {
   const { board, cleared } = clearLines(merged);
   const linesCleared = state.linesCleared + cleared;
   const score = state.score + (LINE_SCORES[cleared] ?? 0);
-  const intervalMs = Math.max(
-    state.minIntervalMs,
-    state.intervalMs - cleared * state.speedStepPerLine,
-  );
 
-  return spawnPiece({ ...state, board, linesCleared, score, intervalMs });
+  let { intervalMs, stage } = state;
+  if (state.mode === 'progressive') {
+    stage = stageForLines(linesCleared);
+    intervalMs = intervalForStage(stage);
+  } else {
+    intervalMs = Math.max(state.minIntervalMs, state.intervalMs - cleared * state.speedStepPerLine);
+  }
+
+  return spawnPiece({ ...state, board, linesCleared, score, intervalMs, stage });
 }
 
 export function step(state: CascadaState): CascadaState {
@@ -324,7 +375,12 @@ export function buildResult(
     score: state.score,
     completed: true, // llegar a game over es un final natural, no un abandono
     durationMs,
-    metrics: { linesCleared: state.linesCleared, finalIntervalMs: state.intervalMs },
+    metrics: {
+      linesCleared: state.linesCleared,
+      finalIntervalMs: state.intervalMs,
+      maxStage: state.stage,
+      topOuts: state.topOuts,
+    },
     timestamp: new Date().toISOString(),
   };
 }

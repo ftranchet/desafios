@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.10.0] — Tranquilo y Progresivo en todo el catálogo
+
+### Agregado
+
+- **Cascada**: Tranquilo (caída fija y suave; el top-out limpia el tablero en vez de terminar, con botón "Terminar") y Progresivo (el grado sube cada 2 líneas: más velocidad, hasta superar al Difícil actual).
+- **Simon**: Tranquilo (reproducción lenta; fallar repite la ronda en vez de terminar) y Progresivo (la reproducción se acelera por grado, puntaje acumulativo multiplicado por grado).
+- **Secuencias numéricas** y **Estimación relámpago**: Tranquilo (sin reloj) y Progresivo (rampa de 20 preguntas/rondas que desbloquea patrones/complejidad por grado y achica el tiempo).
+- **Cifras**: Tranquilo (sin límite de tiempo). Sin Progresivo a propósito: es una ronda única de pensamiento, no un juego de rampa — los modos se declaran donde tienen sentido (ADR-007).
+- Con esto, los 8 juegos del catálogo declaran sus modos definitivos; el smoke de render los cubre a todos en todos sus modos.
+
 ## [0.9.0] — Dificultades y modos: Fácil/Medio/Difícil + Tranquilo y Progresivo (ADR-007)
 
 ### Cambiado

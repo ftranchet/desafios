@@ -63,11 +63,14 @@ export function CifrasGame({ config, onFinish }: GameProps) {
     setTiles(initialTiles);
     sessionStartRef.current = performance.now();
 
-    timeoutRef.current = window.setTimeout(() => submitAnswer(), params.timeLimitMs);
-    tickRef.current = window.setInterval(() => {
-      const elapsed = performance.now() - sessionStartRef.current;
-      setRemainingMs(Math.max(0, params.timeLimitMs - elapsed));
-    }, 250);
+    // Tranquilo: sin límite de tiempo — no se programa reloj alguno (ADR-007).
+    if (params.timeLimitMs > 0) {
+      timeoutRef.current = window.setTimeout(() => submitAnswer(), params.timeLimitMs);
+      tickRef.current = window.setInterval(() => {
+        const elapsed = performance.now() - sessionStartRef.current;
+        setRemainingMs(Math.max(0, params.timeLimitMs - elapsed));
+      }, 250);
+    }
 
     return () => {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
@@ -147,9 +150,11 @@ export function CifrasGame({ config, onFinish }: GameProps) {
       <div className="w-full max-w-sm">
         <div className="mb-2 flex justify-between text-sm text-text-secondary">
           <span>Objetivo</span>
-          <span>{formatSeconds(remainingMs)}</span>
+          {params.timeLimitMs > 0 && <span>{formatSeconds(remainingMs)}</span>}
         </div>
-        <CountdownBar durationMs={params.timeLimitMs} running resetKey={0} />
+        {params.timeLimitMs > 0 && (
+          <CountdownBar durationMs={params.timeLimitMs} running resetKey={0} />
+        )}
       </div>
 
       <p className="font-display text-xl font-extrabold text-accent-primary">{target}</p>

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PROGRESSIVE_STAGES } from '../../core/modes';
 import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import {
   buildResult,
   generateSession,
-  getModeParams,
   isCorrectChoice,
   type AnswerRecord,
   type Round,
@@ -16,12 +16,9 @@ type Phase = 'question' | 'feedback';
 type Choice = 'left' | 'right';
 
 export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
-  const params = getModeParams(config.mode);
-
   // Foco al contenedor: las flechas ← → eligen desde la primera ronda sin
   // exigir un clic previo (RNF-11).
   const containerRef = useAutoFocus<HTMLDivElement>();
-  const roundsRef = useRef<Round[]>([]);
   const answersRef = useRef<AnswerRecord[]>([]);
   const sessionStartRef = useRef(0);
   const roundStartRef = useRef(0);
@@ -29,13 +26,17 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
   const timeoutRef = useRef<number | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
 
+  const [session, setSession] = useState<Round[]>([]);
   const [phase, setPhase] = useState<Phase>('question');
   const [roundIndex, setRoundIndex] = useState(0);
   const [lastChoice, setLastChoice] = useState<Choice | null>(null);
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
 
   const isQuestion = phase === 'question';
-  const secondsLeft = useSecondsLeft(params.secondsPerRound, isQuestion, roundIndex);
+  const round = session[roundIndex];
+  // Tranquilo: seconds = 0 → sin reloj, sin barra, sin cuenta regresiva.
+  const timed = (round?.seconds ?? 0) > 0;
+  const secondsLeft = useSecondsLeft(round?.seconds ?? 0, isQuestion && timed, roundIndex);
 
   function clearTimers() {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
@@ -47,40 +48,44 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
   useEffect(() => clearTimers, []);
 
   useEffect(() => {
-    roundsRef.current = generateSession(config.mode, config.seed ?? Date.now());
+    const rounds = generateSession(config.mode, config.seed ?? Date.now());
     answersRef.current = [];
     sessionStartRef.current = performance.now();
-    startRound(0);
+    setSession(rounds);
+    startRound(0, rounds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function finishGame(completed: boolean) {
+  function finishGame(rounds: Round[], completed: boolean) {
     clearTimers();
     const durationMs = Math.round(performance.now() - sessionStartRef.current);
-    onFinish(buildResult(config, answersRef.current, durationMs, completed));
+    onFinish(buildResult(config, answersRef.current, rounds, durationMs, completed));
   }
 
-  function startRound(index: number) {
-    if (!roundsRef.current[index]) return;
+  function startRound(index: number, rounds: Round[]) {
+    const r = rounds[index];
+    if (!r) return;
     resolvedRef.current = false;
     roundStartRef.current = performance.now();
     setLastChoice(null);
 
-    timeoutRef.current = window.setTimeout(() => {
-      resolveChoice(index, null);
-    }, params.secondsPerRound * 1000);
+    if (r.seconds > 0) {
+      timeoutRef.current = window.setTimeout(() => {
+        resolveChoice(index, null, rounds);
+      }, r.seconds * 1000);
+    }
   }
 
-  function resolveChoice(index: number, choice: Choice | null) {
+  function resolveChoice(index: number, choice: Choice | null, rounds: Round[]) {
     if (resolvedRef.current) return;
     resolvedRef.current = true;
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     timeoutRef.current = null;
 
-    const round = roundsRef.current[index];
-    if (!round) return;
+    const r = rounds[index];
+    if (!r) return;
 
-    const correct = choice !== null && isCorrectChoice(round, choice);
+    const correct = choice !== null && isCorrectChoice(r, choice);
     const responseMs =
       choice !== null ? Math.round(performance.now() - roundStartRef.current) : null;
     answersRef.current[index] = { correct, responseMs };
@@ -91,19 +96,19 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
 
     feedbackTimeoutRef.current = window.setTimeout(() => {
       const nextIndex = index + 1;
-      if (nextIndex >= roundsRef.current.length) {
-        finishGame(true);
+      if (nextIndex >= rounds.length) {
+        finishGame(rounds, true);
       } else {
         setRoundIndex(nextIndex);
         setPhase('question');
-        startRound(nextIndex);
+        startRound(nextIndex, rounds);
       }
     }, FEEDBACK_DURATION_MS);
   }
 
   function handleChoice(choice: Choice) {
     if (phase !== 'question') return;
-    resolveChoice(roundIndex, choice);
+    resolveChoice(roundIndex, choice, session);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -115,8 +120,6 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
       handleChoice('right');
     }
   }
-
-  const round = roundsRef.current[roundIndex];
 
   return (
     <div
@@ -130,17 +133,24 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
       <div className="w-full max-w-sm">
         <div className="mb-2 flex justify-between text-sm text-text-secondary">
           <span>
-            Ronda {roundIndex + 1} / {params.roundCount}
+            Ronda {roundIndex + 1} / {session.length}
+            {config.mode === 'progressive' &&
+              round &&
+              ` · Grado ${round.stage}/${PROGRESSIVE_STAGES}`}
           </span>
-          <span aria-label={`${secondsLeft} segundos restantes`}>
-            {isQuestion ? `${secondsLeft} s` : ''}
-          </span>
+          {timed && (
+            <span aria-label={`${secondsLeft} segundos restantes`}>
+              {isQuestion ? `${secondsLeft} s` : ''}
+            </span>
+          )}
         </div>
-        <CountdownBar
-          durationMs={params.secondsPerRound * 1000}
-          running={isQuestion}
-          resetKey={roundIndex}
-        />
+        {timed && (
+          <CountdownBar
+            durationMs={(round?.seconds ?? 0) * 1000}
+            running={isQuestion}
+            resetKey={roundIndex}
+          />
+        )}
       </div>
 
       {round && (

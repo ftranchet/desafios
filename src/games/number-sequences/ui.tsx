@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PROGRESSIVE_STAGES } from '../../core/modes';
 import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
-import {
-  buildResult,
-  generateSession,
-  getModeParams,
-  type AnswerRecord,
-  type SequenceQuestion,
-} from './logic';
+import { buildResult, generateSession, type AnswerRecord, type SequenceQuestion } from './logic';
 
 const FEEDBACK_DURATION_MS = 700;
 const MAX_INPUT_LENGTH = 7;
@@ -17,12 +12,9 @@ type Phase = 'question' | 'feedback';
 const DIGIT_ROWS = ['7', '8', '9', '4', '5', '6', '1', '2', '3'];
 
 export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
-  const params = getModeParams(config.mode);
-
   // Foco al contenedor: en escritorio se puede tipear la respuesta con el
   // teclado físico desde la primera pregunta, sin clic previo (RNF-11).
   const containerRef = useAutoFocus<HTMLDivElement>();
-  const questionsRef = useRef<SequenceQuestion[]>([]);
   const answersRef = useRef<AnswerRecord[]>([]);
   const sessionStartRef = useRef(0);
   const questionStartRef = useRef(0);
@@ -30,13 +22,17 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
   const timeoutRef = useRef<number | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
 
+  const [session, setSession] = useState<SequenceQuestion[]>([]);
   const [phase, setPhase] = useState<Phase>('question');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
 
   const isQuestion = phase === 'question';
-  const secondsLeft = useSecondsLeft(params.secondsPerQuestion, isQuestion, questionIndex);
+  const question = session[questionIndex];
+  // Tranquilo: seconds = 0 → sin reloj, sin barra, sin cuenta regresiva.
+  const timed = (question?.seconds ?? 0) > 0;
+  const secondsLeft = useSecondsLeft(question?.seconds ?? 0, isQuestion && timed, questionIndex);
 
   function clearTimers() {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
@@ -48,40 +44,44 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
   useEffect(() => clearTimers, []);
 
   useEffect(() => {
-    questionsRef.current = generateSession(config.mode, config.seed ?? Date.now());
+    const questions = generateSession(config.mode, config.seed ?? Date.now());
     answersRef.current = [];
     sessionStartRef.current = performance.now();
-    startQuestion(0);
+    setSession(questions);
+    startQuestion(0, questions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function finishGame(completed: boolean) {
+  function finishGame(questions: SequenceQuestion[], completed: boolean) {
     clearTimers();
     const durationMs = Math.round(performance.now() - sessionStartRef.current);
-    onFinish(buildResult(config, answersRef.current, durationMs, completed));
+    onFinish(buildResult(config, answersRef.current, questions, durationMs, completed));
   }
 
-  function startQuestion(index: number) {
-    if (!questionsRef.current[index]) return;
+  function startQuestion(index: number, questions: SequenceQuestion[]) {
+    const q = questions[index];
+    if (!q) return;
     resolvedRef.current = false;
     questionStartRef.current = performance.now();
     setInputValue('');
 
-    timeoutRef.current = window.setTimeout(() => {
-      resolveAnswer(index, null);
-    }, params.secondsPerQuestion * 1000);
+    if (q.seconds > 0) {
+      timeoutRef.current = window.setTimeout(() => {
+        resolveAnswer(index, null, questions);
+      }, q.seconds * 1000);
+    }
   }
 
-  function resolveAnswer(index: number, submitted: number | null) {
+  function resolveAnswer(index: number, submitted: number | null, questions: SequenceQuestion[]) {
     if (resolvedRef.current) return;
     resolvedRef.current = true;
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     timeoutRef.current = null;
 
-    const question = questionsRef.current[index];
-    if (!question) return;
+    const q = questions[index];
+    if (!q) return;
 
-    const correct = submitted !== null && submitted === question.answer;
+    const correct = submitted !== null && submitted === q.answer;
     const responseMs =
       submitted !== null ? Math.round(performance.now() - questionStartRef.current) : null;
     answersRef.current[index] = { correct, responseMs };
@@ -91,12 +91,12 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
 
     feedbackTimeoutRef.current = window.setTimeout(() => {
       const nextIndex = index + 1;
-      if (nextIndex >= questionsRef.current.length) {
-        finishGame(true);
+      if (nextIndex >= questions.length) {
+        finishGame(questions, true);
       } else {
         setQuestionIndex(nextIndex);
         setPhase('question');
-        startQuestion(nextIndex);
+        startQuestion(nextIndex, questions);
       }
     }, FEEDBACK_DURATION_MS);
   }
@@ -118,7 +118,7 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
 
   function submit() {
     if (phase !== 'question' || inputValue === '' || inputValue === '-') return;
-    resolveAnswer(questionIndex, Number(inputValue));
+    resolveAnswer(questionIndex, Number(inputValue), session);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -137,8 +137,6 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
     }
   }
 
-  const question = questionsRef.current[questionIndex];
-
   return (
     <div
       ref={containerRef}
@@ -149,17 +147,24 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
       <div className="w-full max-w-xs">
         <div className="mb-2 flex justify-between text-sm text-text-secondary">
           <span>
-            Pregunta {questionIndex + 1} / {params.questionCount}
+            Pregunta {questionIndex + 1} / {session.length}
+            {config.mode === 'progressive' &&
+              question &&
+              ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
           </span>
-          <span aria-label={`${secondsLeft} segundos restantes`}>
-            {isQuestion ? `${secondsLeft} s` : ''}
-          </span>
+          {timed && (
+            <span aria-label={`${secondsLeft} segundos restantes`}>
+              {isQuestion ? `${secondsLeft} s` : ''}
+            </span>
+          )}
         </div>
-        <CountdownBar
-          durationMs={params.secondsPerQuestion * 1000}
-          running={isQuestion}
-          resetKey={questionIndex}
-        />
+        {timed && (
+          <CountdownBar
+            durationMs={(question?.seconds ?? 0) * 1000}
+            running={isQuestion}
+            resetKey={questionIndex}
+          />
+        )}
       </div>
 
       {/* La secuencia, el resultado y el keypad ocupan siempre el mismo lugar:

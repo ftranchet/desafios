@@ -11,6 +11,9 @@ import {
   tryMove,
   tryRotate,
   type CascadaState,
+  getModeParams,
+  intervalForStage,
+  stageForLines,
 } from './logic';
 
 describe('createInitialState', () => {
@@ -167,5 +170,36 @@ describe('buildResult', () => {
     expect(result.gameId).toBe('cascada');
     expect(result.completed).toBe(true);
     expect(result.durationMs).toBe(5000);
+  });
+});
+
+describe('modos especiales (ADR-007)', () => {
+  it('Tranquilo: el top-out limpia el tablero en vez de terminar', () => {
+    let state = createInitialState('zen', 42);
+    // Apilar con caídas rápidas hasta provocar el top-out.
+    for (let i = 0; i < 200 && state.topOuts === 0; i += 1) {
+      state = hardDrop(state);
+    }
+    expect(state.topOuts).toBe(1);
+    expect(state.gameOver).toBe(false);
+    // El tablero quedó limpio para seguir jugando.
+    expect(state.board.every((row) => row.every((cell) => cell === 0))).toBe(true);
+  });
+
+  it('los modos fijos sí terminan por top-out', () => {
+    let state = createInitialState('hard', 42);
+    for (let i = 0; i < 200 && !state.gameOver; i += 1) {
+      state = hardDrop(state);
+    }
+    expect(state.gameOver).toBe(true);
+  });
+
+  it('progresivo: el grado sube cada 2 líneas y acelera más allá del Difícil', () => {
+    expect(stageForLines(0)).toBe(1);
+    expect(stageForLines(2)).toBe(2);
+    expect(stageForLines(18)).toBe(10);
+    expect(intervalForStage(1)).toBe(getModeParams('easy').initialIntervalMs);
+    expect(intervalForStage(10)).toBeLessThan(getModeParams('hard').initialIntervalMs);
+    expect(intervalForStage(10)).toBeGreaterThanOrEqual(150);
   });
 });

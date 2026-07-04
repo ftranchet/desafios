@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PROGRESSIVE_STAGES } from '../../core/modes';
 import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   BOARD_HEIGHT,
@@ -112,11 +113,13 @@ export function CascadaGame({ config, onFinish }: GameProps) {
   } | null>(null);
 
   const [score, setScore] = useState(0);
+  const [stage, setStage] = useState(1);
   const [nextType, setNextType] = useState<PieceType | undefined>(undefined);
 
   function render(state: CascadaState) {
     stateRef.current = state;
     setScore(state.score);
+    setStage(state.stage);
     setNextType(state.queue[0]);
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) drawState(ctx, state);
@@ -261,7 +264,14 @@ export function CascadaGame({ config, onFinish }: GameProps) {
       onKeyDown={handleKeyDown}
     >
       <div className="flex w-full max-w-xs items-center justify-between">
-        <p className="font-display text-lg font-extrabold text-text-primary">Puntaje: {score}</p>
+        <p className="font-display text-lg font-extrabold text-text-primary">
+          Puntaje: {score}
+          {config.mode === 'progressive' && (
+            <span className="ml-3 text-sm font-semibold text-text-secondary">
+              Grado {stage}/{PROGRESSIVE_STAGES}
+            </span>
+          )}
+        </p>
         <div className="flex flex-col items-center gap-1">
           <span className="text-xs text-text-secondary">Próxima</span>
           <NextPiecePreview type={nextType} />
@@ -315,6 +325,12 @@ export function CascadaGame({ config, onFinish }: GameProps) {
           </PressButton>
         </div>
       </div>
+      {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
+      {config.mode === 'zen' && (
+        <PressButton variant="primary" ariaLabel="Terminar la partida" onPress={finishGame}>
+          Terminar
+        </PressButton>
+      )}
       <p className="max-w-xs text-center text-sm text-text-secondary">
         Arrastrá la pieza con el dedo, tocá para rotar y hacé un envión hacia abajo para la caída
         rápida. También podés usar los botones o las flechas.

@@ -15,10 +15,12 @@ export interface LevelParams extends Record<string, number> {
 }
 
 // easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
-export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard' | 'zen', LevelParams> = {
   easy: { largeCount: 1, timeLimitMs: 90_000, targetMin: 100, targetMax: 300 },
   medium: { largeCount: 2, timeLimitMs: 60_000, targetMin: 100, targetMax: 700 },
   hard: { largeCount: 3, timeLimitMs: 45_000, targetMin: 100, targetMax: 999 },
+  // Tranquilo: sin límite de tiempo (timeLimitMs 0), contenido medio (ADR-007).
+  zen: { largeCount: 2, timeLimitMs: 0, targetMin: 100, targetMax: 700 },
 };
 
 export function getModeParams(mode: ModeId): LevelParams {
@@ -112,7 +114,9 @@ export function computeScore(
   else if (distance <= 25) base = 150;
 
   const clampedRemaining = Math.max(0, timeRemainingMs);
-  const timeBonus = exact ? Math.round((clampedRemaining / timeLimitMs) * 200) : 0;
+  // Sin límite de tiempo (Tranquilo) no hay bono: evita además el NaN de 0/0.
+  const timeBonus =
+    exact && timeLimitMs > 0 ? Math.round((clampedRemaining / timeLimitMs) * 200) : 0;
 
   return {
     score: base + timeBonus,

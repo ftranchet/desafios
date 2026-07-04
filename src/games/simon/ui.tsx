@@ -5,6 +5,8 @@ import {
   buildResult,
   createInitialState,
   getModeParams,
+  playbackForRound,
+  stageForRound,
   submitTap,
   type SimonState,
 } from './logic';
@@ -61,17 +63,19 @@ export function SimonGame({ config, onFinish, audio }: GameProps) {
   function playSequence() {
     setPhase('playback');
     const target = stateRef.current.round;
+    // En el progresivo, cada ronda se reproduce a la velocidad de su grado.
+    const { flashMs, gapMs } = playbackForRound(config.mode, target);
     const sequence = stateRef.current.sequence.slice(0, target);
     sequence.forEach((pad, index) => {
-      const start = index * (params.flashMs + params.gapMs);
+      const start = index * (flashMs + gapMs);
       schedule(() => {
         setActivePad(pad);
         // El tono acompaña al destello: la secuencia se percibe también de oído.
-        audio?.tone(PADS[pad]?.toneHz ?? 440, params.flashMs);
+        audio?.tone(PADS[pad]?.toneHz ?? 440, flashMs);
       }, start);
-      schedule(() => setActivePad(null), start + params.flashMs);
+      schedule(() => setActivePad(null), start + flashMs);
     });
-    const totalMs = sequence.length * (params.flashMs + params.gapMs);
+    const totalMs = sequence.length * (flashMs + gapMs);
     schedule(() => setPhase('input'), totalMs);
   }
 
@@ -89,12 +93,21 @@ export function SimonGame({ config, onFinish, audio }: GameProps) {
     schedule(() => setPressedPad(null), 150);
 
     const previousRound = stateRef.current.round;
+    const previousMistakes = stateRef.current.mistakes;
     const next = submitTap(stateRef.current, padIndex);
     stateRef.current = next;
 
     if (next.gameOver) {
       setPhase('playback'); // deshabilita los pads mientras se cierra la partida
       schedule(() => finishGame(), 300);
+      return;
+    }
+
+    if (next.mistakes > previousMistakes) {
+      // Tranquilo: el fallo repite la ronda — se vuelve a mostrar la secuencia.
+      audio?.play('error');
+      setPhase('playback');
+      schedule(() => playSequence(), 600);
       return;
     }
 
@@ -128,6 +141,9 @@ export function SimonGame({ config, onFinish, audio }: GameProps) {
         <p className="font-display text-lg font-bold text-text-primary">
           {round} / {params.maxRounds}
         </p>
+        {config.mode === 'progressive' && (
+          <p className="mt-1 text-xs text-text-secondary">Grado {stageForRound(round)}/10</p>
+        )}
         <p className="mt-1 text-sm text-text-secondary">
           {phase === 'playback' ? 'Mirá la secuencia...' : 'Tu turno'}
         </p>

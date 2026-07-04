@@ -1,83 +1,112 @@
 import { describe, expect, it } from 'vitest';
-import { createRng } from '../../core/random';
 import {
   buildResult,
   computeScore,
-  generateRound,
   generateSession,
+  getModeParams,
   isCorrectChoice,
+  stageForIndex,
+  stageParams,
   type AnswerRecord,
+  type Round,
 } from './logic';
 
-describe('generateRound', () => {
-  it('nunca genera un empate', () => {
-    const rng = createRng(1);
-    for (let i = 0; i < 200; i += 1) {
-      const round = generateRound('medium', rng);
-      expect(round.left.value).not.toBe(round.right.value);
+const SEED = 42;
+
+describe('generateSession: modos fijos', () => {
+  it('misma semilla, misma sesión', () => {
+    expect(generateSession('medium', SEED)).toEqual(generateSession('medium', SEED));
+  });
+
+  it('respeta la cantidad de rondas y nunca hay empate', () => {
+    for (const mode of ['easy', 'medium', 'hard', 'zen'] as const) {
+      const session = generateSession(mode, SEED);
+      expect(session).toHaveLength(getModeParams(mode).roundCount);
+      for (const r of session) {
+        expect(r.left.value).not.toBe(r.right.value);
+      }
     }
   });
 
-  it('respeta la magnitud del nivel 1 (comparar números crudos)', () => {
-    const rng = createRng(2);
-    for (let i = 0; i < 20; i += 1) {
-      const round = generateRound('easy', rng);
-      expect(round.left.value).toBeGreaterThanOrEqual(1);
-      expect(round.left.value).toBeLessThanOrEqual(50);
-      expect(round.right.value).toBeGreaterThanOrEqual(1);
-      expect(round.right.value).toBeLessThanOrEqual(50);
+  it('Tranquilo no tiene reloj: seconds = 0 en todas las rondas', () => {
+    for (const r of generateSession('zen', SEED)) {
+      expect(r.seconds).toBe(0);
     }
   });
 
-  it('lanza si el nivel es inválido', () => {
-    expect(() => generateRound('zen' as never, createRng(1))).toThrow();
-  });
-});
-
-describe('generateSession', () => {
-  it('es determinística con la misma semilla', () => {
-    const a = generateSession('medium', 42);
-    const b = generateSession('medium', 42);
-    expect(a).toEqual(b);
-  });
-
-  it('respeta la cantidad de rondas del nivel', () => {
-    expect(generateSession('easy', 1)).toHaveLength(10);
-    expect(generateSession('hard', 1)).toHaveLength(15);
-  });
-});
-
-describe('isCorrectChoice', () => {
-  it('identifica el lado de mayor valor', () => {
-    const round = { left: { label: '3', value: 3 }, right: { label: '9', value: 9 } };
+  it('isCorrectChoice elige el valor mayor', () => {
+    const round: Round = {
+      left: { label: '3', value: 3 },
+      right: { label: '5', value: 5 },
+      stage: 1,
+      seconds: 4,
+    };
     expect(isCorrectChoice(round, 'right')).toBe(true);
     expect(isCorrectChoice(round, 'left')).toBe(false);
   });
 });
 
+describe('modo progresivo', () => {
+  it('el grado sube uno cada dos rondas hasta 10', () => {
+    expect(stageForIndex(0)).toBe(1);
+    expect(stageForIndex(2)).toBe(2);
+    expect(stageForIndex(19)).toBe(10);
+  });
+
+  it('la complejidad se desbloquea por grado y el tiempo se achica', () => {
+    expect(stageParams(1).complexity).toBe('number');
+    expect(stageParams(5).complexity).toBe('sum');
+    expect(stageParams(7).complexity).toBe('mixed');
+    expect(stageParams(10).complexity).toBe('product');
+    expect(stageParams(10).secondsPerRound).toBeLessThan(stageParams(1).secondsPerRound);
+    expect(stageParams(10).secondsPerRound).toBeGreaterThanOrEqual(2);
+  });
+
+  it('la sesión progresiva es determinística y anota el grado', () => {
+    const session = generateSession('progressive', SEED);
+    expect(session).toHaveLength(20);
+    expect(session.map((r) => r.stage)).toEqual(session.map((_, i) => stageForIndex(i)));
+    expect(generateSession('progressive', SEED)).toEqual(session);
+  });
+});
+
 describe('computeScore', () => {
-  it('da puntos base + bono por tiempo y calcula la racha más larga', () => {
+  const round = (stage: number, seconds: number): Round => ({
+    left: { label: '1', value: 1 },
+    right: { label: '2', value: 2 },
+    stage,
+    seconds,
+  });
+
+  it('Tranquilo: punto fijo por acierto, sin bono', () => {
+    const rounds = [round(1, 0), round(1, 0)];
     const answers: AnswerRecord[] = [
-      { correct: true, responseMs: 0 },
-      { correct: true, responseMs: 0 },
-      { correct: false, responseMs: 1000 },
-      { correct: true, responseMs: 0 },
+      { correct: true, responseMs: 60_000 },
+      { correct: true, responseMs: 5 },
     ];
-    const { score, metrics } = computeScore(answers, 4);
-    expect(score).toBe(3 * (100 + 50));
-    expect(metrics.correct).toBe(3);
-    expect(metrics.incorrect).toBe(1);
+    expect(computeScore('zen', answers, rounds).score).toBe(200);
+  });
+
+  it('progresivo: el grado multiplica y la racha se registra', () => {
+    const rounds = [round(1, 4), round(10, 4)];
+    const answers: AnswerRecord[] = [
+      { correct: true, responseMs: 4000 },
+      { correct: true, responseMs: 4000 },
+    ];
+    const { score, metrics } = computeScore('progressive', answers, rounds);
+    expect(score).toBe(100 + 200);
+    expect(metrics.maxStage).toBe(10);
     expect(metrics.bestStreak).toBe(2);
   });
 });
 
 describe('buildResult', () => {
-  it('arma un GameResult válido', () => {
-    const answers: AnswerRecord[] = [{ correct: true, responseMs: 500 }];
-    const result = buildResult({ mode: 'easy', seed: 1 }, answers, 3000, true);
+  it('emite un GameResult válido con el modo de la configuración', () => {
+    const rounds = generateSession('easy', SEED);
+    const answers: AnswerRecord[] = rounds.map(() => ({ correct: true, responseMs: 1000 }));
+    const result = buildResult({ mode: 'easy', seed: SEED }, answers, rounds, 40_000, true);
     expect(result.gameId).toBe('quick-estimate');
-    expect(result.completed).toBe(true);
-    expect(result.durationMs).toBe(3000);
-    expect(result.score).toBeGreaterThan(0);
+    expect(result.mode).toBe('easy');
+    expect(result.metrics.correct).toBe(rounds.length);
   });
 });
