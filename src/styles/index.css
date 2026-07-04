@@ -2,6 +2,8 @@
    precachear cirílico, griego y vietnamita, que la app nunca usa. */
 @import '@fontsource/inter/latin-400.css';
 @import '@fontsource/inter/latin-ext-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-ext-500.css';
 @import '@fontsource/inter/latin-600.css';
 @import '@fontsource/inter/latin-ext-600.css';
 @import '@fontsource/inter/latin-700.css';
@@ -14,6 +16,29 @@
 @tailwind utilities;
 
 @layer base {
+  /* Endurecimiento táctil global (RNF-03/RNF-04):
+     - overscroll-behavior-y: un deslizamiento hacia abajo dentro de un juego
+       (caída rápida en Cascada, giro en Snake) no dispara pull-to-refresh.
+     - touch-action manipulation: elimina la espera de doble tap y el zoom
+       accidental al tocar rápido controles repetidos (Simon, D-pad, keypad).
+     - sin resaltado de tap ni selección de texto en controles: un toque
+       sostenido sobre un botón de juego no abre selección ni menú contextual. */
+  html {
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  a,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
   /* Respeta la preferencia del sistema operativo además del toggle manual (RNF-06) */
   @media (prefers-reduced-motion: reduce) {
     *,

@@ -25,13 +25,69 @@ interface PieceShape {
 // Rotación 0 de cada pieza. Las otras 3 rotaciones se calculan girando estas
 // celdas 90° dentro de su caja — sin tabla de "wall kicks" (PRD/plan: v1 simple).
 const PIECE_SHAPES: Record<PieceType, PieceShape> = {
-  I: { size: 4, cells: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }] },
-  O: { size: 2, cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
-  T: { size: 3, cells: [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }] },
-  S: { size: 3, cells: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
-  Z: { size: 3, cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }] },
-  J: { size: 3, cells: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }] },
-  L: { size: 3, cells: [{ x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }] },
+  I: {
+    size: 4,
+    cells: [
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 3, y: 1 },
+    ],
+  },
+  O: {
+    size: 2,
+    cells: [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ],
+  },
+  T: {
+    size: 3,
+    cells: [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+    ],
+  },
+  S: {
+    size: 3,
+    cells: [
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ],
+  },
+  Z: {
+    size: 3,
+    cells: [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+    ],
+  },
+  J: {
+    size: 3,
+    cells: [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+    ],
+  },
+  L: {
+    size: 3,
+    cells: [
+      { x: 2, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+    ],
+  },
 };
 
 function rotateCell(cell: Cell, size: number): Cell {
@@ -229,7 +285,10 @@ export function lockPiece(state: CascadaState): CascadaState {
   const { board, cleared } = clearLines(merged);
   const linesCleared = state.linesCleared + cleared;
   const score = state.score + (LINE_SCORES[cleared] ?? 0);
-  const intervalMs = Math.max(state.minIntervalMs, state.intervalMs - cleared * state.speedStepPerLine);
+  const intervalMs = Math.max(
+    state.minIntervalMs,
+    state.intervalMs - cleared * state.speedStepPerLine,
+  );
 
   return spawnPiece({ ...state, board, linesCleared, score, intervalMs });
 }
@@ -263,7 +322,11 @@ export function getGhostPiece(state: CascadaState): ActivePiece {
   return piece;
 }
 
-export function buildResult(config: GameConfig, state: CascadaState, durationMs: number): GameResult {
+export function buildResult(
+  config: GameConfig,
+  state: CascadaState,
+  durationMs: number,
+): GameResult {
   return {
     gameId: 'cascada',
     level: config.level,

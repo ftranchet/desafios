@@ -2,6 +2,33 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.6.0] — Auditoría de usabilidad táctil y de escritorio
+
+### Corregido
+
+- La navegación inferior ya no aparece durante el flujo de partida: un toque accidental en "Estadísticas" en pleno Snake ya no desmonta el juego sin confirmación ni registro del resultado (RF-06). La vuelta al catálogo ahora es explícita: botón "←" en selección de nivel y resultado, "Salir" con confirmación durante la partida.
+- Cambiar de juego vía URL o historial remonta la pantalla de juego desde cero, en vez de heredar la fase de la partida anterior (la ruta `/game/:gameId` es la misma y React no desmontaba nada).
+- El tablero de Snake ya no desborda en celulares de 360 px de ancho: el canvas es fluido con tope, y el de Cascada se achica en pantallas bajas en vez de empujar los controles fuera de la vista.
+- En escritorio, los juegos toman foco al arrancar: las flechas (Snake, Cascada, Estimación), los dígitos (Aritmética, Secuencias) y Espacio (Tiempo de reacción) funcionan sin un clic previo sobre el tablero (RNF-11).
+- Deslizar hacia abajo dentro de un juego ya no dispara pull-to-refresh (`overscroll-behavior`), y tocar rápido dos veces un control (pads de Simon, D-pad) ya no hace zoom (`touch-action: manipulation`).
+- La barra de navegación queda siempre a la vista (sticky) y respeta el área segura de iOS (`env(safe-area-inset-bottom)`); antes quedaba bajo el indicador de inicio y, en pantallas largas, fuera de la vista.
+- El diálogo de confirmación es operable por teclado: el foco entra a la opción segura, Escape cancela, Tab no se escapa del diálogo, y tocar el fondo también cancela.
+- Se importa el peso 500 de Inter (se usaba sin estar cargado y el navegador lo sintetizaba) y la exportación de datos funciona de forma confiable en Safari.
+
+### Cambiado
+
+- **Aritmética contra reloj** y **Secuencias numéricas**: keypad numérico propio en pantalla en vez del teclado del sistema, que tapaba media pantalla y aparecía/desaparecía entre pregunta y feedback saltando el layout. Teclas de 44 px, layout estable entre fases, y el teclado físico sigue funcionando en escritorio (dígitos, Backspace, Enter, `-` en Secuencias).
+- Los controles de juego actúan al apoyar el dedo (`pointerdown`), no al soltarlo: D-pad de Snake, botones de Cascada, pads de Simon y opciones de Estimación responden más rápido (RNF-03). La activación por teclado se conserva.
+- **Cascada**: mantener presionado ◀ ▼ ▶ repite el movimiento (espera ~260 ms, cadencia ~110 ms), como la repetición de un teclado físico.
+- Los juegos contra reloj muestran los segundos restantes en número junto a la barra: con "reducir animaciones" activo la barra se congela y el tiempo quedaba invisible (RNF-06).
+- **Simon**: atajos de teclado `1`–`4` para los pads.
+- Los récords del catálogo y las estadísticas dejan de re-parsear todo el almacenamiento en cada consulta (caché del JSON en memoria).
+
+### Agregado
+
+- **Cifras**: botón "Deshacer" que revierte la última combinación — un error de un paso ya no obliga a reiniciar la partida entera.
+- **PRD sección 10.7**: patrones de interacción validados (táctil y escritorio), replicables para todo juego nuevo; la checklist de terminado (12.3) los incorpora.
+
 ## [0.5.0] — Rediseño del control táctil y legibilidad de Simon
 
 ### Cambiado

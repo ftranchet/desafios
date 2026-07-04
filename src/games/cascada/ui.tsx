@@ -39,14 +39,61 @@ interface ControlButtonProps {
   label: string;
   ariaLabel: string;
   onPress: () => void;
+  repeatOnHold?: boolean;
   className?: string;
 }
 
-function ControlButton({ label, ariaLabel, onPress, className = '' }: ControlButtonProps) {
+// Auto-repetición al mantener presionado: primera espera y cadencia similares
+// a la repetición de un teclado físico, para que mover una pieza varias
+// columnas no exija un tap por columna.
+const REPEAT_DELAY_MS = 260;
+const REPEAT_INTERVAL_MS = 110;
+
+function ControlButton({
+  label,
+  ariaLabel,
+  onPress,
+  repeatOnHold = false,
+  className = '',
+}: ControlButtonProps) {
+  const timersRef = useRef<{ delay: number | null; interval: number | null }>({
+    delay: null,
+    interval: null,
+  });
+
+  function stopRepeat() {
+    if (timersRef.current.delay !== null) window.clearTimeout(timersRef.current.delay);
+    if (timersRef.current.interval !== null) window.clearInterval(timersRef.current.interval);
+    timersRef.current = { delay: null, interval: null };
+  }
+
+  useEffect(() => stopRepeat, []);
+
+  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
+    // Actuar al apoyar el dedo, no al soltarlo: en tiempo real la diferencia
+    // se siente (RNF-03). preventDefault evita robarle el foco al tablero.
+    event.preventDefault();
+    onPress();
+    if (!repeatOnHold) return;
+    // Con captura, el pointerup llega aunque el dedo se corra del botón.
+    event.currentTarget.setPointerCapture(event.pointerId);
+    stopRepeat();
+    timersRef.current.delay = window.setTimeout(() => {
+      timersRef.current.interval = window.setInterval(onPress, REPEAT_INTERVAL_MS);
+    }, REPEAT_DELAY_MS);
+  }
+
   return (
     <button
       type="button"
-      onClick={onPress}
+      onPointerDown={handlePointerDown}
+      onPointerUp={stopRepeat}
+      onPointerCancel={stopRepeat}
+      // Enter/Espacio generan un click sintético con detail 0 — única vía que
+      // se atiende acá, porque las de puntero ya se manejaron en pointerdown.
+      onClick={(event) => {
+        if (event.detail === 0) onPress();
+      }}
       aria-label={ariaLabel}
       className={`min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary active:bg-accent-primary active:text-bg ${className}`}
     >
@@ -114,15 +161,19 @@ function NextPiecePreview({ type }: { type: PieceType | undefined }) {
 }
 
 export function CascadaGame({ config, onFinish }: GameProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<CascadaState | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
   // Estado del arrastre: se sigue la columna del dedo para mover la pieza de
   // forma relativa (varias columnas en un gesto), y se distingue tap de flick.
-  const dragRef = useRef<{ startX: number; startY: number; lastCol: number; moved: boolean } | null>(
-    null,
-  );
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    lastCol: number;
+    moved: boolean;
+  } | null>(null);
 
   const [score, setScore] = useState(0);
   const [nextType, setNextType] = useState<PieceType | undefined>(undefined);
@@ -184,6 +235,9 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     const initial = createInitialState(config.level, config.seed ?? Date.now());
     sessionStartRef.current = performance.now();
     render(initial);
+    // Foco inmediato al contenedor: las flechas funcionan apenas arranca la
+    // partida, sin exigir un clic previo sobre el tablero (RNF-11).
+    containerRef.current?.focus({ preventScroll: true });
     scheduleTick(initial.intervalMs);
 
     return () => {
@@ -266,7 +320,8 @@ export function CascadaGame({ config, onFinish }: GameProps) {
 
   return (
     <div
-      className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      ref={containerRef}
+      className="flex min-h-[70vh] flex-col items-center gap-3 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
       aria-label="Tablero de Cascada: arrastrá la pieza con el dedo, tocá para rotar, envión hacia abajo para caída rápida; también botones y flechas"
       tabIndex={0}
@@ -279,9 +334,15 @@ export function CascadaGame({ config, onFinish }: GameProps) {
           <NextPiecePreview type={nextType} />
         </div>
       </div>
+      {/* Alto acotado al viewport: en pantallas bajas el tablero se achica en
+          vez de empujar los controles fuera de la vista; el buffer interno
+          queda fijo y el navegador lo escala manteniendo la proporción. */}
       <canvas
         ref={canvasRef}
-        style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+        style={{
+          height: `min(${CANVAS_HEIGHT}px, 52vh)`,
+          aspectRatio: `${BOARD_WIDTH} / ${BOARD_HEIGHT}`,
+        }}
         className="touch-none rounded-lg border border-surface-alt"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -293,16 +354,19 @@ export function CascadaGame({ config, onFinish }: GameProps) {
           <ControlButton
             label="◀"
             ariaLabel="Mover a la izquierda"
+            repeatOnHold
             onPress={() => applyAction((s) => tryMove(s, -1, 0))}
           />
           <ControlButton
             label="▼"
             ariaLabel="Bajar"
+            repeatOnHold
             onPress={() => applyAction((s) => tryMove(s, 0, 1))}
           />
           <ControlButton
             label="▶"
             ariaLabel="Mover a la derecha"
+            repeatOnHold
             onPress={() => applyAction((s) => tryMove(s, 1, 0))}
           />
         </div>
@@ -312,8 +376,8 @@ export function CascadaGame({ config, onFinish }: GameProps) {
         </div>
       </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
-        Arrastrá la pieza con el dedo, tocá para rotar y hacé un envión hacia abajo para
-        la caída rápida. También podés usar los botones o las flechas.
+        Arrastrá la pieza con el dedo, tocá para rotar y hacé un envión hacia abajo para la caída
+        rápida. También podés usar los botones o las flechas.
       </p>
     </div>
   );

@@ -96,7 +96,23 @@ export function GameScreen() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="flex min-h-touch items-center justify-between border-b border-surface-alt px-4">
-        <h1 className="font-display text-base font-bold text-text-primary">{game.metadata.name}</h1>
+        <div className="flex items-center gap-1">
+          {/* Sin navegación inferior en esta ruta, la vuelta al catálogo vive acá;
+              durante la partida se reemplaza por "Salir" con confirmación. */}
+          {phase !== 'playing' && (
+            <button
+              type="button"
+              aria-label={strings.common.back}
+              className="-ml-2 flex min-h-touch min-w-touch items-center justify-center rounded-lg text-lg text-text-secondary"
+              onClick={() => navigate('/')}
+            >
+              ←
+            </button>
+          )}
+          <h1 className="font-display text-base font-bold text-text-primary">
+            {game.metadata.name}
+          </h1>
+        </div>
         {phase === 'playing' && (
           <button
             type="button"

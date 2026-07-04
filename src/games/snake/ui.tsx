@@ -43,7 +43,18 @@ function DPadButton({ label, ariaLabel, onPress, className = '' }: DPadButtonPro
   return (
     <button
       type="button"
-      onClick={onPress}
+      // La acción dispara al apoyar el dedo (pointerdown), no al soltarlo
+      // (click): en un juego en tiempo real esa diferencia se siente (RNF-03).
+      // preventDefault evita que el botón robe el foco del tablero.
+      onPointerDown={(event) => {
+        event.preventDefault();
+        onPress();
+      }}
+      // Enter/Espacio generan un click sintético con detail 0 — única vía que
+      // se atiende acá, porque los de puntero ya se manejaron en pointerdown.
+      onClick={(event) => {
+        if (event.detail === 0) onPress();
+      }}
       aria-label={ariaLabel}
       className={`min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary active:bg-accent-primary active:text-bg ${className}`}
     >
@@ -72,6 +83,7 @@ function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
 }
 
 export function SnakeGame({ config, onFinish }: GameProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<SnakeState | null>(null);
   // Cola de inputs pendientes (no una sola dirección): así encadenar dos giros
@@ -143,6 +155,10 @@ export function SnakeGame({ config, onFinish }: GameProps) {
     const ctx = canvas?.getContext('2d');
     if (ctx) drawState(ctx, initial);
 
+    // Foco inmediato al contenedor: las flechas funcionan apenas arranca la
+    // partida, sin exigir un clic previo sobre el tablero (RNF-11).
+    containerRef.current?.focus({ preventScroll: true });
+
     scheduleTick(initial.intervalMs);
 
     return () => {
@@ -198,16 +214,19 @@ export function SnakeGame({ config, onFinish }: GameProps) {
 
   return (
     <div
-      className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      ref={containerRef}
+      className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
       aria-label="Tablero de Snake: mantené el dedo para que la víbora te siga, o usá los botones o las flechas"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
       <p className="font-display text-lg font-extrabold text-text-primary">Puntaje: {score}</p>
+      {/* Ancho fluido con tope: en celulares angostos (360px) el tablero no
+          desborda; el buffer interno queda fijo y el navegador lo escala. */}
       <canvas
         ref={canvasRef}
-        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+        style={{ width: '100%', maxWidth: CANVAS_SIZE, aspectRatio: '1 / 1' }}
         className="touch-none rounded-lg border border-surface-alt"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -245,8 +264,8 @@ export function SnakeGame({ config, onFinish }: GameProps) {
         />
       </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
-        Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los
-        botones o las flechas del teclado.
+        Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los botones o las
+        flechas del teclado.
       </p>
     </div>
   );

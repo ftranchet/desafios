@@ -34,8 +34,12 @@ function exportData() {
   const link = document.createElement('a');
   link.href = url;
   link.download = `desafios-mentales-${new Date().toISOString().slice(0, 10)}.json`;
+  // El enlace tiene que estar en el DOM para que el click sintético dispare la
+  // descarga en Safari; revocar recién después de que el navegador la tomó.
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function ConfigScreen() {

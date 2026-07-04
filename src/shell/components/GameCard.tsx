@@ -13,7 +13,7 @@ export function GameCard({ metadata, bestScore }: GameCardProps) {
       to={`/game/${metadata.id}`}
       className="flex flex-col gap-2 rounded-xl border border-surface-alt bg-surface p-4 transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:border-accent-primary"
     >
-      <img src={metadata.icon} alt="" className="h-8 w-8" width={24} height={24} />
+      <img src={metadata.icon} alt="" className="h-8 w-8" width={32} height={32} />
       <h2 className="font-display text-base font-bold text-text-primary">{metadata.name}</h2>
       <p className="text-sm text-text-secondary">{metadata.description}</p>
       <div className="mt-auto flex flex-col gap-1 pt-2 text-xs">

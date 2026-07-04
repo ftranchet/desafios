@@ -9,7 +9,12 @@ const TABS = [
 
 export function AppHeader() {
   return (
-    <nav className="flex border-t border-surface-alt bg-surface" aria-label="Navegación principal">
+    // sticky: la barra queda siempre a la vista aunque el contenido scrollee;
+    // el padding inferior respeta el área segura (indicador de inicio de iOS).
+    <nav
+      className="sticky bottom-0 flex border-t border-surface-alt bg-surface pb-[env(safe-area-inset-bottom)]"
+      aria-label="Navegación principal"
+    >
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}

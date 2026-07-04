@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import {
   buildResult,
@@ -9,12 +9,65 @@ import {
 } from './logic';
 
 const FEEDBACK_DURATION_MS = 700;
+const MAX_INPUT_LENGTH = 7;
+const COUNTDOWN_TICK_MS = 200;
 
 type Phase = 'question' | 'feedback';
+
+const DIGIT_ROWS = [
+  ['7', '8', '9'],
+  ['4', '5', '6'],
+  ['1', '2', '3'],
+];
+
+interface KeyButtonProps {
+  label: string;
+  ariaLabel?: string;
+  onPress: () => void;
+  disabled?: boolean;
+  primary?: boolean;
+  className?: string;
+}
+
+// Tecla del keypad en pantalla: actúa al apoyar el dedo (pointerdown) para
+// respuesta inmediata (RNF-03); preventDefault evita robarle el foco al
+// contenedor, así el teclado físico sigue funcionando en escritorio.
+function KeyButton({
+  label,
+  ariaLabel,
+  onPress,
+  disabled = false,
+  primary = false,
+  className = '',
+}: KeyButtonProps) {
+  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    onPress();
+  }
+  const variant = primary
+    ? 'bg-accent-primary text-bg'
+    : 'border border-surface-alt bg-surface text-text-primary active:bg-surface-alt';
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={ariaLabel ?? label}
+      onPointerDown={handlePointerDown}
+      onClick={(event) => {
+        // Solo activación por teclado (Enter/Espacio → click con detail 0).
+        if (event.detail === 0) onPress();
+      }}
+      className={`min-h-touch rounded-lg font-display text-lg font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary disabled:opacity-40 ${variant} ${className}`}
+    >
+      {label}
+    </button>
+  );
+}
 
 export function NumberSequencesGame({ config, onFinish }: GameProps) {
   const params = getLevelParams(config.level);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const questionsRef = useRef<SequenceQuestion[]>([]);
   const answersRef = useRef<AnswerRecord[]>([]);
   const sessionStartRef = useRef(0);
@@ -22,19 +75,22 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
   const resolvedRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const countdownRef = useRef<number | null>(null);
 
   const [phase, setPhase] = useState<Phase>('question');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(params.secondsPerQuestion);
   const [barKey, setBarKey] = useState(0);
 
   function clearTimers() {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     if (feedbackTimeoutRef.current !== null) window.clearTimeout(feedbackTimeoutRef.current);
+    if (countdownRef.current !== null) window.clearInterval(countdownRef.current);
     timeoutRef.current = null;
     feedbackTimeoutRef.current = null;
+    countdownRef.current = null;
   }
 
   useEffect(() => clearTimers, []);
@@ -43,13 +99,12 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
     questionsRef.current = generateSession(config.level, config.seed ?? Date.now());
     answersRef.current = [];
     sessionStartRef.current = performance.now();
+    // Foco al contenedor: en escritorio se puede tipear la respuesta con el
+    // teclado físico desde la primera pregunta, sin clic previo (RNF-11).
+    containerRef.current?.focus({ preventScroll: true });
     startQuestion(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (phase === 'question') inputRef.current?.focus();
-  }, [phase, questionIndex]);
 
   function finishGame(completed: boolean) {
     clearTimers();
@@ -62,18 +117,27 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
     resolvedRef.current = false;
     questionStartRef.current = performance.now();
     setInputValue('');
+    setSecondsLeft(params.secondsPerQuestion);
     setBarKey((k) => k + 1);
 
     timeoutRef.current = window.setTimeout(() => {
       resolveAnswer(index, null);
     }, params.secondsPerQuestion * 1000);
+    // Cuenta regresiva numérica: mantiene visible el tiempo restante aun con
+    // "reducir animaciones" activo, cuando la barra deja de animarse (RNF-06).
+    countdownRef.current = window.setInterval(() => {
+      const elapsed = performance.now() - questionStartRef.current;
+      setSecondsLeft(Math.max(0, Math.ceil(params.secondsPerQuestion - elapsed / 1000)));
+    }, COUNTDOWN_TICK_MS);
   }
 
   function resolveAnswer(index: number, submitted: number | null) {
     if (resolvedRef.current) return;
     resolvedRef.current = true;
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    if (countdownRef.current !== null) window.clearInterval(countdownRef.current);
     timeoutRef.current = null;
+    countdownRef.current = null;
 
     const question = questionsRef.current[index];
     if (!question) return;
@@ -97,24 +161,63 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
     }, FEEDBACK_DURATION_MS);
   }
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (phase !== 'question' || inputValue === '') return;
+  function appendDigit(digit: string) {
+    if (phase !== 'question') return;
+    setInputValue((v) => (v.length >= MAX_INPUT_LENGTH ? v : v + digit));
+  }
+
+  function deleteDigit() {
+    if (phase !== 'question') return;
+    setInputValue((v) => v.slice(0, -1));
+  }
+
+  function toggleSign() {
+    if (phase !== 'question') return;
+    setInputValue((v) => (v.startsWith('-') ? v.slice(1) : `-${v}`));
+  }
+
+  function submit() {
+    if (phase !== 'question' || inputValue === '' || inputValue === '-') return;
     resolveAnswer(questionIndex, Number(inputValue));
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+      appendDigit(event.key);
+    } else if (event.key === '-') {
+      event.preventDefault();
+      toggleSign();
+    } else if (event.key === 'Backspace') {
+      event.preventDefault();
+      deleteDigit();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      submit();
+    }
+  }
+
   const question = questionsRef.current[questionIndex];
+  const isQuestion = phase === 'question';
 
   return (
-    <div className="flex min-h-[70vh] flex-col items-center gap-8 p-6">
+    <div
+      ref={containerRef}
+      className="flex min-h-[70vh] flex-col items-center gap-5 p-6 focus:outline-none"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
       <div className="w-full max-w-xs">
         <div className="mb-2 flex justify-between text-sm text-text-secondary">
           <span>
             Pregunta {questionIndex + 1} / {params.questionCount}
           </span>
+          <span aria-label={`${secondsLeft} segundos restantes`}>
+            {isQuestion ? `${secondsLeft} s` : ''}
+          </span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
-          {phase === 'question' && (
+          {isQuestion && (
             <div
               key={barKey}
               className="h-full rounded-full bg-accent-primary"
@@ -126,47 +229,65 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
         </div>
       </div>
 
-      {question && phase === 'question' && (
+      {/* La secuencia, el resultado y el keypad ocupan siempre el mismo lugar:
+          entre pregunta y feedback no salta el layout ni aparece y desaparece
+          el teclado del sistema (no se usa ningún <input>). */}
+      {question && (
         <>
           <p className="max-w-xs text-center font-display text-lg font-extrabold text-text-primary">
-            {question.terms.join(', ')}, ?
+            {question.terms.join(', ')}, {isQuestion ? '?' : question.answer}
           </p>
-          <form onSubmit={handleSubmit} className="flex w-full max-w-xs flex-col gap-3">
-            <input
-              ref={inputRef}
-              type="text"
-              inputMode="numeric"
-              pattern="-?[0-9]*"
-              autoComplete="off"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value.replace(/(?!^-)[^0-9]/g, ''))}
-              className="min-h-touch rounded-lg border border-surface-alt bg-surface px-4 text-center font-display text-xl font-bold text-text-primary focus:border-accent-primary focus:outline-none"
-              aria-label="Tu respuesta"
-            />
-            <button
-              type="submit"
-              disabled={inputValue === '' || inputValue === '-'}
-              className="min-h-touch rounded-lg bg-accent-primary px-4 font-display text-base font-bold text-bg disabled:opacity-40"
-            >
-              Responder
-            </button>
-          </form>
-        </>
-      )}
 
-      {question && phase === 'feedback' && (
-        <div className="flex flex-col items-center gap-2 text-center">
-          <p className="max-w-xs font-display text-lg font-extrabold text-text-primary">
-            {question.terms.join(', ')}, {question.answer}
-          </p>
           <p
-            className={`font-display text-sm font-semibold ${
+            aria-live="polite"
+            className={`min-h-[1.25rem] font-display text-sm font-semibold ${
               lastCorrect ? 'text-accent-success' : 'text-accent-error'
             }`}
           >
-            {lastCorrect ? '¡Correcto!' : 'Incorrecto'}
+            {!isQuestion && (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
           </p>
-        </div>
+
+          <div
+            aria-label="Tu respuesta"
+            className={`flex min-h-touch w-full max-w-xs items-center justify-center rounded-lg border bg-surface px-4 font-display text-xl font-bold text-text-primary ${
+              isQuestion ? 'border-accent-primary/60' : 'border-surface-alt'
+            }`}
+          >
+            {inputValue}
+          </div>
+
+          <div className="grid w-full max-w-xs grid-cols-3 gap-2">
+            {DIGIT_ROWS.flat().map((digit) => (
+              <KeyButton
+                key={digit}
+                label={digit}
+                disabled={!isQuestion}
+                onPress={() => appendDigit(digit)}
+              />
+            ))}
+            <KeyButton
+              label="±"
+              ariaLabel="Cambiar signo"
+              disabled={!isQuestion}
+              onPress={toggleSign}
+            />
+            <KeyButton label="0" disabled={!isQuestion} onPress={() => appendDigit('0')} />
+            <KeyButton
+              label="⌫"
+              ariaLabel="Borrar último dígito"
+              disabled={!isQuestion}
+              onPress={deleteDigit}
+            />
+            <KeyButton
+              label="✓"
+              ariaLabel="Responder"
+              disabled={!isQuestion || inputValue === '' || inputValue === '-'}
+              onPress={submit}
+              primary
+              className="col-span-3"
+            />
+          </div>
+        </>
       )}
     </div>
   );

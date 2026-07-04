@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { buildResult, createInitialState, getLevelParams, submitTap, type SimonState } from './logic';
+import {
+  buildResult,
+  createInitialState,
+  getLevelParams,
+  submitTap,
+  type SimonState,
+} from './logic';
 
 // Cada pad tiene color y un glifo propio: la información no depende solo del
 // color (RNF-05) y ayuda a distinguir cuál se enciende.
@@ -18,6 +24,7 @@ type Phase = 'playback' | 'input';
 export function SimonGame({ config, onFinish }: GameProps) {
   const params = getLevelParams(config.level);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<SimonState>(createInitialState(config.level, config.seed ?? Date.now()));
   const sessionStartRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
@@ -41,6 +48,9 @@ export function SimonGame({ config, onFinish }: GameProps) {
 
   useEffect(() => {
     sessionStartRef.current = performance.now();
+    // Foco al contenedor: las teclas 1-4 responden desde la primera ronda,
+    // sin exigir tabular hasta los pads (RNF-11).
+    containerRef.current?.focus({ preventScroll: true });
     schedule(() => playSequence(), START_DELAY_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -90,8 +100,21 @@ export function SimonGame({ config, onFinish }: GameProps) {
     }
   }
 
+  // Atajo de teclado en escritorio: 1-4 tocan los pads en orden de lectura.
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const padIndex = ['1', '2', '3', '4'].indexOf(event.key);
+    if (padIndex === -1) return;
+    event.preventDefault();
+    handlePadTap(padIndex);
+  }
+
   return (
-    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-8 p-6">
+    <div
+      ref={containerRef}
+      className="flex min-h-[70vh] flex-col items-center justify-center gap-8 p-6 focus:outline-none"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
       <div className="text-center">
         <p className="text-sm text-text-secondary">Ronda</p>
         <p className="font-display text-lg font-bold text-text-primary">
@@ -102,7 +125,11 @@ export function SimonGame({ config, onFinish }: GameProps) {
         </p>
       </div>
 
-      <div className="grid w-full max-w-xs grid-cols-2 gap-3" role="group" aria-label="Paneles de Simon">
+      <div
+        className="grid w-full max-w-xs grid-cols-2 gap-3"
+        role="group"
+        aria-label="Paneles de Simon"
+      >
         {PADS.map((pad, index) => {
           const isFlashing = activePad === index;
           const isPressed = pressedPad === index;
@@ -118,7 +145,16 @@ export function SimonGame({ config, onFinish }: GameProps) {
               key={index}
               type="button"
               disabled={phase !== 'input'}
-              onClick={() => handlePadTap(index)}
+              // Responder al apoyar el dedo (pointerdown), no al soltarlo: en
+              // secuencias rápidas la diferencia se acumula (RNF-03).
+              onPointerDown={(event: PointerEvent<HTMLButtonElement>) => {
+                event.preventDefault();
+                handlePadTap(index);
+              }}
+              onClick={(event) => {
+                // Solo activación por teclado (Enter/Espacio → detail 0).
+                if (event.detail === 0) handlePadTap(index);
+              }}
               aria-label={`Panel ${index + 1}`}
               className={`relative flex aspect-square items-center justify-center rounded-xl border border-surface-alt transition-all duration-150 ${pad.color} ${stateClass}`}
             >

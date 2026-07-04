@@ -43,6 +43,9 @@ export function CifrasGame({ config, onFinish }: GameProps) {
 
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
+  // Pila de estados previos a cada combinación: permite deshacer de a un paso
+  // en vez de obligar a reiniciar toda la partida por un error.
+  const [history, setHistory] = useState<Tile[][]>([]);
   const [remainingMs, setRemainingMs] = useState(params.timeLimitMs);
   const [target, setTarget] = useState(0);
 
@@ -119,12 +122,22 @@ export function CifrasGame({ config, onFinish }: GameProps) {
     const result = combine(a.value, b.value, op);
     if (result === null) return;
     const newTile: Tile = { id: nextIdRef.current++, value: result };
+    setHistory([...history, tiles]);
     setTiles(tiles.filter((t) => t.id !== idA && t.id !== idB).concat(newTile));
+    setSelected([]);
+  }
+
+  function handleUndo() {
+    const previous = history[history.length - 1];
+    if (!previous) return;
+    setTiles(previous);
+    setHistory(history.slice(0, -1));
     setSelected([]);
   }
 
   function handleReset() {
     setTiles(originalTilesRef.current.map((t) => ({ ...t })));
+    setHistory([]);
     setSelected([]);
   }
 
@@ -184,13 +197,24 @@ export function CifrasGame({ config, onFinish }: GameProps) {
         >
           Enviar respuesta
         </button>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary"
-        >
-          Reiniciar
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={history.length === 0}
+            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary disabled:opacity-40"
+          >
+            Deshacer
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={history.length === 0}
+            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary disabled:opacity-40"
+          >
+            Reiniciar
+          </button>
+        </div>
       </div>
     </div>
   );

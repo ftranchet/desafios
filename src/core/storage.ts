@@ -15,18 +15,26 @@ export interface StorageService {
   clearAll(): void;
 }
 
+// Caché del JSON parseado: el catálogo y las estadísticas consultan resultados
+// una vez por juego/nivel, y sin caché cada consulta re-parsea todo el
+// almacenamiento. Se invalida en cada escritura de esta misma pestaña.
+let cachedResults: GameResult[] | null = null;
+
 function readResults(): GameResult[] {
+  if (cachedResults) return cachedResults;
   const raw = localStorage.getItem(RESULTS_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    cachedResults = Array.isArray(parsed) ? parsed : [];
   } catch {
-    return [];
+    cachedResults = [];
   }
+  return cachedResults;
 }
 
 function writeResults(results: GameResult[]): void {
+  cachedResults = results;
   localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
 }
 
@@ -108,6 +116,7 @@ export const storage: StorageService = {
   },
 
   clearAll() {
+    cachedResults = null;
     localStorage.removeItem(RESULTS_KEY);
   },
 };

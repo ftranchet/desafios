@@ -24,6 +24,7 @@ const PHASE_BG: Record<Exclude<Phase, 'feedback'>, string> = {
 export function ReactionTimeGame({ config, onFinish }: GameProps) {
   const params = getLevelParams(config.level);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const plansRef = useRef<RoundPlan[]>([]);
   const outcomesRef = useRef<RoundOutcome[]>([]);
   const roundStartRef = useRef(0);
@@ -57,6 +58,9 @@ export function ReactionTimeGame({ config, onFinish }: GameProps) {
   }
 
   useEffect(() => {
+    // Foco al área de juego: Espacio/Enter empiezan y responden desde el
+    // arranque, sin exigir un clic previo (RNF-11).
+    containerRef.current?.focus({ preventScroll: true });
     return () => {
       if (roundTimersRef.current.change !== null)
         window.clearTimeout(roundTimersRef.current.change);
@@ -139,6 +143,7 @@ export function ReactionTimeGame({ config, onFinish }: GameProps) {
 
   return (
     <div
+      ref={containerRef}
       className={`flex h-full min-h-[70vh] flex-col items-center justify-center gap-6 p-6 ${background}`}
       role="button"
       tabIndex={0}

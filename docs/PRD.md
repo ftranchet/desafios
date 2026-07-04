@@ -1,15 +1,16 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.4 · Julio 2026
-**Estado:** Fase 0, Fase 1 y Fase 2 entregadas (`main`, v0.3.1). En definición: revisión de controles (v0.4).
+**Documento de requisitos de producto (PRD)** · Versión 0.5 · Julio 2026
+**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Controles revisados (v0.4/v0.5) y auditoría de usabilidad táctil/teclado aplicada — sus patrones quedaron fijados en la sección 10.7.
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
-| Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                  |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                         |
-| 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro |
-| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                         |
-| 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular          |
+| Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                                                                        |
+| 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro                                                |
+| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                                                                        |
+| 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular                                                         |
+| 0.5     | Julio 2026 | Auditoría integral de usabilidad táctil y de escritorio: los patrones que funcionaron y son replicables quedan documentados en la **sección 10.7** (foco automático, acción en `pointerdown`, keypad propio en pantalla, endurecimiento táctil global, partida a pantalla completa, diálogos accesibles, canvas fluido). La checklist de terminado (12.3) los incorpora |
 
 ---
 
@@ -285,18 +286,18 @@ Post-MVP: **modo progresivo** opcional por juego (la dificultad sube dentro de l
 
 ## 9. Requisitos no funcionales
 
-| ID     | Requisito                                                                                                                                      |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| RNF-01 | Funciona sin conexión tras la primera carga                                                                                                    |
-| RNF-02 | Carga inicial menor a 2 segundos en un celular de gama media con conexión 4G                                                                   |
-| RNF-03 | Respuesta táctil menor a 100 milisegundos en interacciones de juego                                                                            |
-| RNF-04 | Objetivos táctiles de al menos 44 píxeles                                                                                                      |
-| RNF-05 | Contraste de color nivel AA; la información nunca depende solo del color. La paleta se valida contra este requisito antes de fijarse (ADR-003) |
-| RNF-06 | Opción de reducir animaciones (respeta también la preferencia del sistema operativo)                                                           |
-| RNF-07 | Idioma español (Argentina); todos los textos centralizados en un archivo para facilitar futura traducción                                      |
-| RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                              |
-| RNF-09 | Compatible con Chrome y Safari móviles (últimas dos versiones); usable también en escritorio                                                   |
-| RNF-10 | Licencia GNU General Public License v3.0 ✓                                                                                                     |
+| ID     | Requisito                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RNF-01 | Funciona sin conexión tras la primera carga                                                                                                                                                                                                                                                                                                                                                                           |
+| RNF-02 | Carga inicial menor a 2 segundos en un celular de gama media con conexión 4G                                                                                                                                                                                                                                                                                                                                          |
+| RNF-03 | Respuesta táctil menor a 100 milisegundos en interacciones de juego                                                                                                                                                                                                                                                                                                                                                   |
+| RNF-04 | Objetivos táctiles de al menos 44 píxeles                                                                                                                                                                                                                                                                                                                                                                             |
+| RNF-05 | Contraste de color nivel AA; la información nunca depende solo del color. La paleta se valida contra este requisito antes de fijarse (ADR-003)                                                                                                                                                                                                                                                                        |
+| RNF-06 | Opción de reducir animaciones (respeta también la preferencia del sistema operativo)                                                                                                                                                                                                                                                                                                                                  |
+| RNF-07 | Idioma español (Argentina); todos los textos centralizados en un archivo para facilitar futura traducción                                                                                                                                                                                                                                                                                                             |
+| RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                                                                                                                                                                                                                                                                                                     |
+| RNF-09 | Compatible con Chrome y Safari móviles (últimas dos versiones); usable también en escritorio                                                                                                                                                                                                                                                                                                                          |
+| RNF-10 | Licencia GNU General Public License v3.0 ✓                                                                                                                                                                                                                                                                                                                                                                            |
 | RNF-11 | Todo juego es jugable de punta a punta solo con teclado en escritorio (foco visible, sin trampas de tabulación) — no exclusivamente con mouse/touch. Los juegos en tiempo real (Snake, Cascada y los que sigan ese patrón) ofrecen controles táctiles directos en pantalla (botones) como entrada principal en celular; el gesto de deslizar puede coexistir como atajo, pero nunca es la única forma de jugar (v0.4) |
 
 ---
@@ -337,6 +338,31 @@ Cada juego tiene un **ícono vectorial propio** que lo representa en el catálog
 ### 10.6 Voz y textos de la interfaz
 
 Los textos son material de diseño, no decoración. Reglas: español con voseo (Argentina), verbos simples y directos, sin relleno; cada botón dice exactamente lo que hace ("Jugar", "Reintentar", "Ver estadísticas"); los errores explican qué pasó y cómo seguir, sin disculpas vagas; una pantalla vacía invita a la acción ("Todavía no jugaste ninguna partida. Elegí un juego para empezar"). Nombres consistentes en todo el flujo: la acción que se llama "Jugar" no se convierte en "Comenzar" en otra pantalla.
+
+### 10.7 Patrones de interacción validados (táctil y escritorio) — v0.5
+
+Patrones probados en dispositivo/navegador real durante la auditoría de usabilidad (v0.5). Son **replicables**: todo juego nuevo los aplica desde el día uno, y la checklist de terminado (12.3) los exige. Concretan en implementación lo que RNF-03, RNF-04, RNF-06 y RNF-11 piden como requisito.
+
+**Táctil (celular es la plataforma principal):**
+
+1. **Acción en `pointerdown`, no en `click`.** Los controles de juego (D-pad, teclas del keypad, pads de Simon, opciones contra reloj) actúan al apoyar el dedo: `click` dispara recién al soltarlo y esa demora se siente en tiempo real (RNF-03). La activación por teclado se conserva atendiendo solo el `click` sintético de Enter/Espacio (`event.detail === 0`), y `preventDefault()` en `pointerdown` evita robarle el foco al tablero.
+2. **Auto-repetición al mantener presionado** en acciones que se repiten (mover pieza en Cascada): espera inicial ~260 ms y cadencia ~110 ms — la sensación de un teclado físico — con `setPointerCapture` para que el gesto no se corte si el dedo se corre del botón.
+3. **Keypad numérico propio en pantalla, nunca `<input>` con teclado del sistema** para respuestas numéricas (Aritmética, Secuencias). El teclado del sistema tapa media pantalla, aparece y desaparece entre pregunta y feedback, y salta el layout. El keypad propio da teclas de ≥44 px (RNF-04), layout estable (pregunta, resultado y teclas ocupan siempre el mismo lugar) y convive con el teclado físico en escritorio.
+4. **Endurecimiento táctil global (CSS del shell, los juegos lo heredan):** `overscroll-behavior-y: none` en `html` (un deslizamiento hacia abajo dentro de un juego no dispara pull-to-refresh), `touch-action: manipulation` en botones y enlaces (sin espera de doble tap ni zoom accidental en toques rápidos), sin resaltado de tap (`-webkit-tap-highlight-color`) ni selección de texto en controles, y `touch-none` en los canvas con gestos propios.
+5. **Flujo de partida a pantalla completa.** En la ruta de juego no hay navegación inferior: un toque accidental cerca del borde no puede desmontar la partida sin confirmación (y sin registrar el resultado, RF-06). La salida es explícita: "←" para volver en selección de nivel y resultado, "Salir" con confirmación durante la partida. En el resto de la app, la barra inferior es `sticky` y respeta `env(safe-area-inset-bottom)` (indicador de inicio de iOS).
+6. **Canvas fluido con buffer fijo.** El buffer interno del canvas queda fijo (tamaño lógico × `devicePixelRatio`) y el tamaño CSS se acota con `max-width`/`vh` + `aspect-ratio`: el tablero de Snake no desborda un celular de 360 px y el de Cascada se achica en pantallas bajas en vez de empujar los controles fuera de la vista. Las coordenadas de puntero se convierten con `getBoundingClientRect()`, así el escalado no rompe la entrada.
+7. **Deshacer antes que reiniciar** en juegos de manipulación de estado (Cifras): un error de un paso no cuesta la partida entera.
+
+**Escritorio (teclado y mouse, RNF-11):**
+
+8. **Auto-foco del área de juego al montar.** El contenedor del juego tiene `tabIndex={0}` y recibe `focus({ preventScroll: true })` apenas arranca la partida: flechas, dígitos y atajos funcionan desde el primer segundo, sin exigir un clic previo sobre el tablero (que además scrollearía la página).
+9. **Todo control en pantalla tiene su tecla:** flechas para dirección/movimiento, dígitos y Backspace/Enter para el keypad, Espacio para caída rápida o para reaccionar, `1`–`4` para los pads de Simon. El botón en pantalla y la tecla disparan la misma función.
+10. **Diálogos de confirmación accesibles:** al abrirse, el foco entra al diálogo sobre la opción segura (cancelar) — un Enter apurado no dispara la acción destructiva —, Escape y el toque/clic en el fondo cancelan, y Tab circula solo dentro del diálogo.
+
+**Común:**
+
+11. **Cuenta regresiva numérica junto a la barra animada.** Con "reducir animaciones" activo (RNF-06) la barra de tiempo deja de animarse; el número de segundos restantes mantiene visible la información. Regla general: ninguna información depende solo de una animación.
+12. **Layout estable entre estados.** Pregunta, feedback y controles reservan su lugar (alturas mínimas) para que la pantalla no salte entre fases — crítico cuando el usuario está por tocar algo.
 
 ---
 
@@ -412,7 +438,7 @@ Las **mecánicas** de juego en general no gozan de protección de derechos de au
 - [ ] Cinco niveles configurados, jugables y perceptiblemente distintos.
 - [ ] Ícono vectorial propio, dibujado con la paleta del sistema.
 - [ ] Usa exclusivamente los tokens de diseño (sin colores ni fuentes ad hoc).
-- [ ] Funciona con toque y con mouse/teclado.
+- [ ] Funciona con toque y con mouse/teclado, aplicando los patrones de interacción de la sección 10.7 (acción en `pointerdown`, auto-foco al montar, atajos de teclado, keypad propio si pide números).
 - [ ] Sin errores de tipos ni de linter; build de producción pasa.
 - [ ] Tests de `logic.ts` con semilla fija pasan (mínimo: generación de partida, validación de jugada, cálculo de puntaje).
 - [ ] Registrado en `registry.ts` con metadatos completos en español.
@@ -539,10 +565,10 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 
 ### 17.4 Decisiones revisadas (v0.4, julio 2026)
 
-| #   | Decisión                                   | Resolución Fase 2                                                          | Resolución v0.4                                                                                                                          |
-| --- | ------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Controles táctiles de Snake y Cascada       | Solo gestos de deslizamiento (sin d-pad en pantalla, PRD 5.2 / Fase 2)       | Se agregan controles táctiles directos en pantalla (botones) como entrada principal en celular (RNF-11); el deslizamiento queda como atajo opcional, no obligatorio |
-| 2   | Operabilidad por teclado                    | Implícita en cada juego, sin requisito explícito                             | RNF-11 la vuelve requisito explícito para todos los juegos, presentes y futuros                                                             |
+| #   | Decisión                              | Resolución Fase 2                                                      | Resolución v0.4                                                                                                                                                     |
+| --- | ------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Controles táctiles de Snake y Cascada | Solo gestos de deslizamiento (sin d-pad en pantalla, PRD 5.2 / Fase 2) | Se agregan controles táctiles directos en pantalla (botones) como entrada principal en celular (RNF-11); el deslizamiento queda como atajo opcional, no obligatorio |
+| 2   | Operabilidad por teclado              | Implícita en cada juego, sin requisito explícito                       | RNF-11 la vuelve requisito explícito para todos los juegos, presentes y futuros                                                                                     |
 
 ---
 
