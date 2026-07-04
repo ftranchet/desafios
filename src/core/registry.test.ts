@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Category } from './contract';
+import { DIFFICULTY_MODE_IDS, MODE_LABELS, SPECIAL_MODE_IDS } from './modes';
 import { GAMES, getGameById } from './registry';
 
 // Test de contrato del registro (PRD 5.6): valida los metadatos de TODOS los
@@ -30,13 +31,22 @@ describe('registro de juegos: contrato de metadatos', () => {
     expect(meta.icon.trim().length).toBeGreaterThan(0);
     expect(meta.estimatedSeconds).toBeGreaterThan(0);
 
-    // Exactamente 5 niveles, numerados 1..5 en orden, con etiqueta visible.
-    expect(meta.levels).toHaveLength(5);
-    meta.levels.forEach((level, index) => {
-      expect(level.level).toBe(index + 1);
-      expect(level.label.trim().length).toBeGreaterThan(0);
-      expect(level.params).toBeTypeOf('object');
-    });
+    // Estructura de modos (ADR-007): las tres dificultades primero y en orden
+    // canónico; después, solo modos especiales conocidos, sin repetir; los
+    // labels canónicos y descripción en los especiales (garantía de buildModes).
+    const ids = meta.modes.map((m) => m.id);
+    expect(ids.slice(0, 3)).toEqual([...DIFFICULTY_MODE_IDS]);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const extra of ids.slice(3)) {
+      expect(SPECIAL_MODE_IDS).toContain(extra);
+    }
+    for (const mode of meta.modes) {
+      expect(mode.label).toBe(MODE_LABELS[mode.id]);
+      expect(mode.params).toBeTypeOf('object');
+      if ((SPECIAL_MODE_IDS as readonly string[]).includes(mode.id)) {
+        expect(mode.description?.trim().length).toBeGreaterThan(0);
+      }
+    }
 
     // El componente existe (función o clase React).
     expect(game.Component).toBeDefined();

@@ -1,4 +1,4 @@
-import type { GameConfig, GameResult } from '../../core/contract';
+import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { createRng, randomInt } from '../../core/random';
 
 // Lógica pura de Simon — sin React ni DOM. Repetir una secuencia de colores
@@ -14,25 +14,16 @@ export interface LevelParams extends Record<string, number> {
   maxRounds: number; // tope de longitud de secuencia (acota la duración de la partida)
 }
 
-export const LEVEL_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'Fácil',
-  2: 'Medio',
-  3: 'Difícil',
-  4: 'Avanzado',
-  5: 'Experto',
+// easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
+  easy: { flashMs: 600, gapMs: 300, maxRounds: 15 },
+  medium: { flashMs: 450, gapMs: 200, maxRounds: 20 },
+  hard: { flashMs: 320, gapMs: 150, maxRounds: 25 },
 };
 
-export const LEVEL_PARAMS: Record<1 | 2 | 3 | 4 | 5, LevelParams> = {
-  1: { flashMs: 600, gapMs: 300, maxRounds: 15 },
-  2: { flashMs: 500, gapMs: 250, maxRounds: 18 },
-  3: { flashMs: 450, gapMs: 200, maxRounds: 20 },
-  4: { flashMs: 400, gapMs: 180, maxRounds: 22 },
-  5: { flashMs: 320, gapMs: 150, maxRounds: 25 },
-};
-
-export function getLevelParams(level: number): LevelParams {
-  const params = LEVEL_PARAMS[level as 1 | 2 | 3 | 4 | 5];
-  if (!params) throw new Error(`Nivel inválido: ${level}`);
+export function getModeParams(mode: ModeId): LevelParams {
+  const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
+  if (!params) throw new Error(`Modo no soportado: ${mode}`);
   return params;
 }
 
@@ -45,8 +36,8 @@ export interface SimonState {
   score: number;
 }
 
-export function createInitialState(level: number, seed: number): SimonState {
-  const params = getLevelParams(level);
+export function createInitialState(mode: ModeId, seed: number): SimonState {
+  const params = getModeParams(mode);
   const rng = createRng(seed);
   const sequence = Array.from({ length: params.maxRounds }, () => randomInt(rng, 0, PAD_COUNT - 1));
   return { sequence, round: 1, playerIndex: 0, gameOver: false, failed: false, score: 0 };
@@ -80,7 +71,7 @@ export function buildResult(config: GameConfig, state: SimonState, durationMs: n
   const roundsCompleted = state.failed ? Math.max(0, state.round - 1) : state.round;
   return {
     gameId: 'simon',
-    level: config.level,
+    mode: config.mode,
     score: state.score,
     completed: true, // fallar o llegar al tope es un final natural, no un abandono
     durationMs,

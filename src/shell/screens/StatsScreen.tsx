@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { MODE_LABELS } from '../../core/modes';
 import { GAMES, getGameById } from '../../core/registry';
 import { storage } from '../../core/storage';
 import { strings } from '../../i18n/es';
@@ -23,11 +24,13 @@ export function StatsScreen() {
 
   const records = useMemo(() => {
     return GAMES.flatMap((game) =>
-      game.metadata.levels
-        .map((level) => ({
+      game.metadata.modes
+        // El modo Tranquilo no compite (ADR-007): no aparece en récords.
+        .filter((mode) => mode.id !== 'zen')
+        .map((mode) => ({
           gameName: game.metadata.name,
-          levelLabel: level.label,
-          best: storage.getBest(game.metadata.id, level.level),
+          modeLabel: mode.label,
+          best: storage.getBest(game.metadata.id, mode.id),
         }))
         .filter((entry) => entry.best !== null),
     );
@@ -57,7 +60,7 @@ export function StatsScreen() {
                 className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
               >
                 <span>
-                  {entry.gameName} · {entry.levelLabel}
+                  {entry.gameName} · {entry.modeLabel}
                 </span>
                 <span className="text-accent-primary">{entry.best?.score}</span>
               </li>
@@ -80,7 +83,8 @@ export function StatsScreen() {
                 className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
               >
                 <span>
-                  {formatDate(result.timestamp)} · {gameName(result.gameId)} · Nivel {result.level}
+                  {formatDate(result.timestamp)} · {gameName(result.gameId)} ·{' '}
+                  {MODE_LABELS[result.mode]}
                 </span>
                 <span className={result.completed ? 'text-accent-primary' : 'text-text-secondary'}>
                   {result.completed ? result.score : strings.stats.abandoned}

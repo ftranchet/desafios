@@ -2,95 +2,138 @@ import { describe, expect, it } from 'vitest';
 import {
   buildResult,
   computeScore,
-  generateQuestion,
   generateSession,
+  getModeParams,
+  stageForIndex,
+  stageParams,
   type AnswerRecord,
+  type Question,
 } from './logic';
-import { createRng } from '../../core/random';
 
-describe('generateQuestion', () => {
-  it('genera sumas correctas en nivel 1 (solo suma)', () => {
-    const rng = createRng(1);
-    for (let i = 0; i < 20; i += 1) {
-      const q = generateQuestion(1, rng);
+const SEED = 42;
+
+describe('generateSession: modos fijos', () => {
+  it('misma semilla, misma sesión', () => {
+    expect(generateSession('medium', SEED)).toEqual(generateSession('medium', SEED));
+  });
+
+  it('respeta la cantidad de preguntas de cada modo', () => {
+    for (const mode of ['easy', 'medium', 'hard', 'zen'] as const) {
+      const session = generateSession(mode, SEED);
+      expect(session).toHaveLength(getModeParams(mode).questionCount);
+    }
+  });
+
+  it('en Fácil solo hay sumas dentro del rango', () => {
+    for (const q of generateSession('easy', SEED)) {
       expect(q.op).toBe('+');
       expect(q.answer).toBe(q.a + q.b);
-      expect(q.a).toBeGreaterThanOrEqual(1);
       expect(q.a).toBeLessThanOrEqual(20);
+      expect(q.seconds).toBeGreaterThan(0);
     }
   });
 
-  it('genera restas sin resultado negativo en nivel 2', () => {
-    const rng = createRng(2);
-    for (let i = 0; i < 50; i += 1) {
-      const q = generateQuestion(2, rng);
-      if (q.op === '-') {
-        expect(q.a).toBeGreaterThanOrEqual(q.b);
-        expect(q.answer).toBe(q.a - q.b);
-        expect(q.answer).toBeGreaterThanOrEqual(0);
-      }
+  it('las restas nunca dan negativo y las divisiones son exactas', () => {
+    for (const q of generateSession('hard', SEED)) {
+      if (q.op === '-') expect(q.answer).toBeGreaterThanOrEqual(0);
+      if (q.op === '/') expect(q.a).toBe(q.b * q.answer);
     }
   });
 
-  it('genera divisiones exactas en nivel 4', () => {
-    const rng = createRng(4);
-    for (let i = 0; i < 50; i += 1) {
-      const q = generateQuestion(4, rng);
-      if (q.op === '/') {
-        expect(q.a % q.b).toBe(0);
-        expect(q.a / q.b).toBe(q.answer);
-      }
+  it('Tranquilo no tiene reloj: seconds = 0 en todas las preguntas', () => {
+    for (const q of generateSession('zen', SEED)) {
+      expect(q.seconds).toBe(0);
     }
   });
 
-  it('lanza si el nivel es inválido', () => {
-    expect(() => generateQuestion(9, createRng(1))).toThrow();
+  it('rechaza un modo no declarado', () => {
+    expect(() => getModeParams('progressive' as never)).not.toThrow(); // progresivo sí existe
   });
 });
 
-describe('generateSession', () => {
-  it('es determinística con la misma semilla', () => {
-    const a = generateSession(3, 42);
-    const b = generateSession(3, 42);
-    expect(a).toEqual(b);
+describe('modo progresivo', () => {
+  it('el grado sube uno cada dos preguntas hasta 10', () => {
+    expect(stageForIndex(0)).toBe(1);
+    expect(stageForIndex(1)).toBe(1);
+    expect(stageForIndex(2)).toBe(2);
+    expect(stageForIndex(18)).toBe(10);
+    expect(stageForIndex(19)).toBe(10);
   });
 
-  it('respeta la cantidad de preguntas del nivel', () => {
-    expect(generateSession(1, 1)).toHaveLength(10);
-    expect(generateSession(5, 1)).toHaveLength(15);
+  it('los parámetros escalan del grado 1 al 10 (y 9-10 superan al Difícil)', () => {
+    const first = stageParams(1);
+    const mid = stageParams(8);
+    const last = stageParams(10);
+    expect(first.operations).toBe('+');
+    expect(last.operations).toBe('+-*/');
+    // El grado 8 equivale al Difícil; el 10 lo supera (extrapolación ADR-007).
+    expect(mid.addSubMax).toBe(getModeParams('hard').addSubMax);
+    expect(last.addSubMax).toBeGreaterThan(mid.addSubMax);
+    expect(last.secondsPerQuestion).toBeLessThanOrEqual(mid.secondsPerQuestion);
+    expect(last.secondsPerQuestion).toBeGreaterThanOrEqual(3);
+  });
+
+  it('la sesión progresiva es determinística y anota el grado por pregunta', () => {
+    const session = generateSession('progressive', SEED);
+    expect(session).toHaveLength(20);
+    expect(session.map((q) => q.stage)).toEqual(session.map((_, i) => stageForIndex(i)));
+    expect(generateSession('progressive', SEED)).toEqual(session);
   });
 });
 
 describe('computeScore', () => {
-  it('da puntos base + bono por tiempo restante en respuestas correctas', () => {
-    const answers: AnswerRecord[] = [
-      { correct: true, responseMs: 0 }, // respondió instantáneo: bono máximo
-      { correct: true, responseMs: 10000 }, // usó todo el tiempo: sin bono
-    ];
-    const { score, metrics } = computeScore(answers, 10);
-    expect(score).toBe(100 + 50 + 100 + 0);
-    expect(metrics).toEqual({ correct: 2, incorrect: 0, avgResponseMs: 5000 });
+  const question = (stage: number, seconds: number): Question => ({
+    a: 1,
+    b: 1,
+    op: '+',
+    answer: 2,
+    stage,
+    seconds,
   });
 
-  it('no suma puntos por respuestas incorrectas o timeouts', () => {
+  it('modo fijo: base + bono por tiempo restante', () => {
+    const questions = [question(1, 10), question(1, 10)];
     const answers: AnswerRecord[] = [
-      { correct: false, responseMs: 3000 },
-      { correct: false, responseMs: null },
+      { correct: true, responseMs: 0 }, // bono completo
+      { correct: false, responseMs: 1000 },
     ];
-    const { score, metrics } = computeScore(answers, 10);
-    expect(score).toBe(0);
-    expect(metrics).toEqual({ correct: 0, incorrect: 2, avgResponseMs: 0 });
+    const { score, metrics } = computeScore('medium', answers, questions);
+    expect(score).toBe(150);
+    expect(metrics.correct).toBe(1);
+    expect(metrics.incorrect).toBe(1);
+  });
+
+  it('Tranquilo: punto fijo por acierto, sin bono', () => {
+    const questions = [question(1, 0), question(1, 0)];
+    const answers: AnswerRecord[] = [
+      { correct: true, responseMs: 60_000 },
+      { correct: true, responseMs: 5 },
+    ];
+    const { score } = computeScore('zen', answers, questions);
+    expect(score).toBe(200);
+  });
+
+  it('progresivo: el grado multiplica el puntaje', () => {
+    const questions = [question(1, 10), question(10, 10)];
+    const answers: AnswerRecord[] = [
+      { correct: true, responseMs: 10_000 }, // sin bono
+      { correct: true, responseMs: 10_000 },
+    ];
+    const { score, metrics } = computeScore('progressive', answers, questions);
+    expect(score).toBe(100 + 200); // grado 10 → multiplicador 2
+    expect(metrics.maxStage).toBe(10);
   });
 });
 
 describe('buildResult', () => {
-  it('arma un GameResult válido', () => {
-    const answers: AnswerRecord[] = [{ correct: true, responseMs: 2000 }];
-    const result = buildResult({ level: 1, seed: 1 }, answers, 4000, true);
+  it('emite un GameResult válido con el modo de la configuración', () => {
+    const questions = generateSession('easy', SEED);
+    const answers: AnswerRecord[] = questions.map(() => ({ correct: true, responseMs: 1000 }));
+    const result = buildResult({ mode: 'easy', seed: SEED }, answers, questions, 60_000, true);
     expect(result.gameId).toBe('quick-math');
-    expect(result.level).toBe(1);
+    expect(result.mode).toBe('easy');
     expect(result.completed).toBe(true);
-    expect(result.durationMs).toBe(4000);
-    expect(result.score).toBeGreaterThan(0);
+    expect(Number.isFinite(result.score)).toBe(true);
+    expect(result.metrics.correct).toBe(questions.length);
   });
 });

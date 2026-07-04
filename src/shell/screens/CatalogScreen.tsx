@@ -8,7 +8,8 @@ import { useSettingsStore } from '../store/useSettingsStore';
 
 function bestScoreFor(gameId: string): number | null {
   // Solo partidas completadas: una abandonada (score 0) no cuenta como récord.
-  const results = storage.getResults(gameId).filter((r) => r.completed);
+  // El modo Tranquilo no compite (ADR-007): queda fuera del récord del catálogo.
+  const results = storage.getResults(gameId).filter((r) => r.completed && r.mode !== 'zen');
   if (results.length === 0) return null;
   return Math.max(...results.map((r) => r.score));
 }

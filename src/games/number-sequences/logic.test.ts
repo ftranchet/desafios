@@ -12,7 +12,7 @@ describe('generateSequence', () => {
   it('genera progresiones aritméticas consistentes en nivel 1', () => {
     const rng = createRng(1);
     for (let i = 0; i < 30; i += 1) {
-      const q = generateSequence(1, rng);
+      const q = generateSequence('easy', rng);
       expect(q.patternType).toBe('arithmetic');
       expect(q.terms).toHaveLength(4);
       const step = (q.terms[1] as number) - (q.terms[0] as number);
@@ -26,7 +26,7 @@ describe('generateSequence', () => {
   it('genera progresiones geométricas con razón entera en nivel 4', () => {
     const rng = createRng(2);
     for (let i = 0; i < 30; i += 1) {
-      const q = generateSequence(4, rng);
+      const q = generateSequence('hard', rng);
       if (q.patternType !== 'geometric') continue;
       const ratio = (q.terms[1] as number) / (q.terms[0] as number);
       for (let t = 1; t < q.terms.length; t += 1) {
@@ -37,20 +37,20 @@ describe('generateSequence', () => {
   });
 
   it('lanza si el nivel es inválido', () => {
-    expect(() => generateSequence(9, createRng(1))).toThrow();
+    expect(() => generateSequence('zen' as never, createRng(1))).toThrow();
   });
 });
 
 describe('generateSession', () => {
   it('es determinística con la misma semilla', () => {
-    const a = generateSession(3, 42);
-    const b = generateSession(3, 42);
+    const a = generateSession('medium', 42);
+    const b = generateSession('medium', 42);
     expect(a).toEqual(b);
   });
 
   it('respeta la cantidad de preguntas del nivel', () => {
-    expect(generateSession(1, 1)).toHaveLength(8);
-    expect(generateSession(5, 1)).toHaveLength(12);
+    expect(generateSession('easy', 1)).toHaveLength(8);
+    expect(generateSession('hard', 1)).toHaveLength(12);
   });
 });
 
@@ -77,7 +77,7 @@ describe('computeScore', () => {
 describe('buildResult', () => {
   it('arma un GameResult válido', () => {
     const answers: AnswerRecord[] = [{ correct: true, responseMs: 2000 }];
-    const result = buildResult({ level: 1, seed: 1 }, answers, 4000, true);
+    const result = buildResult({ mode: 'easy', seed: 1 }, answers, 4000, true);
     expect(result.gameId).toBe('number-sequences');
     expect(result.completed).toBe(true);
     expect(result.durationMs).toBe(4000);

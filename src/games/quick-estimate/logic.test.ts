@@ -13,7 +13,7 @@ describe('generateRound', () => {
   it('nunca genera un empate', () => {
     const rng = createRng(1);
     for (let i = 0; i < 200; i += 1) {
-      const round = generateRound(3, rng);
+      const round = generateRound('medium', rng);
       expect(round.left.value).not.toBe(round.right.value);
     }
   });
@@ -21,7 +21,7 @@ describe('generateRound', () => {
   it('respeta la magnitud del nivel 1 (comparar números crudos)', () => {
     const rng = createRng(2);
     for (let i = 0; i < 20; i += 1) {
-      const round = generateRound(1, rng);
+      const round = generateRound('easy', rng);
       expect(round.left.value).toBeGreaterThanOrEqual(1);
       expect(round.left.value).toBeLessThanOrEqual(50);
       expect(round.right.value).toBeGreaterThanOrEqual(1);
@@ -30,20 +30,20 @@ describe('generateRound', () => {
   });
 
   it('lanza si el nivel es inválido', () => {
-    expect(() => generateRound(0, createRng(1))).toThrow();
+    expect(() => generateRound('zen' as never, createRng(1))).toThrow();
   });
 });
 
 describe('generateSession', () => {
   it('es determinística con la misma semilla', () => {
-    const a = generateSession(3, 42);
-    const b = generateSession(3, 42);
+    const a = generateSession('medium', 42);
+    const b = generateSession('medium', 42);
     expect(a).toEqual(b);
   });
 
   it('respeta la cantidad de rondas del nivel', () => {
-    expect(generateSession(1, 1)).toHaveLength(10);
-    expect(generateSession(5, 1)).toHaveLength(15);
+    expect(generateSession('easy', 1)).toHaveLength(10);
+    expect(generateSession('hard', 1)).toHaveLength(15);
   });
 });
 
@@ -74,7 +74,7 @@ describe('computeScore', () => {
 describe('buildResult', () => {
   it('arma un GameResult válido', () => {
     const answers: AnswerRecord[] = [{ correct: true, responseMs: 500 }];
-    const result = buildResult({ level: 2, seed: 1 }, answers, 3000, true);
+    const result = buildResult({ mode: 'easy', seed: 1 }, answers, 3000, true);
     expect(result.gameId).toBe('quick-estimate');
     expect(result.completed).toBe(true);
     expect(result.durationMs).toBe(3000);

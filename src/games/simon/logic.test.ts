@@ -2,29 +2,29 @@ import { describe, expect, it } from 'vitest';
 import {
   buildResult,
   createInitialState,
-  getLevelParams,
+  getModeParams,
   PAD_COUNT,
   submitTap,
   type SimonState,
 } from './logic';
 
-describe('getLevelParams', () => {
+describe('getModeParams', () => {
   it('lanza si el nivel es inválido', () => {
-    expect(() => getLevelParams(0)).toThrow();
-    expect(() => getLevelParams(6)).toThrow();
+    expect(() => getModeParams('zen' as never)).toThrow();
+    expect(() => getModeParams('zen' as never)).toThrow();
   });
 });
 
 describe('createInitialState', () => {
   it('es determinística con la misma semilla', () => {
-    const a = createInitialState(2, 7);
-    const b = createInitialState(2, 7);
+    const a = createInitialState('easy', 7);
+    const b = createInitialState('easy', 7);
     expect(a).toEqual(b);
   });
 
   it('genera una secuencia de la longitud máxima del nivel, con valores válidos', () => {
-    const params = getLevelParams(3);
-    const state = createInitialState(3, 1);
+    const params = getModeParams('medium');
+    const state = createInitialState('medium', 1);
     expect(state.sequence).toHaveLength(params.maxRounds);
     for (const pad of state.sequence) {
       expect(pad).toBeGreaterThanOrEqual(0);
@@ -33,7 +33,7 @@ describe('createInitialState', () => {
   });
 
   it('arranca en la ronda 1, sin fallar y sin puntaje', () => {
-    const state = createInitialState(1, 1);
+    const state = createInitialState('easy', 1);
     expect(state.round).toBe(1);
     expect(state.playerIndex).toBe(0);
     expect(state.gameOver).toBe(false);
@@ -102,7 +102,7 @@ describe('buildResult', () => {
       failed: true,
       score: 20,
     };
-    const result = buildResult({ level: 2, seed: 1 }, state, 5000);
+    const result = buildResult({ mode: 'easy', seed: 1 }, state, 5000);
     expect(result.gameId).toBe('simon');
     expect(result.completed).toBe(true);
     expect(result.durationMs).toBe(5000);
@@ -120,7 +120,7 @@ describe('buildResult', () => {
       failed: false,
       score: 20,
     };
-    const result = buildResult({ level: 1, seed: 1 }, state, 3000);
+    const result = buildResult({ mode: 'easy', seed: 1 }, state, 3000);
     expect(result.metrics.roundsCompleted).toBe(2);
     expect(result.metrics.failed).toBe(0);
   });

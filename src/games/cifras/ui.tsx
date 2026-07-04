@@ -6,7 +6,7 @@ import {
   closestToTarget,
   combine,
   generatePuzzle,
-  getLevelParams,
+  getModeParams,
   type Op,
   type Puzzle,
 } from './logic';
@@ -31,7 +31,7 @@ function formatSeconds(ms: number): string {
 }
 
 export function CifrasGame({ config, onFinish }: GameProps) {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
 
   const puzzleRef = useRef<Puzzle>({ numbers: [], target: 0 });
   const originalTilesRef = useRef<Tile[]>([]);
@@ -55,7 +55,7 @@ export function CifrasGame({ config, onFinish }: GameProps) {
   }, [tiles]);
 
   useEffect(() => {
-    const puzzle = generatePuzzle(config.level, config.seed ?? Date.now());
+    const puzzle = generatePuzzle(config.mode, config.seed ?? Date.now());
     puzzleRef.current = puzzle;
     setTarget(puzzle.target);
     const initialTiles = puzzle.numbers.map((value) => ({ id: nextIdRef.current++, value }));

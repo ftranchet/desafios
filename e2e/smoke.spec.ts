@@ -27,7 +27,7 @@ test('partida completa de Snake: resultado y persistencia versionada', async ({ 
     const raw = localStorage.getItem('dm:results');
     return raw ? (JSON.parse(raw) as { schemaVersion?: number; results?: unknown[] }) : null;
   });
-  expect(stored?.schemaVersion).toBe(1);
+  expect(stored?.schemaVersion).toBe(2);
   expect(stored?.results).toHaveLength(1);
 
   await page.getByRole('button', { name: 'Reintentar' }).tap();
@@ -45,6 +45,30 @@ test('el keypad de Aritmética responde y muestra el feedback', async ({ page })
   await expect(page.getByLabel('Tu respuesta')).toHaveText('1');
   await page.getByRole('button', { name: 'Responder' }).tap();
   await expect(page.getByText(/¡Correcto!|Incorrecto/)).toBeVisible();
+});
+
+test('el selector ofrece las 3 dificultades y los modos declarados por juego', async ({ page }) => {
+  // Aritmética declara los dos modos especiales (referencia ADR-007).
+  await page.goto('./#/game/quick-math');
+  for (const label of ['Fácil', 'Medio', 'Difícil']) {
+    await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole('button', { name: /Tranquilo/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Progresivo/ })).toBeVisible();
+
+  // Cascada todavía no los implementa: el selector no los muestra.
+  await page.goto('./#/game/cascada');
+  await expect(page.getByRole('button', { name: 'Fácil', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Tranquilo/ })).toHaveCount(0);
+});
+
+test('Tranquilo en Aritmética: sin reloj y con nota de modo sin récords', async ({ page }) => {
+  await page.goto('./#/game/quick-math');
+  await page.getByRole('button', { name: /Tranquilo/ }).tap();
+  await page.getByRole('button', { name: 'Jugar' }).tap();
+  // Keypad presente, pero sin cuenta regresiva ni barra (seconds = 0).
+  await expect(page.getByRole('button', { name: '1', exact: true })).toBeVisible();
+  await expect(page.locator('span[aria-label*="segundos restantes"]')).toHaveCount(0);
 });
 
 test('en la ruta de juego no hay navegación inferior y Volver funciona', async ({ page }) => {

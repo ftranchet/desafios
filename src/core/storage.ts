@@ -1,28 +1,33 @@
-import type { GameResult } from './contract';
+import type { GameResult, ModeId } from './contract';
+import { isModeId, levelToMode } from './modes';
 
 // Servicio de persistencia (PRD sección 5.4). Solo lo usa el shell: los juegos
 // nunca acceden a almacenamiento directamente (principio de arquitectura 4.2.2).
 // Garantías de robustez (PRD 5.6): la escritura nunca tira excepción hacia el
 // flujo de cierre de partida, el historial está acotado sin perder récords, y
 // la lectura tolera datos legados o corruptos.
+//
+// Esquema v2 (ADR-007): los resultados se keyean por modo (`mode`) en vez del
+// nivel numérico 1–5. Los datos v1 y el formato legado (array pelado) migran
+// en lectura: nivel 1-2 → easy, 3 → medium, 4-5 → hard.
 
 const RESULTS_KEY = 'dm:results';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 // Tope del historial persistido. Al rotar, se retiene además el mejor
-// resultado completado por (juego, nivel): los récords no caducan.
+// resultado completado por (juego, modo): los récords no caducan.
 export const MAX_STORED_RESULTS = 500;
 
 export interface StorageService {
   saveResult(result: GameResult): void;
   getResults(gameId?: string): GameResult[];
-  getBest(gameId: string, level: number): GameResult | null;
+  getBest(gameId: string, mode: ModeId): GameResult | null;
   getStreak(): number; // Días consecutivos con al menos una partida completada
   exportAll(): string; // JSON completo
   clearAll(): void;
 }
 
-// Forma mínima de un GameResult (solo tipos): lo que se exige al guardar.
+// Forma mínima de un GameResult v2 (solo tipos): lo que se exige al guardar.
 // Un número no finito NO invalida la forma — eso lo corrige sanitizeResult,
 // porque descartar la partida entera por un bug de puntaje sería peor.
 function hasResultShape(value: unknown): value is GameResult {
@@ -31,18 +36,36 @@ function hasResultShape(value: unknown): value is GameResult {
   return (
     typeof r.gameId === 'string' &&
     r.gameId.length > 0 &&
+    isModeId(r.mode) &&
     typeof r.score === 'number' &&
     typeof r.completed === 'boolean' &&
     typeof r.timestamp === 'string'
   );
 }
 
-// Filtro de lectura: si el almacenamiento se corrompió (edición manual,
-// versión vieja con un bug), una entrada rota se descarta en vez de romper
-// récords, historial y racha. Acá sí se exige puntaje finito: lo escrito por
-// esta versión siempre lo es, así que un NaN persistido es dato corrupto.
-function isPlausibleResult(value: unknown): value is GameResult {
-  return hasResultShape(value) && Number.isFinite(value.score);
+// Migra/valida una entrada leída del almacenamiento. Devuelve el resultado en
+// esquema v2, o null si la entrada está corrupta (se descarta sin romper).
+function migrateStoredEntry(value: unknown): GameResult | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const r = value as Record<string, unknown>;
+  const baseValid =
+    typeof r.gameId === 'string' &&
+    r.gameId.length > 0 &&
+    typeof r.score === 'number' &&
+    Number.isFinite(r.score) &&
+    typeof r.completed === 'boolean' &&
+    typeof r.timestamp === 'string';
+  if (!baseValid) return null;
+
+  if (isModeId(r.mode)) return value as GameResult;
+
+  // Esquema v1 / legado: nivel numérico 1–5 → modo equivalente (ADR-007).
+  if (typeof r.level === 'number' && Number.isFinite(r.level)) {
+    const migrated: Record<string, unknown> = { ...r, mode: levelToMode(r.level) };
+    delete migrated.level;
+    return migrated as unknown as GameResult;
+  }
+  return null;
 }
 
 // Normaliza números fuera de rango (NaN/Infinity/negativos) sin descartar la
@@ -59,7 +82,7 @@ function sanitizeResult(result: GameResult): GameResult {
 }
 
 // Caché del JSON parseado: el catálogo y las estadísticas consultan resultados
-// una vez por juego/nivel, y sin caché cada consulta re-parsea todo el
+// una vez por juego/modo, y sin caché cada consulta re-parsea todo el
 // almacenamiento. Se invalida en cada escritura de esta misma pestaña.
 let cachedResults: GameResult[] | null = null;
 
@@ -74,18 +97,18 @@ function readResults(): GameResult[] {
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
+    let entries: unknown[] = [];
     if (Array.isArray(parsed)) {
       // Formato legado (v0.x): el array pelado, sin envoltorio de versión.
-      cachedResults = parsed.filter(isPlausibleResult);
+      entries = parsed;
     } else if (
       typeof parsed === 'object' &&
       parsed !== null &&
       Array.isArray((parsed as { results?: unknown }).results)
     ) {
-      cachedResults = (parsed as { results: unknown[] }).results.filter(isPlausibleResult);
-    } else {
-      cachedResults = [];
+      entries = (parsed as { results: unknown[] }).results;
     }
+    cachedResults = entries.map(migrateStoredEntry).filter((r): r is GameResult => r !== null);
   } catch {
     cachedResults = [];
   }
@@ -104,7 +127,7 @@ function writeResults(results: GameResult[]): void {
 }
 
 // Rota el historial cuando supera el tope, conservando el mejor resultado
-// completado por (juego, nivel) aunque sea viejo: el historial es finito,
+// completado por (juego, modo) aunque sea viejo: el historial es finito,
 // los récords no.
 export function trimResults(results: GameResult[]): GameResult[] {
   if (results.length <= MAX_STORED_RESULTS) return results;
@@ -114,7 +137,7 @@ export function trimResults(results: GameResult[]): GameResult[] {
   const bestByCombo = new Map<string, GameResult>();
   for (const result of results) {
     if (!result.completed) continue;
-    const key = `${result.gameId}:${result.level}`;
+    const key = `${result.gameId}:${result.mode}`;
     const best = bestByCombo.get(key);
     if (!best || result.score > best.score) bestByCombo.set(key, result);
   }
@@ -169,10 +192,12 @@ export const storage: StorageService = {
     return gameId ? results.filter((r) => r.gameId === gameId) : results;
   },
 
-  getBest(gameId, level) {
+  getBest(gameId, mode) {
     // Solo partidas completadas: una abandonada (score 0) no cuenta como récord.
+    // El modo Tranquilo no compite (ADR-007): nunca tiene récord.
+    if (mode === 'zen') return null;
     const candidates = readResults().filter(
-      (r) => r.gameId === gameId && r.level === level && r.completed,
+      (r) => r.gameId === gameId && r.mode === mode && r.completed,
     );
     if (candidates.length === 0) return null;
     return candidates.reduce((best, r) => (r.score > best.score ? r : best));

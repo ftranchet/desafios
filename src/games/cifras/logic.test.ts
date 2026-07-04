@@ -3,36 +3,36 @@ import { buildResult, closestToTarget, combine, computeScore, generatePuzzle } f
 
 describe('generatePuzzle', () => {
   it('es determinística con la misma semilla', () => {
-    const a = generatePuzzle(3, 42);
-    const b = generatePuzzle(3, 42);
+    const a = generatePuzzle('medium', 42);
+    const b = generatePuzzle('medium', 42);
     expect(a).toEqual(b);
   });
 
   it('siempre devuelve 6 números', () => {
-    for (let level = 1; level <= 5; level += 1) {
-      const puzzle = generatePuzzle(level, level * 7);
+    for (const mode of ['easy', 'medium', 'hard'] as const) {
+      const puzzle = generatePuzzle(mode, 7);
       expect(puzzle.numbers).toHaveLength(6);
     }
   });
 
-  it('respeta la cantidad de números grandes del nivel', () => {
+  it('respeta la cantidad de números grandes del modo', () => {
     const largePool = [25, 50, 75, 100];
-    for (let level = 1; level <= 5; level += 1) {
-      const puzzle = generatePuzzle(level, level * 13);
+    const expectedByMode = { easy: 1, medium: 2, hard: 3 } as const;
+    for (const mode of ['easy', 'medium', 'hard'] as const) {
+      const puzzle = generatePuzzle(mode, 13);
       const largeCount = puzzle.numbers.filter((n) => largePool.includes(n)).length;
-      const expected = level <= 2 ? 1 : level <= 4 ? 2 : 3;
-      expect(largeCount).toBe(expected);
+      expect(largeCount).toBe(expectedByMode[mode]);
     }
   });
 
   it('el objetivo cae dentro del rango del nivel', () => {
-    const puzzle = generatePuzzle(1, 5);
+    const puzzle = generatePuzzle('easy', 5);
     expect(puzzle.target).toBeGreaterThanOrEqual(100);
     expect(puzzle.target).toBeLessThanOrEqual(300);
   });
 
   it('lanza si el nivel es inválido', () => {
-    expect(() => generatePuzzle(0, 1)).toThrow();
+    expect(() => generatePuzzle('zen' as never, 1)).toThrow();
   });
 });
 
@@ -94,9 +94,9 @@ describe('computeScore', () => {
 
 describe('buildResult', () => {
   it('arma un GameResult válido', () => {
-    const result = buildResult({ level: 1, seed: 1 }, 253, 253, 10_000, 20_000, true);
+    const result = buildResult({ mode: 'easy', seed: 1 }, 253, 253, 10_000, 20_000, true);
     expect(result.gameId).toBe('cifras');
-    expect(result.level).toBe(1);
+    expect(result.mode).toBe('easy');
     expect(result.completed).toBe(true);
     expect(result.durationMs).toBe(20_000);
     expect(result.score).toBeGreaterThan(0);

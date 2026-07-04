@@ -1,8 +1,10 @@
-import type { GameConfig, GameResult } from '../../core/contract';
+import type { GameConfig, GameResult, ModeId } from '../../core/contract';
+import { lerp, PROGRESSIVE_STAGES, progressiveT } from '../../core/modes';
 import { createRng, randomInt, type Rng } from '../../core/random';
 
-// Lógica pura de Snake — sin React ni canvas. Valida el bucle de tiempo real
-// que hereda Cascada en Fase 2 (PRD 11.1).
+// Lógica pura de Snake — sin React ni canvas. Implementación de referencia de
+// ADR-007 para juegos de tiempo real: tres dificultades, Tranquilo (chocar no
+// mata: te reacomoda y seguís) y Progresivo (grados que suben por comida).
 
 export interface Position {
   x: number;
@@ -11,37 +13,83 @@ export interface Position {
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
-export interface LevelParams extends Record<string, number> {
+export interface ModeParams extends Record<string, number> {
   gridSize: number;
   initialIntervalMs: number;
-  speedStepMs: number; // cuánto baja el intervalo por cada comida
+  speedStepMs: number; // cuánto baja el intervalo por cada comida (modos fijos)
   minIntervalMs: number; // piso de velocidad
   obstacleCount: number;
 }
 
-export const LEVEL_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'Fácil',
-  2: 'Medio',
-  3: 'Difícil',
-  4: 'Avanzado',
-  5: 'Experto',
+// easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior.
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard' | 'zen' | 'progressive', ModeParams> = {
+  easy: {
+    gridSize: 14,
+    initialIntervalMs: 220,
+    speedStepMs: 4,
+    minIntervalMs: 100,
+    obstacleCount: 0,
+  },
+  medium: {
+    gridSize: 16,
+    initialIntervalMs: 180,
+    speedStepMs: 6,
+    minIntervalMs: 80,
+    obstacleCount: 3,
+  },
+  hard: {
+    gridSize: 18,
+    initialIntervalMs: 140,
+    speedStepMs: 8,
+    minIntervalMs: 60,
+    obstacleCount: 10,
+  },
+  // Tranquilo: velocidad fija y suave, sin obstáculos, chocar no termina.
+  zen: {
+    gridSize: 14,
+    initialIntervalMs: 200,
+    speedStepMs: 0,
+    minIntervalMs: 200,
+    obstacleCount: 0,
+  },
+  // Progresivo: la velocidad y los obstáculos los pone el grado (stage).
+  progressive: {
+    gridSize: 16,
+    initialIntervalMs: 220,
+    speedStepMs: 0,
+    minIntervalMs: 55,
+    obstacleCount: 0,
+  },
 };
 
-export const LEVEL_PARAMS: Record<1 | 2 | 3 | 4 | 5, LevelParams> = {
-  1: { gridSize: 14, initialIntervalMs: 220, speedStepMs: 4, minIntervalMs: 100, obstacleCount: 0 },
-  2: { gridSize: 14, initialIntervalMs: 200, speedStepMs: 5, minIntervalMs: 90, obstacleCount: 0 },
-  3: { gridSize: 16, initialIntervalMs: 180, speedStepMs: 6, minIntervalMs: 80, obstacleCount: 3 },
-  4: { gridSize: 16, initialIntervalMs: 160, speedStepMs: 7, minIntervalMs: 70, obstacleCount: 6 },
-  5: { gridSize: 18, initialIntervalMs: 140, speedStepMs: 8, minIntervalMs: 60, obstacleCount: 10 },
-};
-
-export function getLevelParams(level: number): LevelParams {
-  const params = LEVEL_PARAMS[level as 1 | 2 | 3 | 4 | 5];
-  if (!params) throw new Error(`Nivel inválido: ${level}`);
+export function getModeParams(mode: ModeId): ModeParams {
+  const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
+  if (!params) throw new Error(`Modo no soportado: ${mode}`);
   return params;
 }
 
+// --- Modo progresivo ---------------------------------------------------------
+
+const FOODS_PER_STAGE = 3;
+
+/** Grado según comidas: sube uno cada 3 comidas, tope 10. */
+export function stageForFood(foodCount: number): number {
+  return Math.min(PROGRESSIVE_STAGES, Math.floor(foodCount / FOODS_PER_STAGE) + 1);
+}
+
+/** Velocidad del grado: interpola fácil→difícil y extrapola en 9-10 (ADR-007). */
+export function intervalForStage(stage: number): number {
+  const t = progressiveT(stage);
+  return Math.max(
+    MODE_PARAMS.progressive.minIntervalMs,
+    Math.round(lerp(MODE_PARAMS.easy.initialIntervalMs, 70, t)),
+  );
+}
+
+// -----------------------------------------------------------------------------
+
 export interface SnakeState {
+  mode: ModeId;
   gridSize: number;
   seed: number;
   foodCount: number; // comidas ya comidas — deriva la semilla de la próxima comida
@@ -50,9 +98,9 @@ export interface SnakeState {
   food: Position;
   obstacles: Position[];
   intervalMs: number;
-  speedStepMs: number;
-  minIntervalMs: number;
   score: number;
+  stage: number; // grado del modo progresivo; 1 en el resto
+  crashes: number; // choques en Tranquilo (no terminan la partida)
   gameOver: boolean;
 }
 
@@ -127,21 +175,25 @@ function pickFreeCell(rng: Rng, gridSize: number, occupied: Set<string>): Positi
   return cells[index] ?? { x: 0, y: 0 };
 }
 
-// Cada comida nueva usa un offset de semilla distinto y determinístico, para
-// que step() sea una función pura (mismo estado + dirección → mismo resultado).
+// Cada comida/obstáculo nuevo usa un offset de semilla distinto y determinístico,
+// para que step() sea una función pura (mismo estado + dirección → mismo resultado).
 function foodRngFor(seed: number, count: number): Rng {
   return createRng(seed + 1 + count);
 }
 
-export function createInitialState(level: number, seed: number): SnakeState {
-  const params = getLevelParams(level);
-  const { gridSize } = params;
+function centeredSnake(gridSize: number): Position[] {
   const center = Math.floor(gridSize / 2);
-  const snake: Position[] = [
+  return [
     { x: center, y: center },
     { x: center - 1, y: center },
     { x: center - 2, y: center },
   ];
+}
+
+export function createInitialState(mode: ModeId, seed: number): SnakeState {
+  const params = getModeParams(mode);
+  const { gridSize } = params;
+  const snake = centeredSnake(gridSize);
 
   const obstacleRng = createRng(seed);
   const occupied = new Set(snake.map(posKey));
@@ -155,6 +207,7 @@ export function createInitialState(level: number, seed: number): SnakeState {
   const food = pickFreeCell(foodRngFor(seed, 0), gridSize, occupied);
 
   return {
+    mode,
     gridSize,
     seed,
     foodCount: 0,
@@ -163,14 +216,30 @@ export function createInitialState(level: number, seed: number): SnakeState {
     food,
     obstacles,
     intervalMs: params.initialIntervalMs,
-    speedStepMs: params.speedStepMs,
-    minIntervalMs: params.minIntervalMs,
     score: 0,
+    stage: 1,
+    crashes: 0,
     gameOver: false,
   };
 }
 
 const POINTS_PER_FOOD = 10;
+
+// Tranquilo: chocar no termina — la víbora vuelve al centro con su largo
+// inicial, conservando puntaje y comida pendiente (reubicada si quedó abajo).
+function respawn(state: SnakeState): SnakeState {
+  const snake = centeredSnake(state.gridSize);
+  const crashes = state.crashes + 1;
+  const occupied = new Set([...snake, ...state.obstacles].map(posKey));
+  const food = occupied.has(posKey(state.food))
+    ? pickFreeCell(
+        foodRngFor(state.seed, state.foodCount + crashes * 1000),
+        state.gridSize,
+        occupied,
+      )
+    : state.food;
+  return { ...state, snake, direction: 'right', food, crashes };
+}
 
 export function step(state: SnakeState, requestedDirection: Direction): SnakeState {
   if (state.gameOver) return state;
@@ -190,14 +259,14 @@ export function step(state: SnakeState, requestedDirection: Direction): SnakeSta
     newHead.x < 0 || newHead.x >= state.gridSize || newHead.y < 0 || newHead.y >= state.gridSize;
   const hitObstacle = state.obstacles.some((o) => samePos(o, newHead));
   if (hitWall || hitObstacle) {
-    return { ...state, direction, gameOver: true };
+    return state.mode === 'zen' ? respawn(state) : { ...state, direction, gameOver: true };
   }
 
   const ateFood = samePos(newHead, state.food);
   const bodyAfterMove = ateFood ? state.snake : state.snake.slice(0, -1);
 
   if (bodyAfterMove.some((seg) => samePos(seg, newHead))) {
-    return { ...state, direction, gameOver: true };
+    return state.mode === 'zen' ? respawn(state) : { ...state, direction, gameOver: true };
   }
 
   const newSnake = [newHead, ...bodyAfterMove];
@@ -206,10 +275,31 @@ export function step(state: SnakeState, requestedDirection: Direction): SnakeSta
     return { ...state, snake: newSnake, direction };
   }
 
+  const params = getModeParams(state.mode);
   const newFoodCount = state.foodCount + 1;
-  const occupied = new Set([...newSnake, ...state.obstacles].map(posKey));
+  let { intervalMs, stage, obstacles } = state;
+
+  if (state.mode === 'progressive') {
+    // El grado sube por comida; con cada grado nuevo, más velocidad y un
+    // obstáculo más (determinístico: mismo seed, misma partida).
+    const newStage = stageForFood(newFoodCount);
+    if (newStage > stage) {
+      const occupiedNow = new Set([...newSnake, ...obstacles, state.food].map(posKey));
+      const obstacle = pickFreeCell(
+        foodRngFor(state.seed, 500 + newStage),
+        state.gridSize,
+        occupiedNow,
+      );
+      obstacles = [...obstacles, obstacle];
+    }
+    stage = newStage;
+    intervalMs = intervalForStage(newStage);
+  } else {
+    intervalMs = Math.max(params.minIntervalMs, state.intervalMs - params.speedStepMs);
+  }
+
+  const occupied = new Set([...newSnake, ...obstacles].map(posKey));
   const food = pickFreeCell(foodRngFor(state.seed, newFoodCount), state.gridSize, occupied);
-  const intervalMs = Math.max(state.minIntervalMs, state.intervalMs - state.speedStepMs);
 
   return {
     ...state,
@@ -218,6 +308,8 @@ export function step(state: SnakeState, requestedDirection: Direction): SnakeSta
     food,
     foodCount: newFoodCount,
     intervalMs,
+    stage,
+    obstacles,
     score: state.score + POINTS_PER_FOOD,
   };
 }
@@ -225,11 +317,16 @@ export function step(state: SnakeState, requestedDirection: Direction): SnakeSta
 export function buildResult(config: GameConfig, state: SnakeState, durationMs: number): GameResult {
   return {
     gameId: 'snake',
-    level: config.level,
+    mode: config.mode,
     score: state.score,
-    completed: true, // llegar a game over es un final natural del juego, no un abandono
+    completed: true, // llegar a game over (o terminar en Tranquilo) es un final natural
     durationMs,
-    metrics: { length: state.snake.length, foodEaten: state.foodCount },
+    metrics: {
+      length: state.snake.length,
+      foodEaten: state.foodCount,
+      crashes: state.crashes,
+      maxStage: state.stage,
+    },
     timestamp: new Date().toISOString(),
   };
 }

@@ -1,18 +1,19 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.7 · Julio 2026
-**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6) y catálogo listo para escalar: kit de interacción (ADR-005), audio en juegos (ADR-006), generador `npm run new-game` y suite E2E en CI.
+**Documento de requisitos de producto (PRD)** · Versión 0.8 · Julio 2026
+**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6), catálogo listo para escalar (ADR-005/006, generador, E2E) y sistema de dificultad renovado: 3 dificultades + modos Tranquilo y Progresivo (sección 7, ADR-007).
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
-| Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                                                                 |
-| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                                                                        |
-| 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro                                                |
-| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                                                                        |
-| 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular                                                         |
-| 0.5     | Julio 2026 | Auditoría integral de usabilidad táctil y de escritorio: los patrones que funcionaron y son replicables quedan documentados en la **sección 10.7** (foco automático, acción en `pointerdown`, keypad propio en pantalla, endurecimiento táctil global, partida a pantalla completa, diálogos accesibles, canvas fluido). La checklist de terminado (12.3) los incorpora |
-| 0.6     | Julio 2026 | Robustez del shell como base para escalar el catálogo: **sección 5.6** — aislamiento de fallas por juego (error boundary), frontera desconfiada para `GameResult`, persistencia acotada con retención de récords y esquema versionado, test de contrato + smoke de render sobre el registro (un juego queda cubierto al registrarse), y CI en ramas además del deploy   |
-| 0.7     | Julio 2026 | Escalabilidad del catálogo: **ADR-005** (kit de interacción `src/core/ui/` — implementación canónica de los patrones 10.7), **ADR-006** (primera ampliación del contrato: `GameProps.audio`, sonido dentro de los juegos gateado por el shell — Simon suena), generador `npm run new-game` (esqueleto compilable, testeado y registrado), y suite E2E de humo en CI     |
+| Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 0.2     | Julio 2026 | Decisiones validadas: PWA, nombre "Desafíos Mentales", Tailwind, licencia GPL-3.0, código en inglés / textos en español, juego de validación "Tiempo de reacción". Nueva dirección visual: pixel art minimalista. Repriorización del catálogo (Tetris, Snake y matemática arriba). Eliminados: 2048, Buscaminas y Kakuro                                                                                                                          |
+| 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                                                                                                                                                  |
+| 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular                                                                                                                                   |
+| 0.5     | Julio 2026 | Auditoría integral de usabilidad táctil y de escritorio: los patrones que funcionaron y son replicables quedan documentados en la **sección 10.7** (foco automático, acción en `pointerdown`, keypad propio en pantalla, endurecimiento táctil global, partida a pantalla completa, diálogos accesibles, canvas fluido). La checklist de terminado (12.3) los incorpora                                                                           |
+| 0.6     | Julio 2026 | Robustez del shell como base para escalar el catálogo: **sección 5.6** — aislamiento de fallas por juego (error boundary), frontera desconfiada para `GameResult`, persistencia acotada con retención de récords y esquema versionado, test de contrato + smoke de render sobre el registro (un juego queda cubierto al registrarse), y CI en ramas además del deploy                                                                             |
+| 0.7     | Julio 2026 | Escalabilidad del catálogo: **ADR-005** (kit de interacción `src/core/ui/` — implementación canónica de los patrones 10.7), **ADR-006** (primera ampliación del contrato: `GameProps.audio`, sonido dentro de los juegos gateado por el shell — Simon suena), generador `npm run new-game` (esqueleto compilable, testeado y registrado), y suite E2E de humo en CI                                                                               |
+| 0.8     | Julio 2026 | **ADR-007 — dificultades y modos**: los 5 niveles se reemplazan por 3 dificultades (Fácil/Medio/Difícil) + 2 modos especiales declarados por juego — **Tranquilo** (sin relojes ni game over, no compite) y **Progresivo** (10 grados de fácil a más-que-difícil, récord = hasta dónde llegaste). Sección 7 reescrita, contrato con `modes`/`ModeId`, récords migrados del esquema de niveles (v2), Aritmética y Snake como referencias completas |
 
 ---
 
@@ -147,9 +148,14 @@ Convención del proyecto: **código e identificadores en inglés; todos los text
 
 export type Category = 'memory' | 'logic' | 'math' | 'speed' | 'spatial' | 'words';
 
-export interface DifficultyLevel {
-  level: 1 | 2 | 3 | 4 | 5;
-  label: string; // Texto visible: "Fácil", "Medio", "Difícil"...
+// Dificultades y modos (ADR-007): tres dificultades obligatorias más dos
+// modos especiales opcionales, declarados por cada juego según tengan sentido.
+export type ModeId = 'easy' | 'medium' | 'hard' | 'zen' | 'progressive';
+
+export interface GameMode {
+  id: ModeId;
+  label: string; // "Fácil", "Tranquilo"... — siempre desde core/modes.ts (buildModes)
+  description?: string; // Una línea, solo para los modos especiales
   params: Record<string, number | string | boolean>;
 }
 
@@ -159,23 +165,23 @@ export interface GameMetadata {
   category: Category;
   description: string; // Una línea, en español
   version: string;
-  levels: DifficultyLevel[]; // Exactamente 5
+  modes: GameMode[]; // easy/medium/hard obligatorios; zen/progressive opcionales (ADR-007)
   estimatedSeconds: number; // Duración típica de una partida
   icon: string; // Ruta al ícono vectorial del juego
 }
 
 export interface GameConfig {
-  level: number; // 1 a 5
+  mode: ModeId;
   seed?: number; // Reproducibilidad en tests
 }
 
 export interface GameResult {
   gameId: string;
-  level: number;
+  mode: ModeId;
   score: number; // Escala libre por juego
   completed: boolean; // false si abandonó
   durationMs: number;
-  metrics: Record<string, number>; // Específicas del juego: aciertos, errores, mejorRacha...
+  metrics: Record<string, number>; // Específicas del juego: aciertos, errores, maxStage...
   timestamp: string; // ISO 8601
 }
 
@@ -259,44 +265,49 @@ El objetivo del sistema es que agregar juegos sea de bajo riesgo. Estas garantí
 1. **Aislamiento de fallas.** El componente de cada juego se monta dentro de un _error boundary_ (`GameErrorBoundary`): una excepción durante el render o un ciclo de vida del juego muestra un panel de falla con salida al catálogo, con el shell, los récords y la navegación intactos. El peor caso de un juego roto es ese panel, nunca una pantalla en blanco.
 2. **Frontera desconfiada.** El shell no confía en el `GameResult` que emite un juego: normaliza `gameId` y `level` con lo que él mismo montó (un `buildResult` copiado de otro juego no puede corromper récords ajenos), y la capa de persistencia rechaza resultados sin forma válida y normaliza números no finitos o negativos (un puntaje `NaN` no envenena las comparaciones de récord).
 3. **Persistencia acotada y tolerante.** El historial persiste con esquema versionado (con lectura del formato legado), está acotado a `MAX_STORED_RESULTS` con retención del mejor resultado por (juego, nivel) — el historial es finito, los récords no caducan —, la lectura descarta entradas corruptas en vez de romper, y la escritura tolera cuota llena o modo privado sin tirar excepción: fallar al persistir jamás rompe el cierre de una partida.
-4. **Contrato verificado por tests, automáticamente.** `registry.test.ts` valida los metadatos de todos los juegos registrados (id único en kebab-case, exactamente 5 niveles numerados, textos visibles no vacíos, ícono, duración estimada) y `registry.render.test.tsx` monta el componente de cada juego con semilla fija en tres niveles. **Registrar un juego es quedar cubierto por la batería de tests del shell** — sin escribir ni un test extra.
+4. **Contrato verificado por tests, automáticamente.** `registry.test.ts` valida los metadatos de todos los juegos registrados (id único en kebab-case, estructura de modos de ADR-007 con labels canónicos, textos visibles no vacíos, ícono, duración estimada) y `registry.render.test.tsx` monta el componente de cada juego con semilla fija **en cada modo que declara**. **Registrar un juego es quedar cubierto por la batería de tests del shell** — sin escribir ni un test extra.
 5. **CI en ramas.** Los checks completos (formato, lint, tipos, tests, build) corren en cada push a cualquier rama y en cada pull request (`ci.yml`), no solo en el deploy de `main` (`deploy.yml`): una rama rota se entera antes de mergear.
 
 ---
 
 ## 6. Requisitos funcionales
 
-| ID    | Requisito                                                                                                                  |
-| ----- | -------------------------------------------------------------------------------------------------------------------------- |
-| RF-01 | El catálogo muestra todos los juegos registrados con ícono, nombre, categoría, descripción y récord personal               |
-| RF-02 | El catálogo permite filtrar por categoría                                                                                  |
-| RF-03 | Antes de iniciar, el usuario elige nivel (1 a 5); el último nivel jugado queda preseleccionado                             |
-| RF-04 | Durante la partida hay botón de pausa (si el juego lo admite) y de salir con confirmación                                  |
-| RF-05 | Al terminar, se muestra puntaje, récord previo del nivel y si hubo récord nuevo                                            |
-| RF-06 | Todo resultado (incluidos abandonos) se persiste localmente                                                                |
-| RF-07 | La pantalla de estadísticas muestra récords por juego/nivel, últimas 20 partidas y racha de días                           |
-| RF-08 | Configuración: sonido on/off, vibración on/off, reducir animaciones, exportar datos, borrar datos (con doble confirmación) |
-| RF-09 | La app es instalable en la pantalla de inicio del celular (manifest de PWA con nombre "Desafíos Mentales")                 |
-| RF-10 | La app funciona completa sin conexión después de la primera carga (service worker)                                         |
+| ID    | Requisito                                                                                                                                                                         |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RF-01 | El catálogo muestra todos los juegos registrados con ícono, nombre, categoría, descripción y récord personal                                                                      |
+| RF-02 | El catálogo permite filtrar por categoría                                                                                                                                         |
+| RF-03 | Antes de iniciar, el usuario elige dificultad (Fácil/Medio/Difícil) o un modo especial (Tranquilo/Progresivo) si el juego lo declara; el último modo jugado queda preseleccionado |
+| RF-04 | Durante la partida hay botón de pausa (si el juego lo admite) y de salir con confirmación                                                                                         |
+| RF-05 | Al terminar, se muestra puntaje, récord previo del modo y si hubo récord nuevo (el modo Tranquilo no compite: sin récords)                                                        |
+| RF-06 | Todo resultado (incluidos abandonos) se persiste localmente                                                                                                                       |
+| RF-07 | La pantalla de estadísticas muestra récords por juego/modo, últimas 20 partidas y racha de días                                                                                   |
+| RF-08 | Configuración: sonido on/off, vibración on/off, reducir animaciones, exportar datos, borrar datos (con doble confirmación)                                                        |
+| RF-09 | La app es instalable en la pantalla de inicio del celular (manifest de PWA con nombre "Desafíos Mentales")                                                                        |
+| RF-10 | La app funciona completa sin conexión después de la primera carga (service worker)                                                                                                |
 
 ---
 
-## 7. Sistema de dificultad
+## 7. Sistema de dificultad y modos (v0.8, ADR-007)
 
-Cinco niveles por juego, definidos por **parámetros** en los metadatos (no por lógica condicional dispersa). Ejemplos del patrón:
+**Tres dificultades** — Fácil, Medio, Difícil — definidas por **parámetros** en los metadatos (no por lógica condicional dispersa), más **dos modos especiales** que cada juego declara solo si tienen sentido en su mecánica:
 
-| Juego                    | Parámetros que escalan con el nivel                                                                   |
+- **Tranquilo (`zen`)**: sin relojes que corran hacia atrás y sin game over. Cada juego lo interpreta: preguntas sin timer; en Snake chocar reacomoda la víbora y se sigue jugando; en Cascada el top-out limpia el tablero; en Simon fallar repite la ronda. **No compite**: sin récords ni "¡Récord nuevo!" — la partida queda en el historial y nada más.
+- **Progresivo (`progressive`)**: la partida recorre **10 grados** de dificultad. Los grados 1–8 interpolan el espacio Fácil→Difícil y los grados 9–10 **extrapolan más allá del Difícil actual** (curva común en `core/modes.ts`: `progressiveT`, `lerp`). En juegos de supervivencia el grado sube por logro (comidas, líneas) y se termina al perder; en juegos de preguntas la sesión es una rampa de longitud fija. Récord natural: puntaje con multiplicador por grado + métrica `maxStage` ("¿hasta dónde llegaste?").
+
+Parámetros que escalan, ejemplos del patrón:
+
+| Juego                    | Parámetros que escalan con la dificultad                                                              |
 | ------------------------ | ----------------------------------------------------------------------------------------------------- |
 | Aritmética contra reloj  | Rango numérico, operaciones incluidas (suma → división), segundos por pregunta, cantidad de preguntas |
-| Cifras                   | Magnitud del número objetivo, cantidad de números disponibles, tiempo límite, exigencia de exactitud  |
-| Snake                    | Velocidad inicial, aceleración por comida, obstáculos en niveles altos                                |
+| Cifras                   | Cantidad de números grandes, tiempo límite, magnitud del objetivo                                     |
+| Snake                    | Velocidad inicial, aceleración por comida, obstáculos                                                 |
 | Cascada (clon de Tetris) | Velocidad de caída inicial y aceleración por línea completada                                         |
 | Secuencias numéricas     | Complejidad del patrón (aritmético → geométrico → combinado), cantidad de términos visibles, tiempo   |
 | Simon                    | Velocidad de reproducción de la secuencia, longitud objetivo                                          |
 | Sudoku                   | Cantidad de celdas reveladas / técnica de resolución requerida                                        |
 | Nonograma                | Tamaño de grilla (5×5 a 15×15)                                                                        |
 
-Post-MVP: **modo progresivo** opcional por juego (la dificultad sube dentro de la misma partida hasta que el jugador falla).
+Robustez para juegos nuevos (requisito del product owner): la estructura se declara con `buildModes()` (labels y orden canónicos — imposible desviarse), el test de contrato valida los modos de todo juego registrado, y el smoke de render monta cada juego **en cada modo que declara**. Referencias completas: Aritmética (preguntas) y Snake (tiempo real) implementan los 5 modos; el resto suma Tranquilo/Progresivo juego por juego.
 
 ---
 
@@ -461,7 +472,7 @@ Las **mecánicas** de juego en general no gozan de protección de derechos de au
 ### 12.3 Checklist de "terminado" por juego (Definition of Done)
 
 - [ ] Implementa el contrato completo (`GameModule`, `GameProps`, emite `GameResult` válido).
-- [ ] Cinco niveles configurados, jugables y perceptiblemente distintos.
+- [ ] Las tres dificultades configuradas, jugables y perceptiblemente distintas; Tranquilo y Progresivo declarados donde la mecánica los admita (ADR-007).
 - [ ] Ícono vectorial propio, dibujado con la paleta del sistema.
 - [ ] Usa exclusivamente los tokens de diseño (sin colores ni fuentes ad hoc).
 - [ ] Funciona con toque y con mouse/teclado, aplicando los patrones de interacción de la sección 10.7 (acción en `pointerdown`, auto-foco al montar, atajos de teclado, keypad propio si pide números).

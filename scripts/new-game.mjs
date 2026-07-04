@@ -43,7 +43,7 @@ const name = visibleName ?? pascal;
 // interacción, contrato — para reemplazarla por la mecánica real.
 // ---------------------------------------------------------------------------
 
-const logicTs = `import type { GameConfig, GameResult } from '../../core/contract';
+const logicTs = `import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { createRng, randomInt } from '../../core/random';
 
 // Lógica pura de "${name}" — sin React ni DOM (PRD 4.2.3).
@@ -55,25 +55,17 @@ export interface LevelParams extends Record<string, number> {
   goalMax: number;
 }
 
-export const LEVEL_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'Fácil',
-  2: 'Medio',
-  3: 'Difícil',
-  4: 'Avanzado',
-  5: 'Experto',
+// Las tres dificultades obligatorias (ADR-007). Para sumar Tranquilo o
+// Progresivo: agregá los parámetros acá y declaralos en buildModes (index.ts).
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
+  easy: { goalMin: 3, goalMax: 5 },
+  medium: { goalMin: 8, goalMax: 12 },
+  hard: { goalMin: 17, goalMax: 25 },
 };
 
-export const LEVEL_PARAMS: Record<1 | 2 | 3 | 4 | 5, LevelParams> = {
-  1: { goalMin: 3, goalMax: 5 },
-  2: { goalMin: 5, goalMax: 8 },
-  3: { goalMin: 8, goalMax: 12 },
-  4: { goalMin: 12, goalMax: 17 },
-  5: { goalMin: 17, goalMax: 25 },
-};
-
-export function getLevelParams(level: number): LevelParams {
-  const params = LEVEL_PARAMS[level as 1 | 2 | 3 | 4 | 5];
-  if (!params) throw new Error(\`Nivel inválido: \${level}\`);
+export function getModeParams(mode: ModeId): LevelParams {
+  const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
+  if (!params) throw new Error(\`Modo no soportado: \${mode}\`);
   return params;
 }
 
@@ -82,8 +74,8 @@ export interface GameState {
   taps: number;
 }
 
-export function createInitialState(level: number, seed: number): GameState {
-  const params = getLevelParams(level);
+export function createInitialState(mode: ModeId, seed: number): GameState {
+  const params = getModeParams(mode);
   const rng = createRng(seed);
   return { goal: randomInt(rng, params.goalMin, params.goalMax), taps: 0 };
 }
@@ -102,7 +94,7 @@ export function computeScore(state: GameState): number {
 export function buildResult(config: GameConfig, state: GameState, durationMs: number): GameResult {
   return {
     gameId: '${id}',
-    level: config.level,
+    mode: config.mode,
     score: computeScore(state),
     completed: true,
     durationMs,
@@ -125,7 +117,7 @@ export function ${pascal}Game({ config, onFinish, audio }: GameProps) {
   const containerRef = useAutoFocus<HTMLDivElement>();
   const sessionStartRef = useRef(performance.now());
   const [state, setState] = useState<GameState>(() =>
-    createInitialState(config.level, config.seed ?? Date.now()),
+    createInitialState(config.mode, config.seed ?? Date.now()),
   );
 
   function tap() {
@@ -171,16 +163,11 @@ export function ${pascal}Game({ config, onFinish, audio }: GameProps) {
 }
 `;
 
-const indexTs = `import type { DifficultyLevel, GameModule } from '../../core/contract';
+const indexTs = `import type { GameModule } from '../../core/contract';
+import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { LEVEL_LABELS, LEVEL_PARAMS } from './logic';
+import { MODE_PARAMS } from './logic';
 import { ${pascal}Game } from './ui';
-
-const levels: DifficultyLevel[] = ([1, 2, 3, 4, 5] as const).map((level) => ({
-  level,
-  label: LEVEL_LABELS[level],
-  params: LEVEL_PARAMS[level],
-}));
 
 export const ${camel}: GameModule = {
   metadata: {
@@ -191,7 +178,12 @@ export const ${camel}: GameModule = {
     // TODO: una línea en español que describa la mecánica real.
     description: 'Esqueleto generado: contá los toques exactos y enviá.',
     version: '0.1.0',
-    levels,
+    // Tranquilo/Progresivo se declaran acá cuando el juego los implemente.
+    modes: buildModes({
+      easy: MODE_PARAMS.easy,
+      medium: MODE_PARAMS.medium,
+      hard: MODE_PARAMS.hard,
+    }),
     estimatedSeconds: 60,
     icon,
   },
@@ -204,7 +196,7 @@ import {
   buildResult,
   computeScore,
   createInitialState,
-  getLevelParams,
+  getModeParams,
   registerTap,
 } from './logic';
 
@@ -214,13 +206,13 @@ const SEED = 123;
 
 describe('${id}: generación', () => {
   it('misma semilla, misma partida', () => {
-    expect(createInitialState(3, SEED)).toEqual(createInitialState(3, SEED));
+    expect(createInitialState('medium', SEED)).toEqual(createInitialState('medium', SEED));
   });
 
-  it('el objetivo respeta los parámetros de cada nivel', () => {
-    for (const level of [1, 2, 3, 4, 5]) {
-      const params = getLevelParams(level);
-      const state = createInitialState(level, SEED);
+  it('el objetivo respeta los parámetros de cada modo', () => {
+    for (const mode of ['easy', 'medium', 'hard'] as const) {
+      const params = getModeParams(mode);
+      const state = createInitialState(mode, SEED);
       expect(state.goal).toBeGreaterThanOrEqual(params.goalMin);
       expect(state.goal).toBeLessThanOrEqual(params.goalMax);
     }
@@ -229,24 +221,24 @@ describe('${id}: generación', () => {
 
 describe('${id}: jugada y puntaje', () => {
   it('registerTap incrementa sin mutar el estado anterior', () => {
-    const state = createInitialState(1, SEED);
+    const state = createInitialState('easy', SEED);
     const next = registerTap(state);
     expect(next.taps).toBe(state.taps + 1);
     expect(state.taps).toBe(0);
   });
 
   it('puntaje máximo al acertar exacto, decreciente al pasarse', () => {
-    let state = createInitialState(1, SEED);
+    let state = createInitialState('easy', SEED);
     for (let i = 0; i < state.goal; i += 1) state = registerTap(state);
     expect(computeScore(state)).toBe(100);
     expect(computeScore(registerTap(state))).toBeLessThan(100);
   });
 
   it('buildResult emite un GameResult válido', () => {
-    const state = createInitialState(2, SEED);
-    const result = buildResult({ level: 2, seed: SEED }, state, 1234);
+    const state = createInitialState('easy', SEED);
+    const result = buildResult({ mode: 'easy', seed: SEED }, state, 1234);
     expect(result.gameId).toBe('${id}');
-    expect(result.level).toBe(2);
+    expect(result.mode).toBe('easy');
     expect(Number.isFinite(result.score)).toBe(true);
     expect(result.completed).toBe(true);
   });

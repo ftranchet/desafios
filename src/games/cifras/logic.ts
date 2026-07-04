@@ -1,4 +1,4 @@
-import type { GameConfig, GameResult } from '../../core/contract';
+import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { createRng, randomInt, type Rng } from '../../core/random';
 
 // Lógica pura del juego "Cifras" — formato numbers round de Countdown.
@@ -14,25 +14,16 @@ export interface LevelParams extends Record<string, number> {
   targetMax: number;
 }
 
-export const LEVEL_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'Fácil',
-  2: 'Medio',
-  3: 'Difícil',
-  4: 'Avanzado',
-  5: 'Experto',
+// easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
+  easy: { largeCount: 1, timeLimitMs: 90_000, targetMin: 100, targetMax: 300 },
+  medium: { largeCount: 2, timeLimitMs: 60_000, targetMin: 100, targetMax: 700 },
+  hard: { largeCount: 3, timeLimitMs: 45_000, targetMin: 100, targetMax: 999 },
 };
 
-export const LEVEL_PARAMS: Record<1 | 2 | 3 | 4 | 5, LevelParams> = {
-  1: { largeCount: 1, timeLimitMs: 90_000, targetMin: 100, targetMax: 300 },
-  2: { largeCount: 1, timeLimitMs: 75_000, targetMin: 100, targetMax: 500 },
-  3: { largeCount: 2, timeLimitMs: 60_000, targetMin: 100, targetMax: 700 },
-  4: { largeCount: 2, timeLimitMs: 50_000, targetMin: 100, targetMax: 999 },
-  5: { largeCount: 3, timeLimitMs: 45_000, targetMin: 100, targetMax: 999 },
-};
-
-export function getLevelParams(level: number): LevelParams {
-  const params = LEVEL_PARAMS[level as 1 | 2 | 3 | 4 | 5];
-  if (!params) throw new Error(`Nivel inválido: ${level}`);
+export function getModeParams(mode: ModeId): LevelParams {
+  const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
+  if (!params) throw new Error(`Modo no soportado: ${mode}`);
   return params;
 }
 
@@ -56,8 +47,8 @@ export interface Puzzle {
   target: number;
 }
 
-export function generatePuzzle(level: number, seed: number): Puzzle {
-  const params = getLevelParams(level);
+export function generatePuzzle(mode: ModeId, seed: number): Puzzle {
+  const params = getModeParams(mode);
   const rng = createRng(seed);
   const large = drawWithoutReplacement(rng, LARGE_POOL, params.largeCount);
   const small = drawWithoutReplacement(rng, SMALL_POOL, 6 - params.largeCount);
@@ -137,11 +128,11 @@ export function buildResult(
   durationMs: number,
   completed: boolean,
 ): GameResult {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
   const { score, metrics } = computeScore(target, achieved, timeRemainingMs, params.timeLimitMs);
   return {
     gameId: 'cifras',
-    level: config.level,
+    mode: config.mode,
     score,
     completed,
     durationMs,

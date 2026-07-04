@@ -9,19 +9,19 @@ import {
 
 describe('createRoundPlans', () => {
   it('es determinístico con la misma semilla', () => {
-    const a = createRoundPlans(3, 42);
-    const b = createRoundPlans(3, 42);
+    const a = createRoundPlans('medium', 42);
+    const b = createRoundPlans('medium', 42);
     expect(a).toEqual(b);
   });
 
   it('produce cronogramas distintos con semillas distintas', () => {
-    const a = createRoundPlans(3, 1);
-    const b = createRoundPlans(3, 2);
+    const a = createRoundPlans('medium', 1);
+    const b = createRoundPlans('medium', 2);
     expect(a).not.toEqual(b);
   });
 
   it('respeta la cantidad de rondas y el rango de demora del nivel', () => {
-    const plans = createRoundPlans(1, 7);
+    const plans = createRoundPlans('easy', 7);
     expect(plans).toHaveLength(5);
     for (const plan of plans) {
       expect(plan.delayMs).toBeGreaterThanOrEqual(1000);
@@ -31,7 +31,7 @@ describe('createRoundPlans', () => {
   });
 
   it('lanza si el nivel es inválido', () => {
-    expect(() => createRoundPlans(6, 1)).toThrow();
+    expect(() => createRoundPlans('zen' as never, 1)).toThrow();
   });
 });
 
@@ -102,9 +102,9 @@ describe('computeScore', () => {
 describe('buildResult', () => {
   it('arma un GameResult válido', () => {
     const outcomes: RoundOutcome[] = [{ isDecoy: false, correct: true, reactionMs: 250 }];
-    const result = buildResult({ level: 2, seed: 1 }, outcomes, 5000, true);
+    const result = buildResult({ mode: 'easy', seed: 1 }, outcomes, 5000, true);
     expect(result.gameId).toBe('reaction-time');
-    expect(result.level).toBe(2);
+    expect(result.mode).toBe('easy');
     expect(result.completed).toBe(true);
     expect(result.durationMs).toBe(5000);
     expect(result.score).toBeGreaterThan(0);

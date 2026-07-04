@@ -22,7 +22,10 @@ export function ResultPanel({
       <p className="font-display text-xl font-extrabold tracking-tight text-accent-primary">
         {result.score}
       </p>
-      {isNewRecord ? (
+      {/* El modo Tranquilo no compite (ADR-007): sin récords ni fanfarria. */}
+      {result.mode === 'zen' ? (
+        <p className="text-sm text-text-secondary">{strings.result.zenNote}</p>
+      ) : isNewRecord ? (
         <p className="font-display text-sm font-semibold text-accent-success">
           {strings.result.newRecord}
         </p>

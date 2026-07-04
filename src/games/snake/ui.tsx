@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PROGRESSIVE_STAGES } from '../../core/modes';
 import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
@@ -67,7 +68,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
 
-  const [score, setScore] = useState(0);
+  const [hud, setHud] = useState({ score: 0, stage: 1 });
 
   function finishGame() {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
@@ -94,7 +95,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
         : consumeDirection(current.direction, directionQueueRef.current);
     const next = step(current, direction);
     stateRef.current = next;
-    setScore(next.score);
+    setHud({ score: next.score, stage: next.stage });
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -117,12 +118,12 @@ export function SnakeGame({ config, onFinish }: GameProps) {
       ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    const initial = createInitialState(config.level, config.seed ?? Date.now());
+    const initial = createInitialState(config.mode, config.seed ?? Date.now());
     stateRef.current = initial;
     directionQueueRef.current = [];
     targetRef.current = null;
     sessionStartRef.current = performance.now();
-    setScore(0);
+    setHud({ score: 0, stage: 1 });
 
     const ctx = canvas?.getContext('2d');
     if (ctx) drawState(ctx, initial);
@@ -189,7 +190,14 @@ export function SnakeGame({ config, onFinish }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <p className="font-display text-lg font-extrabold text-text-primary">Puntaje: {score}</p>
+      <p className="font-display text-lg font-extrabold text-text-primary">
+        Puntaje: {hud.score}
+        {config.mode === 'progressive' && (
+          <span className="ml-3 text-sm font-semibold text-text-secondary">
+            Grado {hud.stage}/{PROGRESSIVE_STAGES}
+          </span>
+        )}
+      </p>
       {/* Ancho fluido con tope: en celulares angostos (360px) el tablero no
           desborda; el buffer interno queda fijo y el navegador lo escala. */}
       <canvas
@@ -235,6 +243,12 @@ export function SnakeGame({ config, onFinish }: GameProps) {
           ▼
         </PressButton>
       </div>
+      {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
+      {config.mode === 'zen' && (
+        <PressButton variant="primary" ariaLabel="Terminar la partida" onPress={finishGame}>
+          Terminar
+        </PressButton>
+      )}
       <p className="max-w-xs text-center text-sm text-text-secondary">
         Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los botones o las
         flechas del teclado.

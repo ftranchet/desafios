@@ -168,7 +168,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
       ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    const initial = createInitialState(config.level, config.seed ?? Date.now());
+    const initial = createInitialState(config.mode, config.seed ?? Date.now());
     sessionStartRef.current = performance.now();
     render(initial);
     scheduleTick(initial.intervalMs);

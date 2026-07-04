@@ -4,7 +4,7 @@ import { useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   createRoundPlans,
-  getLevelParams,
+  getModeParams,
   resolveRoundTap,
   type RoundOutcome,
   type RoundPlan,
@@ -23,7 +23,7 @@ const PHASE_BG: Record<Exclude<Phase, 'feedback'>, string> = {
 };
 
 export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
 
   // Foco al área de juego: Espacio/Enter empiezan y responden desde el
   // arranque, sin exigir un clic previo (RNF-11).
@@ -118,7 +118,7 @@ export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   }
 
   function beginGame() {
-    plansRef.current = createRoundPlans(config.level, config.seed ?? Date.now());
+    plansRef.current = createRoundPlans(config.mode, config.seed ?? Date.now());
     outcomesRef.current = [];
     sessionStartRef.current = performance.now();
     setRoundIndex(0);

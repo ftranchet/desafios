@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { GameAudio, GameResult } from '../../core/contract';
+import type { GameAudio, GameResult, ModeId } from '../../core/contract';
 import { getGameById } from '../../core/registry';
 import { playSound, playTone, warmUpAudio } from '../../core/sound';
 import { storage } from '../../core/storage';
@@ -8,13 +8,13 @@ import { vibrate } from '../../core/vibration';
 import { strings } from '../../i18n/es';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameErrorBoundary } from '../components/GameErrorBoundary';
-import { LevelPicker } from '../components/LevelPicker';
+import { ModePicker } from '../components/ModePicker';
 import { ResultPanel } from '../components/ResultPanel';
 import { useSettingsStore } from '../store/useSettingsStore';
 
-type ScreenPhase = 'select-level' | 'playing' | 'result';
+type ScreenPhase = 'select-mode' | 'playing' | 'result';
 
-const DEFAULT_LEVEL = 3;
+const DEFAULT_MODE: ModeId = 'medium';
 
 export function GameScreen() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -26,11 +26,17 @@ export function GameScreen() {
   const soundEnabled = useSettingsStore((s) => s.sound);
   const vibrationEnabled = useSettingsStore((s) => s.vibration);
 
-  const initialLevel =
-    lastPlayed && lastPlayed.gameId === gameId ? lastPlayed.level : DEFAULT_LEVEL;
+  // El último modo jugado se preselecciona (RF-03) solo si el juego lo sigue
+  // declarando — un juego puede retirar un modo entre versiones.
+  const initialMode =
+    lastPlayed &&
+    lastPlayed.gameId === gameId &&
+    game?.metadata.modes.some((m) => m.id === lastPlayed.mode)
+      ? lastPlayed.mode
+      : DEFAULT_MODE;
 
-  const [phase, setPhase] = useState<ScreenPhase>('select-level');
-  const [level, setLevel] = useState(initialLevel);
+  const [phase, setPhase] = useState<ScreenPhase>('select-mode');
+  const [mode, setMode] = useState<ModeId>(initialMode);
   const [result, setResult] = useState<GameResult | null>(null);
   const [previousBest, setPreviousBest] = useState<number | null>(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
@@ -61,33 +67,33 @@ export function GameScreen() {
     // Este tap es un gesto directo: desbloquea el audio para que los efectos
     // que se disparan después (desde timers/tick) suenen en iOS/Safari.
     if (soundEnabled) warmUpAudio();
-    const best = storage.getBest(game.metadata.id, level);
+    const best = storage.getBest(game.metadata.id, mode);
     setPreviousBest(best ? best.score : null);
-    setLastPlayed({ gameId: game.metadata.id, level });
+    setLastPlayed({ gameId: game.metadata.id, mode });
     setSessionStart(performance.now());
     setPhase('playing');
   }
 
   function handleFinish(gameResult: GameResult) {
     if (!game) return;
-    // Frontera desconfiada (PRD 5.6): el shell conoce el juego y el nivel que
+    // Frontera desconfiada (PRD 5.6): el shell conoce el juego y el modo que
     // montó — no depende de que el juego los devuelva bien. Un buildResult
-    // copiado de otro juego con el gameId viejo no puede corromper récords.
-    if (gameResult.gameId !== game.metadata.id || gameResult.level !== level) {
+    // copiado de otro juego no puede corromper récords.
+    if (gameResult.gameId !== game.metadata.id || gameResult.mode !== mode) {
       console.warn(
-        `GameResult inconsistente (gameId="${gameResult.gameId}", level=${gameResult.level}); ` +
-          `se normaliza a "${game.metadata.id}" nivel ${level}.`,
+        `GameResult inconsistente (gameId="${gameResult.gameId}", mode=${gameResult.mode}); ` +
+          `se normaliza a "${game.metadata.id}" modo ${mode}.`,
       );
     }
     const result: GameResult = {
       ...gameResult,
       gameId: game.metadata.id,
-      level,
+      mode,
     };
     storage.saveResult(result);
-    // Récord solo si supera el mejor puntaje previo (o 0 si es la primera vez):
-    // así una primera partida perdida con 0 no se marca como récord nuevo.
-    const isRecord = result.score > (previousBest ?? 0);
+    // Récord solo si supera el mejor puntaje previo (o 0 si es la primera vez).
+    // El modo Tranquilo no compite (ADR-007): nunca marca récord.
+    const isRecord = mode !== 'zen' && result.score > (previousBest ?? 0);
     if (soundEnabled) {
       playSound(isRecord ? 'record' : result.completed ? 'success' : 'error');
     }
@@ -103,7 +109,7 @@ export function GameScreen() {
     const durationMs = Math.round(performance.now() - sessionStart);
     storage.saveResult({
       gameId: game.metadata.id,
-      level,
+      mode,
       score: 0,
       completed: false,
       durationMs,
@@ -117,7 +123,7 @@ export function GameScreen() {
 
   function handleRetry() {
     setResult(null);
-    setPhase('select-level');
+    setPhase('select-mode');
   }
 
   return (
@@ -151,11 +157,11 @@ export function GameScreen() {
         )}
       </header>
 
-      {phase === 'select-level' && (
-        <LevelPicker
-          levels={game.metadata.levels}
-          selectedLevel={level}
-          onSelect={setLevel}
+      {phase === 'select-mode' && (
+        <ModePicker
+          modes={game.metadata.modes}
+          selectedMode={mode}
+          onSelect={setMode}
           onPlay={handlePlay}
         />
       )}
@@ -163,7 +169,7 @@ export function GameScreen() {
       {phase === 'playing' && (
         <GameErrorBoundary onExit={() => navigate('/')}>
           <game.Component
-            config={{ level }}
+            config={{ mode }}
             onFinish={handleFinish}
             onQuit={handleAbandon}
             audio={gameAudio}

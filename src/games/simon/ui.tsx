@@ -4,7 +4,7 @@ import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   createInitialState,
-  getLevelParams,
+  getModeParams,
   submitTap,
   type SimonState,
 } from './logic';
@@ -26,12 +26,12 @@ const START_DELAY_MS = 500;
 type Phase = 'playback' | 'input';
 
 export function SimonGame({ config, onFinish, audio }: GameProps) {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
 
   // Foco al contenedor: las teclas 1-4 responden desde la primera ronda,
   // sin exigir tabular hasta los pads (RNF-11).
   const containerRef = useAutoFocus<HTMLDivElement>();
-  const stateRef = useRef<SimonState>(createInitialState(config.level, config.seed ?? Date.now()));
+  const stateRef = useRef<SimonState>(createInitialState(config.mode, config.seed ?? Date.now()));
   const sessionStartRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
 

@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { ModeId } from '../../core/contract';
+import { isModeId, levelToMode } from '../../core/modes';
 
 // Único estado global del shell (PRD 4.2, principio 6): preferencias del
-// usuario y último juego jugado (para preseleccionar nivel, RF-03). Los
+// usuario y último juego jugado (para preseleccionar el modo, RF-03). Los
 // juegos nunca acceden a este store directamente.
 
 export interface LastPlayed {
   gameId: string;
-  level: number;
+  mode: ModeId;
 }
 
 interface SettingsState {
@@ -35,11 +37,26 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'dm:settings',
-      // Versión explícita del esquema persistido: deja listo el mecanismo de
-      // migración para cambios futuros. La forma 0→1 no cambió, así que la
-      // migración conserva el estado guardado tal cual.
-      version: 1,
-      migrate: (persisted) => persisted as SettingsState,
+      // v2 (ADR-007): lastPlayed guarda el modo en vez del nivel numérico.
+      version: 2,
+      migrate: (persisted) => {
+        const state = persisted as Partial<SettingsState> & {
+          lastPlayed?: { gameId?: string; level?: number; mode?: unknown } | null;
+        };
+        const last = state.lastPlayed;
+        if (last && typeof last.gameId === 'string') {
+          if (isModeId(last.mode)) {
+            state.lastPlayed = { gameId: last.gameId, mode: last.mode };
+          } else if (typeof last.level === 'number') {
+            state.lastPlayed = { gameId: last.gameId, mode: levelToMode(last.level) };
+          } else {
+            state.lastPlayed = null;
+          }
+        } else {
+          state.lastPlayed = null;
+        }
+        return state as SettingsState;
+      },
     },
   ),
 );

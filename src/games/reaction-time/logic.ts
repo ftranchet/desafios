@@ -1,4 +1,4 @@
-import type { GameConfig, GameResult } from '../../core/contract';
+import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { chance, createRng, randomInt } from '../../core/random';
 
 // Lógica pura del juego "Tiempo de reacción" — sin React ni DOM (PRD sección 4.2.3).
@@ -13,25 +13,16 @@ export interface LevelParams {
   [key: string]: number; // index signature para encajar con DifficultyLevel['params']
 }
 
-export const LEVEL_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'Fácil',
-  2: 'Medio',
-  3: 'Difícil',
-  4: 'Avanzado',
-  5: 'Experto',
+// easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
+  easy: { rounds: 5, minDelayMs: 1000, maxDelayMs: 3000, decoyChance: 0 },
+  medium: { rounds: 7, minDelayMs: 600, maxDelayMs: 2200, decoyChance: 0.2 },
+  hard: { rounds: 10, minDelayMs: 400, maxDelayMs: 1800, decoyChance: 0.5 },
 };
 
-export const LEVEL_PARAMS: Record<1 | 2 | 3 | 4 | 5, LevelParams> = {
-  1: { rounds: 5, minDelayMs: 1000, maxDelayMs: 3000, decoyChance: 0 },
-  2: { rounds: 6, minDelayMs: 800, maxDelayMs: 2500, decoyChance: 0 },
-  3: { rounds: 7, minDelayMs: 600, maxDelayMs: 2200, decoyChance: 0.2 },
-  4: { rounds: 8, minDelayMs: 500, maxDelayMs: 2000, decoyChance: 0.35 },
-  5: { rounds: 10, minDelayMs: 400, maxDelayMs: 1800, decoyChance: 0.5 },
-};
-
-export function getLevelParams(level: number): LevelParams {
-  const params = LEVEL_PARAMS[level as 1 | 2 | 3 | 4 | 5];
-  if (!params) throw new Error(`Nivel inválido: ${level}`);
+export function getModeParams(mode: ModeId): LevelParams {
+  const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
+  if (!params) throw new Error(`Modo no soportado: ${mode}`);
   return params;
 }
 
@@ -40,8 +31,8 @@ export interface RoundPlan {
   isDecoy: boolean; // true = el cambio es un color señuelo que no hay que tocar
 }
 
-export function createRoundPlans(level: number, seed: number): RoundPlan[] {
-  const params = getLevelParams(level);
+export function createRoundPlans(mode: ModeId, seed: number): RoundPlan[] {
+  const params = getModeParams(mode);
   const rng = createRng(seed);
   const plans: RoundPlan[] = [];
   for (let i = 0; i < params.rounds; i += 1) {
@@ -135,7 +126,7 @@ export function buildResult(
   const { score, metrics } = computeScore(outcomes);
   return {
     gameId: 'reaction-time',
-    level: config.level,
+    mode: config.mode,
     score,
     completed,
     durationMs,

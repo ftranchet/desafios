@@ -1,4 +1,4 @@
-import type { GameConfig, GameResult } from '../../core/contract';
+import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { chance, createRng, pick, randomInt, type Rng } from '../../core/random';
 
 // Lógica pura de "Estimación relámpago" — sin React ni DOM. Decidir rápido
@@ -13,25 +13,16 @@ export interface LevelParams extends Record<string, number | string> {
   roundCount: number;
 }
 
-export const LEVEL_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'Fácil',
-  2: 'Medio',
-  3: 'Difícil',
-  4: 'Avanzado',
-  5: 'Experto',
+// easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
+export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
+  easy: { complexity: 'number', range: 50, secondsPerRound: 4, roundCount: 10 },
+  medium: { complexity: 'mixed', range: 30, secondsPerRound: 3.5, roundCount: 12 },
+  hard: { complexity: 'product', range: 15, secondsPerRound: 2.5, roundCount: 15 },
 };
 
-export const LEVEL_PARAMS: Record<1 | 2 | 3 | 4 | 5, LevelParams> = {
-  1: { complexity: 'number', range: 50, secondsPerRound: 4, roundCount: 10 },
-  2: { complexity: 'sum', range: 30, secondsPerRound: 4, roundCount: 10 },
-  3: { complexity: 'mixed', range: 30, secondsPerRound: 3.5, roundCount: 12 },
-  4: { complexity: 'product', range: 12, secondsPerRound: 3, roundCount: 12 },
-  5: { complexity: 'product', range: 15, secondsPerRound: 2.5, roundCount: 15 },
-};
-
-export function getLevelParams(level: number): LevelParams {
-  const params = LEVEL_PARAMS[level as 1 | 2 | 3 | 4 | 5];
-  if (!params) throw new Error(`Nivel inválido: ${level}`);
+export function getModeParams(mode: ModeId): LevelParams {
+  const params = MODE_PARAMS[mode as keyof typeof MODE_PARAMS];
+  if (!params) throw new Error(`Modo no soportado: ${mode}`);
   return params;
 }
 
@@ -78,8 +69,8 @@ function generateExpression(complexity: ExpressionComplexity, range: number, rng
   }
 }
 
-export function generateRound(level: number, rng: Rng): Round {
-  const params = getLevelParams(level);
+export function generateRound(mode: ModeId, rng: Rng): Round {
+  const params = getModeParams(mode);
   const left = generateExpression(params.complexity, params.range, rng);
   let right = generateExpression(params.complexity, params.range, rng);
   let attempts = 0;
@@ -94,12 +85,12 @@ export function generateRound(level: number, rng: Rng): Round {
   return { left, right };
 }
 
-export function generateSession(level: number, seed: number): Round[] {
-  const params = getLevelParams(level);
+export function generateSession(mode: ModeId, seed: number): Round[] {
+  const params = getModeParams(mode);
   const rng = createRng(seed);
   const rounds: Round[] = [];
   for (let i = 0; i < params.roundCount; i += 1) {
-    rounds.push(generateRound(level, rng));
+    rounds.push(generateRound(mode, rng));
   }
   return rounds;
 }
@@ -164,11 +155,11 @@ export function buildResult(
   durationMs: number,
   completed: boolean,
 ): GameResult {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
   const { score, metrics } = computeScore(answers, params.secondsPerRound);
   return {
     gameId: 'quick-estimate',
-    level: config.level,
+    mode: config.mode,
     score,
     completed,
     durationMs,

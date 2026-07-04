@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.9.0] — Dificultades y modos: Fácil/Medio/Difícil + Tranquilo y Progresivo (ADR-007)
+
+### Cambiado
+
+- **Los 5 niveles se reemplazan por 3 dificultades + 2 modos especiales.** Fácil/Medio/Difícil (equivalentes a los niveles 1/3/5 anteriores) más **Tranquilo** — sin relojes ni game over, no compite: sin récords ni fanfarria — y **Progresivo** — la partida recorre 10 grados de dificultad, del más fácil a más allá del Difícil actual (grados 9-10 extrapolan), con récord natural "¿hasta dónde llegaste?" (`maxStage`).
+- **Los modos se declaran por juego** (`buildModes`, `src/core/modes.ts`): todos ofrecen las 3 dificultades; Tranquilo y Progresivo solo donde tienen sentido. **Aritmética contra reloj** (preguntas) y **Snake** (tiempo real) son las referencias con los 5 modos completos: en Snake Tranquilo chocar reacomoda la víbora y seguís (con botón "Terminar"), y en Progresivo cada 3 comidas sube el grado, acelera y aparece un obstáculo. Tiempo de reacción no declara Tranquilo (el juego ES un reloj). El resto suma sus modos especiales en próximas sesiones.
+- **Contrato v2 (ADR-007)**: `GameMetadata.modes`, `GameConfig.mode` y `GameResult.mode` reemplazan a los niveles numéricos. El test de contrato valida la estructura de modos de todo juego registrado y el smoke de render monta cada juego en cada modo que declara — declarar un modo es quedar testeado en ese modo.
+- **Récords e historial migran solos** (esquema v2 sobre el mecanismo versionado de 0.7.0): nivel 1-2 → Fácil, 3 → Medio, 4-5 → Difícil, conservando puntajes; `lastPlayed` migra igual. El selector nuevo muestra las dificultades como fila de 3 y los modos especiales como tarjetas con descripción.
+- Generador `npm run new-game` actualizado a la estructura de modos (validado generando un juego de prueba); PRD sección 7 reescrita, RF-03/05/07 y checklist 12.3 actualizados.
+
 ## [0.8.0] — Escalabilidad del catálogo: kit de interacción, audio en juegos, generador y E2E
 
 ### Agregado

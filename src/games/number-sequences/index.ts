@@ -1,23 +1,14 @@
-import type { DifficultyLevel, GameModule } from '../../core/contract';
+import type { GameModule } from '../../core/contract';
+import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { LEVEL_LABELS, LEVEL_PARAMS } from './logic';
+import { MODE_PARAMS, type LevelParams } from './logic';
 import { NumberSequencesGame } from './ui';
 
-// DifficultyLevel.params solo admite valores primitivos (contrato, sección 5.2);
-// `patternTypes` (array) se serializa a texto acá. La lógica real usa LEVEL_PARAMS.
-const levels: DifficultyLevel[] = ([1, 2, 3, 4, 5] as const).map((level) => {
-  const params = LEVEL_PARAMS[level];
-  return {
-    level,
-    label: LEVEL_LABELS[level],
-    params: {
-      patternTypes: params.patternTypes.join(','),
-      termCount: params.termCount,
-      secondsPerQuestion: params.secondsPerQuestion,
-      questionCount: params.questionCount,
-    },
-  };
-});
+// GameMode.params solo admite valores primitivos (contrato, sección 5.2);
+// `patternTypes` (array) se serializa a texto acá. La lógica usa MODE_PARAMS.
+function toMeta(params: LevelParams) {
+  return { ...params, patternTypes: params.patternTypes.join(',') };
+}
 
 export const numberSequences: GameModule = {
   metadata: {
@@ -25,8 +16,12 @@ export const numberSequences: GameModule = {
     name: 'Secuencias numéricas',
     category: 'math',
     description: 'Detectá el patrón e indicá el siguiente término.',
-    version: '1.0.0',
-    levels,
+    version: '2.0.0',
+    modes: buildModes({
+      easy: toMeta(MODE_PARAMS.easy),
+      medium: toMeta(MODE_PARAMS.medium),
+      hard: toMeta(MODE_PARAMS.hard),
+    }),
     estimatedSeconds: 80,
     icon,
   },

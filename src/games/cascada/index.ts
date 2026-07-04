@@ -1,13 +1,8 @@
-import type { DifficultyLevel, GameModule } from '../../core/contract';
+import type { GameModule } from '../../core/contract';
+import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { LEVEL_LABELS, LEVEL_PARAMS } from './logic';
+import { MODE_PARAMS } from './logic';
 import { CascadaGame } from './ui';
-
-const levels: DifficultyLevel[] = ([1, 2, 3, 4, 5] as const).map((level) => ({
-  level,
-  label: LEVEL_LABELS[level],
-  params: LEVEL_PARAMS[level],
-}));
 
 export const cascada: GameModule = {
   metadata: {
@@ -15,8 +10,14 @@ export const cascada: GameModule = {
     name: 'Cascada',
     category: 'spatial',
     description: 'Encajá las piezas que caen y completá líneas.',
-    version: '1.0.0',
-    levels,
+    version: '2.0.0',
+    // Tranquilo y Progresivo llegan en una próxima sesión (ADR-007): el juego
+    // declara solo lo que implementa y el selector muestra lo declarado.
+    modes: buildModes({
+      easy: MODE_PARAMS.easy,
+      medium: MODE_PARAMS.medium,
+      hard: MODE_PARAMS.hard,
+    }),
     estimatedSeconds: 120,
     icon,
   },

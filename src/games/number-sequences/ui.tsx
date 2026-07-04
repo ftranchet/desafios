@@ -4,7 +4,7 @@ import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../c
 import {
   buildResult,
   generateSession,
-  getLevelParams,
+  getModeParams,
   type AnswerRecord,
   type SequenceQuestion,
 } from './logic';
@@ -17,7 +17,7 @@ type Phase = 'question' | 'feedback';
 const DIGIT_ROWS = ['7', '8', '9', '4', '5', '6', '1', '2', '3'];
 
 export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
 
   // Foco al contenedor: en escritorio se puede tipear la respuesta con el
   // teclado físico desde la primera pregunta, sin clic previo (RNF-11).
@@ -48,7 +48,7 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
   useEffect(() => clearTimers, []);
 
   useEffect(() => {
-    questionsRef.current = generateSession(config.level, config.seed ?? Date.now());
+    questionsRef.current = generateSession(config.mode, config.seed ?? Date.now());
     answersRef.current = [];
     sessionStartRef.current = performance.now();
     startQuestion(0);

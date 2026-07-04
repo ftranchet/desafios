@@ -1,13 +1,8 @@
-import type { DifficultyLevel, GameModule } from '../../core/contract';
+import type { GameModule } from '../../core/contract';
+import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { LEVEL_LABELS, LEVEL_PARAMS } from './logic';
+import { MODE_PARAMS } from './logic';
 import { CifrasGame } from './ui';
-
-const levels: DifficultyLevel[] = ([1, 2, 3, 4, 5] as const).map((level) => ({
-  level,
-  label: LEVEL_LABELS[level],
-  params: LEVEL_PARAMS[level],
-}));
 
 export const cifras: GameModule = {
   metadata: {
@@ -15,8 +10,12 @@ export const cifras: GameModule = {
     name: 'Cifras',
     category: 'math',
     description: 'Combiná 6 números con las 4 operaciones para llegar al objetivo.',
-    version: '1.0.0',
-    levels,
+    version: '2.0.0',
+    modes: buildModes({
+      easy: MODE_PARAMS.easy,
+      medium: MODE_PARAMS.medium,
+      hard: MODE_PARAMS.hard,
+    }),
     estimatedSeconds: 75,
     icon,
   },

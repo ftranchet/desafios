@@ -24,8 +24,13 @@ export const strings = {
     noScore: 'Sin partidas todavía',
     continueLast: 'Seguir jugando',
   },
-  levelPicker: {
-    title: 'Elegí el nivel',
+  // Los nombres y descripciones de los modos (Fácil, Tranquilo, Progresivo...)
+  // viven en src/core/modes.ts: son vocabulario del contrato (ADR-007) y los
+  // juegos los declaran vía buildModes, no desde acá.
+  modePicker: {
+    title: 'Elegí cómo jugar',
+    difficulty: 'Dificultad',
+    special: 'Modos',
     play: 'Jugar',
   },
   game: {
@@ -44,7 +49,8 @@ export const strings = {
     score: (score: number) => `Puntaje: ${score}`,
     newRecord: '¡Récord nuevo!',
     previousRecord: (score: number) => `Récord anterior: ${score}`,
-    noPreviousRecord: 'Primera partida en este nivel',
+    noPreviousRecord: 'Primera partida en este modo',
+    zenNote: 'Modo tranquilo: sin récords, puro juego.',
     retry: 'Reintentar',
     backToCatalog: 'Volver al catálogo',
   },

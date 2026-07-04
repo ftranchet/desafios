@@ -1,13 +1,8 @@
-import type { DifficultyLevel, GameModule } from '../../core/contract';
+import type { GameModule } from '../../core/contract';
+import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { LEVEL_LABELS, LEVEL_PARAMS } from './logic';
+import { MODE_PARAMS } from './logic';
 import { SnakeGame } from './ui';
-
-const levels: DifficultyLevel[] = ([1, 2, 3, 4, 5] as const).map((level) => ({
-  level,
-  label: LEVEL_LABELS[level],
-  params: LEVEL_PARAMS[level],
-}));
 
 export const snake: GameModule = {
   metadata: {
@@ -15,8 +10,14 @@ export const snake: GameModule = {
     name: 'Snake',
     category: 'spatial',
     description: 'Comé y crecé sin chocarte contra las paredes, obstáculos o vos mismo.',
-    version: '1.0.0',
-    levels,
+    version: '2.0.0',
+    modes: buildModes({
+      easy: MODE_PARAMS.easy,
+      medium: MODE_PARAMS.medium,
+      hard: MODE_PARAMS.hard,
+      zen: MODE_PARAMS.zen,
+      progressive: MODE_PARAMS.progressive,
+    }),
     estimatedSeconds: 60,
     icon,
   },

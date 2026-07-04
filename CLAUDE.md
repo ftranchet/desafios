@@ -5,7 +5,7 @@ Instrucciones permanentes para trabajar en **Desafíos Mentales** con Claude Cod
 ## Antes de tocar código
 
 - Leé `docs/PRD.md` antes de cualquier tarea de producto (qué juego construir, qué prioridad, qué queda fuera de alcance en la sección 2.2).
-- Revisá `docs/decisions/` (ADR-001 a ADR-006) antes de cambiar stack, contrato o tokens visuales — documentan por qué se decidió lo que hay. La identidad visual vigente es la de ADR-004 (minimalismo moderno); ADR-003 queda como registro histórico salvo por su sección de paleta, que sigue vigente. ADR-005 fija el kit de interacción `src/core/ui/` y ADR-006 el audio de los juegos vía `GameProps.audio`.
+- Revisá `docs/decisions/` (ADR-001 a ADR-007) antes de cambiar stack, contrato o tokens visuales — documentan por qué se decidió lo que hay. La identidad visual vigente es la de ADR-004 (minimalismo moderno); ADR-003 queda como registro histórico salvo por su sección de paleta, que sigue vigente. ADR-005 fija el kit de interacción `src/core/ui/`, ADR-006 el audio de los juegos vía `GameProps.audio`, y ADR-007 el sistema de dificultades y modos (3 dificultades + Tranquilo/Progresivo declarados por juego vía `buildModes` de `src/core/modes.ts`).
 
 ## Contrato y tokens: no se tocan sin una decisión explícita
 

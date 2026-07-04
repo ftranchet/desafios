@@ -4,7 +4,7 @@ import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../c
 import {
   buildResult,
   generateSession,
-  getLevelParams,
+  getModeParams,
   isCorrectChoice,
   type AnswerRecord,
   type Round,
@@ -16,7 +16,7 @@ type Phase = 'question' | 'feedback';
 type Choice = 'left' | 'right';
 
 export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
-  const params = getLevelParams(config.level);
+  const params = getModeParams(config.mode);
 
   // Foco al contenedor: las flechas ← → eligen desde la primera ronda sin
   // exigir un clic previo (RNF-11).
@@ -47,7 +47,7 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
   useEffect(() => clearTimers, []);
 
   useEffect(() => {
-    roundsRef.current = generateSession(config.level, config.seed ?? Date.now());
+    roundsRef.current = generateSession(config.mode, config.seed ?? Date.now());
     answersRef.current = [];
     sessionStartRef.current = performance.now();
     startRound(0);
