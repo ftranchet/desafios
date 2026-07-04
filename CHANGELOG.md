@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.10.1] — Deploy reparado y pulido
+
+### Corregido
+
+- **El sitio publicado estaba congelado en 0.7.0**: el workflow de deploy fallaba desde 0.8.0 porque en CI `vite preview` liga `localhost` a IPv6 y el health-check de Playwright contra `127.0.0.1` expiraba. El servidor de preview ahora liga `127.0.0.1` explícito (con timeout de 60 s) y los workflows corren en Node 22 (Node 20 llegó a su fin de vida).
+- **Snake Progresivo**: el obstáculo que aparece al subir de grado ya no puede caer pegado a la cabeza (distancia ≤ 2) — sin muertes injustas.
+- Botones "Terminar" del modo Tranquilo con padding horizontal correcto.
+
 ## [0.10.0] — Tranquilo y Progresivo en todo el catálogo
 
 ### Agregado
