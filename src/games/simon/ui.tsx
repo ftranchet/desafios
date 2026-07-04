@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   createInitialState,
@@ -8,23 +9,28 @@ import {
   type SimonState,
 } from './logic';
 
-// Cada pad tiene color y un glifo propio: la información no depende solo del
-// color (RNF-05) y ayuda a distinguir cuál se enciende.
+// Cada pad tiene color, un glifo propio y un tono propio (ADR-006): la
+// información no depende solo del color (RNF-05) — se ve por forma y se oye
+// por altura, fiel al juego original. Frecuencias consonantes (C-E-G-C).
 const PADS = [
-  { color: 'bg-game-1', glyph: '●' },
-  { color: 'bg-game-2', glyph: '■' },
-  { color: 'bg-game-3', glyph: '▲' },
-  { color: 'bg-game-4', glyph: '◆' },
+  { color: 'bg-game-1', glyph: '●', toneHz: 261.63 },
+  { color: 'bg-game-2', glyph: '■', toneHz: 329.63 },
+  { color: 'bg-game-3', glyph: '▲', toneHz: 392.0 },
+  { color: 'bg-game-4', glyph: '◆', toneHz: 523.25 },
 ];
+
+const TAP_TONE_MS = 150;
 
 const START_DELAY_MS = 500;
 
 type Phase = 'playback' | 'input';
 
-export function SimonGame({ config, onFinish }: GameProps) {
+export function SimonGame({ config, onFinish, audio }: GameProps) {
   const params = getLevelParams(config.level);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Foco al contenedor: las teclas 1-4 responden desde la primera ronda,
+  // sin exigir tabular hasta los pads (RNF-11).
+  const containerRef = useAutoFocus<HTMLDivElement>();
   const stateRef = useRef<SimonState>(createInitialState(config.level, config.seed ?? Date.now()));
   const sessionStartRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
@@ -48,9 +54,6 @@ export function SimonGame({ config, onFinish }: GameProps) {
 
   useEffect(() => {
     sessionStartRef.current = performance.now();
-    // Foco al contenedor: las teclas 1-4 responden desde la primera ronda,
-    // sin exigir tabular hasta los pads (RNF-11).
-    containerRef.current?.focus({ preventScroll: true });
     schedule(() => playSequence(), START_DELAY_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -61,7 +64,11 @@ export function SimonGame({ config, onFinish }: GameProps) {
     const sequence = stateRef.current.sequence.slice(0, target);
     sequence.forEach((pad, index) => {
       const start = index * (params.flashMs + params.gapMs);
-      schedule(() => setActivePad(pad), start);
+      schedule(() => {
+        setActivePad(pad);
+        // El tono acompaña al destello: la secuencia se percibe también de oído.
+        audio?.tone(PADS[pad]?.toneHz ?? 440, params.flashMs);
+      }, start);
       schedule(() => setActivePad(null), start + params.flashMs);
     });
     const totalMs = sequence.length * (params.flashMs + params.gapMs);
@@ -78,6 +85,7 @@ export function SimonGame({ config, onFinish }: GameProps) {
     if (phase !== 'input') return;
 
     setPressedPad(padIndex);
+    audio?.tone(PADS[padIndex]?.toneHz ?? 440, TAP_TONE_MS);
     schedule(() => setPressedPad(null), 150);
 
     const previousRound = stateRef.current.round;
@@ -141,21 +149,12 @@ export function SimonGame({ config, onFinish }: GameProps) {
               ? 'brightness-110 scale-95'
               : 'brightness-[.5] saturate-[.85]';
           return (
-            <button
+            <PressButton
               key={index}
-              type="button"
+              variant="bare"
               disabled={phase !== 'input'}
-              // Responder al apoyar el dedo (pointerdown), no al soltarlo: en
-              // secuencias rápidas la diferencia se acumula (RNF-03).
-              onPointerDown={(event: PointerEvent<HTMLButtonElement>) => {
-                event.preventDefault();
-                handlePadTap(index);
-              }}
-              onClick={(event) => {
-                // Solo activación por teclado (Enter/Espacio → detail 0).
-                if (event.detail === 0) handlePadTap(index);
-              }}
-              aria-label={`Panel ${index + 1}`}
+              onPress={() => handlePadTap(index)}
+              ariaLabel={`Panel ${index + 1}`}
               className={`relative flex aspect-square items-center justify-center rounded-xl border border-surface-alt transition-all duration-150 ${pad.color} ${stateClass}`}
             >
               <span
@@ -165,7 +164,7 @@ export function SimonGame({ config, onFinish }: GameProps) {
               >
                 {pad.glyph}
               </span>
-            </button>
+            </PressButton>
           );
         })}
       </div>

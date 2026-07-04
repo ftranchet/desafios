@@ -23,3 +23,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+      # E2E de humo contra el build de producción (PRD 5.6).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          CI: 'true'

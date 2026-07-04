@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import {
   buildResult,
   generateSession,
@@ -10,64 +11,17 @@ import {
 
 const FEEDBACK_DURATION_MS = 700;
 const MAX_INPUT_LENGTH = 7;
-const COUNTDOWN_TICK_MS = 200;
 
 type Phase = 'question' | 'feedback';
 
-const DIGIT_ROWS = [
-  ['7', '8', '9'],
-  ['4', '5', '6'],
-  ['1', '2', '3'],
-];
+const DIGIT_ROWS = ['7', '8', '9', '4', '5', '6', '1', '2', '3'];
 
-interface KeyButtonProps {
-  label: string;
-  ariaLabel?: string;
-  onPress: () => void;
-  disabled?: boolean;
-  primary?: boolean;
-  className?: string;
-}
-
-// Tecla del keypad en pantalla: actúa al apoyar el dedo (pointerdown) para
-// respuesta inmediata (RNF-03); preventDefault evita robarle el foco al
-// contenedor, así el teclado físico sigue funcionando en escritorio.
-function KeyButton({
-  label,
-  ariaLabel,
-  onPress,
-  disabled = false,
-  primary = false,
-  className = '',
-}: KeyButtonProps) {
-  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    onPress();
-  }
-  const variant = primary
-    ? 'bg-accent-primary text-bg'
-    : 'border border-surface-alt bg-surface text-text-primary active:bg-surface-alt';
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-label={ariaLabel ?? label}
-      onPointerDown={handlePointerDown}
-      onClick={(event) => {
-        // Solo activación por teclado (Enter/Espacio → click con detail 0).
-        if (event.detail === 0) onPress();
-      }}
-      className={`min-h-touch rounded-lg font-display text-lg font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary disabled:opacity-40 ${variant} ${className}`}
-    >
-      {label}
-    </button>
-  );
-}
-
-export function NumberSequencesGame({ config, onFinish }: GameProps) {
+export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
   const params = getLevelParams(config.level);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Foco al contenedor: en escritorio se puede tipear la respuesta con el
+  // teclado físico desde la primera pregunta, sin clic previo (RNF-11).
+  const containerRef = useAutoFocus<HTMLDivElement>();
   const questionsRef = useRef<SequenceQuestion[]>([]);
   const answersRef = useRef<AnswerRecord[]>([]);
   const sessionStartRef = useRef(0);
@@ -75,22 +29,20 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
   const resolvedRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
-  const countdownRef = useRef<number | null>(null);
 
   const [phase, setPhase] = useState<Phase>('question');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(params.secondsPerQuestion);
-  const [barKey, setBarKey] = useState(0);
+
+  const isQuestion = phase === 'question';
+  const secondsLeft = useSecondsLeft(params.secondsPerQuestion, isQuestion, questionIndex);
 
   function clearTimers() {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     if (feedbackTimeoutRef.current !== null) window.clearTimeout(feedbackTimeoutRef.current);
-    if (countdownRef.current !== null) window.clearInterval(countdownRef.current);
     timeoutRef.current = null;
     feedbackTimeoutRef.current = null;
-    countdownRef.current = null;
   }
 
   useEffect(() => clearTimers, []);
@@ -99,9 +51,6 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
     questionsRef.current = generateSession(config.level, config.seed ?? Date.now());
     answersRef.current = [];
     sessionStartRef.current = performance.now();
-    // Foco al contenedor: en escritorio se puede tipear la respuesta con el
-    // teclado físico desde la primera pregunta, sin clic previo (RNF-11).
-    containerRef.current?.focus({ preventScroll: true });
     startQuestion(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -117,27 +66,17 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
     resolvedRef.current = false;
     questionStartRef.current = performance.now();
     setInputValue('');
-    setSecondsLeft(params.secondsPerQuestion);
-    setBarKey((k) => k + 1);
 
     timeoutRef.current = window.setTimeout(() => {
       resolveAnswer(index, null);
     }, params.secondsPerQuestion * 1000);
-    // Cuenta regresiva numérica: mantiene visible el tiempo restante aun con
-    // "reducir animaciones" activo, cuando la barra deja de animarse (RNF-06).
-    countdownRef.current = window.setInterval(() => {
-      const elapsed = performance.now() - questionStartRef.current;
-      setSecondsLeft(Math.max(0, Math.ceil(params.secondsPerQuestion - elapsed / 1000)));
-    }, COUNTDOWN_TICK_MS);
   }
 
   function resolveAnswer(index: number, submitted: number | null) {
     if (resolvedRef.current) return;
     resolvedRef.current = true;
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-    if (countdownRef.current !== null) window.clearInterval(countdownRef.current);
     timeoutRef.current = null;
-    countdownRef.current = null;
 
     const question = questionsRef.current[index];
     if (!question) return;
@@ -146,6 +85,7 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
     const responseMs =
       submitted !== null ? Math.round(performance.now() - questionStartRef.current) : null;
     answersRef.current[index] = { correct, responseMs };
+    audio?.play(correct ? 'success' : 'error');
     setLastCorrect(correct);
     setPhase('feedback');
 
@@ -198,7 +138,6 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
   }
 
   const question = questionsRef.current[questionIndex];
-  const isQuestion = phase === 'question';
 
   return (
     <div
@@ -216,17 +155,11 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
             {isQuestion ? `${secondsLeft} s` : ''}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
-          {isQuestion && (
-            <div
-              key={barKey}
-              className="h-full rounded-full bg-accent-primary"
-              style={{
-                animation: `shrink-width ${params.secondsPerQuestion}s linear forwards`,
-              }}
-            />
-          )}
-        </div>
+        <CountdownBar
+          durationMs={params.secondsPerQuestion * 1000}
+          running={isQuestion}
+          resetKey={questionIndex}
+        />
       </div>
 
       {/* La secuencia, el resultado y el keypad ocupan siempre el mismo lugar:
@@ -257,35 +190,44 @@ export function NumberSequencesGame({ config, onFinish }: GameProps) {
           </div>
 
           <div className="grid w-full max-w-xs grid-cols-3 gap-2">
-            {DIGIT_ROWS.flat().map((digit) => (
-              <KeyButton
+            {DIGIT_ROWS.map((digit) => (
+              <PressButton
                 key={digit}
-                label={digit}
+                variant="key"
                 disabled={!isQuestion}
                 onPress={() => appendDigit(digit)}
-              />
+              >
+                {digit}
+              </PressButton>
             ))}
-            <KeyButton
-              label="±"
+            <PressButton
+              variant="key"
               ariaLabel="Cambiar signo"
               disabled={!isQuestion}
               onPress={toggleSign}
-            />
-            <KeyButton label="0" disabled={!isQuestion} onPress={() => appendDigit('0')} />
-            <KeyButton
-              label="⌫"
+            >
+              ±
+            </PressButton>
+            <PressButton variant="key" disabled={!isQuestion} onPress={() => appendDigit('0')}>
+              0
+            </PressButton>
+            <PressButton
+              variant="key"
               ariaLabel="Borrar último dígito"
               disabled={!isQuestion}
               onPress={deleteDigit}
-            />
-            <KeyButton
-              label="✓"
+            >
+              ⌫
+            </PressButton>
+            <PressButton
+              variant="primary"
               ariaLabel="Responder"
               disabled={!isQuestion || inputValue === '' || inputValue === '-'}
               onPress={submit}
-              primary
               className="col-span-3"
-            />
+            >
+              ✓
+            </PressButton>
           </div>
         </>
       )}

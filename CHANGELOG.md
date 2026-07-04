@@ -2,6 +2,15 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.8.0] — Escalabilidad del catálogo: kit de interacción, audio en juegos, generador y E2E
+
+### Agregado
+
+- **ADR-005 — Kit de interacción `src/core/ui/`**: `PressButton` (acción en `pointerdown` + teclado + auto-repetición opcional), `useAutoFocus`, `CountdownBar` y `useSecondsLeft`. Es la implementación canónica de los patrones del PRD 10.7; los ocho juegos ahora la importan en vez de duplicar el código (el keypad estaba copiado en dos juegos, el auto-foco en seis). Con tests propios del kit.
+- **ADR-006 — Sonido dentro de los juegos** (primera ampliación del contrato desde ADR-002, aditiva y retrocompatible): `GameProps.audio` inyecta una capacidad de audio ya gateada por la configuración — con sonido apagado, implementación nula. **Simon por fin suena**: cada pad tiene su tono (C-E-G-C) en el destello y en el toque; Aritmética, Secuencias, Estimación y Tiempo de reacción dan feedback sonoro por respuesta.
+- **Generador de juegos**: `npm run new-game <id> ["Nombre"]` crea `src/games/<id>/` completo (lógica pura con semilla, interfaz con el kit, tests, ícono) y lo registra. El esqueleto pasa los cinco checks sin tocar nada — validado generando un juego de prueba de punta a punta.
+- **Suite E2E de humo** (`e2e/smoke.spec.ts`, Playwright): catálogo, partida completa de Snake con persistencia versionada, keypad de Aritmética, navegación de juego, diálogo de salida y configuración — contra el build de producción, en viewport táctil de celular. Corre en CI de ramas y antes de cada deploy.
+
 ## [0.7.0] — Robustez del shell
 
 Sesión enfocada en que sumar juegos sea de bajo riesgo: las garantías quedan documentadas en la sección 5.6 del PRD.

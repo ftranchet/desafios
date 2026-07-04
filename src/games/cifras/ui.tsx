@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameProps } from '../../core/contract';
+import { CountdownBar } from '../../core/ui';
 import {
   buildResult,
   closestToTarget,
@@ -148,12 +149,7 @@ export function CifrasGame({ config, onFinish }: GameProps) {
           <span>Objetivo</span>
           <span>{formatSeconds(remainingMs)}</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
-          <div
-            className="h-full rounded-full bg-accent-primary"
-            style={{ animation: `shrink-width ${params.timeLimitMs}ms linear forwards` }}
-          />
-        </div>
+        <CountdownBar durationMs={params.timeLimitMs} running resetKey={0} />
       </div>
 
       <p className="font-display text-xl font-extrabold text-accent-primary">{target}</p>

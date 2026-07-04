@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useRef, useState, useEffect, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -33,73 +34,6 @@ const PIECE_COLORS = ['#3fd0c9', '#6bcf63', '#f4557a', '#ffcd4b', '#8a6dff', '#f
 
 function pieceColor(type: PieceType): string {
   return PIECE_COLORS[PIECE_ORDER.indexOf(type)] ?? COLOR_SURFACE_ALT;
-}
-
-interface ControlButtonProps {
-  label: string;
-  ariaLabel: string;
-  onPress: () => void;
-  repeatOnHold?: boolean;
-  className?: string;
-}
-
-// Auto-repetición al mantener presionado: primera espera y cadencia similares
-// a la repetición de un teclado físico, para que mover una pieza varias
-// columnas no exija un tap por columna.
-const REPEAT_DELAY_MS = 260;
-const REPEAT_INTERVAL_MS = 110;
-
-function ControlButton({
-  label,
-  ariaLabel,
-  onPress,
-  repeatOnHold = false,
-  className = '',
-}: ControlButtonProps) {
-  const timersRef = useRef<{ delay: number | null; interval: number | null }>({
-    delay: null,
-    interval: null,
-  });
-
-  function stopRepeat() {
-    if (timersRef.current.delay !== null) window.clearTimeout(timersRef.current.delay);
-    if (timersRef.current.interval !== null) window.clearInterval(timersRef.current.interval);
-    timersRef.current = { delay: null, interval: null };
-  }
-
-  useEffect(() => stopRepeat, []);
-
-  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
-    // Actuar al apoyar el dedo, no al soltarlo: en tiempo real la diferencia
-    // se siente (RNF-03). preventDefault evita robarle el foco al tablero.
-    event.preventDefault();
-    onPress();
-    if (!repeatOnHold) return;
-    // Con captura, el pointerup llega aunque el dedo se corra del botón.
-    event.currentTarget.setPointerCapture(event.pointerId);
-    stopRepeat();
-    timersRef.current.delay = window.setTimeout(() => {
-      timersRef.current.interval = window.setInterval(onPress, REPEAT_INTERVAL_MS);
-    }, REPEAT_DELAY_MS);
-  }
-
-  return (
-    <button
-      type="button"
-      onPointerDown={handlePointerDown}
-      onPointerUp={stopRepeat}
-      onPointerCancel={stopRepeat}
-      // Enter/Espacio generan un click sintético con detail 0 — única vía que
-      // se atiende acá, porque las de puntero ya se manejaron en pointerdown.
-      onClick={(event) => {
-        if (event.detail === 0) onPress();
-      }}
-      aria-label={ariaLabel}
-      className={`min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary active:bg-accent-primary active:text-bg ${className}`}
-    >
-      {label}
-    </button>
-  );
 }
 
 function drawState(ctx: CanvasRenderingContext2D, state: CascadaState) {
@@ -161,7 +95,9 @@ function NextPiecePreview({ type }: { type: PieceType | undefined }) {
 }
 
 export function CascadaGame({ config, onFinish }: GameProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Foco inmediato al contenedor: las flechas funcionan apenas arranca la
+  // partida, sin exigir un clic previo sobre el tablero (RNF-11).
+  const containerRef = useAutoFocus<HTMLDivElement>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<CascadaState | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -235,9 +171,6 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     const initial = createInitialState(config.level, config.seed ?? Date.now());
     sessionStartRef.current = performance.now();
     render(initial);
-    // Foco inmediato al contenedor: las flechas funcionan apenas arranca la
-    // partida, sin exigir un clic previo sobre el tablero (RNF-11).
-    containerRef.current?.focus({ preventScroll: true });
     scheduleTick(initial.intervalMs);
 
     return () => {
@@ -351,28 +284,35 @@ export function CascadaGame({ config, onFinish }: GameProps) {
       />
       <div className="flex w-full max-w-xs items-center justify-between gap-4">
         <div className="grid grid-cols-3 gap-2" role="group" aria-label="Mover pieza">
-          <ControlButton
-            label="◀"
+          <PressButton
             ariaLabel="Mover a la izquierda"
             repeatOnHold
             onPress={() => applyAction((s) => tryMove(s, -1, 0))}
-          />
-          <ControlButton
-            label="▼"
+          >
+            ◀
+          </PressButton>
+          <PressButton
             ariaLabel="Bajar"
             repeatOnHold
             onPress={() => applyAction((s) => tryMove(s, 0, 1))}
-          />
-          <ControlButton
-            label="▶"
+          >
+            ▼
+          </PressButton>
+          <PressButton
             ariaLabel="Mover a la derecha"
             repeatOnHold
             onPress={() => applyAction((s) => tryMove(s, 1, 0))}
-          />
+          >
+            ▶
+          </PressButton>
         </div>
         <div className="flex gap-2" role="group" aria-label="Acciones de la pieza">
-          <ControlButton label="↻" ariaLabel="Rotar" onPress={() => applyAction(tryRotate)} />
-          <ControlButton label="⤓" ariaLabel="Caída rápida" onPress={() => applyAction(hardDrop)} />
+          <PressButton ariaLabel="Rotar" onPress={() => applyAction(tryRotate)}>
+            ↻
+          </PressButton>
+          <PressButton ariaLabel="Caída rápida" onPress={() => applyAction(hardDrop)}>
+            ⤓
+          </PressButton>
         </div>
       </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">

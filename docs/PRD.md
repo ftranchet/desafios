@@ -1,7 +1,7 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.5 · Julio 2026
-**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Controles revisados (v0.4/v0.5) y auditoría de usabilidad táctil/teclado aplicada — sus patrones quedaron fijados en la sección 10.7.
+**Documento de requisitos de producto (PRD)** · Versión 0.7 · Julio 2026
+**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6) y catálogo listo para escalar: kit de interacción (ADR-005), audio en juegos (ADR-006), generador `npm run new-game` y suite E2E en CI.
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
 | Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                                                                 |
@@ -12,6 +12,7 @@
 | 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular                                                         |
 | 0.5     | Julio 2026 | Auditoría integral de usabilidad táctil y de escritorio: los patrones que funcionaron y son replicables quedan documentados en la **sección 10.7** (foco automático, acción en `pointerdown`, keypad propio en pantalla, endurecimiento táctil global, partida a pantalla completa, diálogos accesibles, canvas fluido). La checklist de terminado (12.3) los incorpora |
 | 0.6     | Julio 2026 | Robustez del shell como base para escalar el catálogo: **sección 5.6** — aislamiento de fallas por juego (error boundary), frontera desconfiada para `GameResult`, persistencia acotada con retención de récords y esquema versionado, test de contrato + smoke de render sobre el registro (un juego queda cubierto al registrarse), y CI en ramas además del deploy   |
+| 0.7     | Julio 2026 | Escalabilidad del catálogo: **ADR-005** (kit de interacción `src/core/ui/` — implementación canónica de los patrones 10.7), **ADR-006** (primera ampliación del contrato: `GameProps.audio`, sonido dentro de los juegos gateado por el shell — Simon suena), generador `npm run new-game` (esqueleto compilable, testeado y registrado), y suite E2E de humo en CI     |
 
 ---
 
@@ -178,10 +179,21 @@ export interface GameResult {
   timestamp: string; // ISO 8601
 }
 
+export type GameSoundEffect = 'success' | 'error' | 'record' | 'gameover';
+
+// Capacidad de audio inyectada por el shell, ya gateada por la configuración
+// del usuario (ADR-006): con el sonido apagado se inyecta una implementación
+// nula. Los juegos nunca tocan Web Audio ni leen configuración global.
+export interface GameAudio {
+  play(effect: GameSoundEffect): void; // efectos comunes del sistema
+  tone(frequency: number, durationMs: number): void; // tonos propios del juego
+}
+
 export interface GameProps {
   config: GameConfig;
   onFinish(result: GameResult): void; // El juego terminó (única vía de salida de datos)
   onQuit(): void; // El usuario abandonó
+  audio?: GameAudio; // Opcional (ADR-006): retrocompatible con juegos previos
 }
 
 export interface GameModule {
@@ -195,6 +207,7 @@ Notas de diseño:
 - Los juegos de tiempo real (Snake, Cascada) implementan su bucle de juego con canvas **dentro** de su propio componente; el contrato no cambia.
 - El puntaje es de escala libre por juego. No se normaliza entre juegos: comparar puntajes de Cifras con puntajes de Snake no aporta valor y complica todo.
 - `metrics` permite que cada juego guarde lo que le sea propio sin romper el esquema común.
+- `audio` (ADR-006) invierte la dependencia del sonido: el juego declara _qué_ quiere sonar (un efecto común o un tono propio, como los pads de Simon) y el shell decide si suena según la configuración. La síntesis vive solo en `src/core/sound.ts` (regla 11.2).
 
 ### 5.3 Registro de juegos
 
@@ -227,6 +240,8 @@ export interface StorageService {
 ```
 
 ### 5.5 Flujo para agregar un juego nuevo (repetible en una sesión de Claude Code)
+
+**Atajo (v0.7):** `npm run new-game <game-id> ["Nombre visible"]` genera los pasos 1, 2, 4 y 5 como esqueleto compilable, testeado y ya registrado — con los patrones de interacción de la sección 10.7 y el kit de ADR-005 aplicados. Queda reemplazar la mecánica de ejemplo, el ícono y los metadatos.
 
 1. Crear la carpeta `src/games/<game-id>/`.
 2. Implementar `logic.ts` (funciones puras, con semilla), `ui.tsx` (componente que implementa `GameProps`) e `index.ts` (exporta el `GameModule`).
@@ -352,7 +367,7 @@ Los textos son material de diseño, no decoración. Reglas: español con voseo (
 
 ### 10.7 Patrones de interacción validados (táctil y escritorio) — v0.5
 
-Patrones probados en dispositivo/navegador real durante la auditoría de usabilidad (v0.5). Son **replicables**: todo juego nuevo los aplica desde el día uno, y la checklist de terminado (12.3) los exige. Concretan en implementación lo que RNF-03, RNF-04, RNF-06 y RNF-11 piden como requisito.
+Patrones probados en dispositivo/navegador real durante la auditoría de usabilidad (v0.5). Son **replicables**: todo juego nuevo los aplica desde el día uno, y la checklist de terminado (12.3) los exige. Concretan en implementación lo que RNF-03, RNF-04, RNF-06 y RNF-11 piden como requisito. **Desde v0.7, la implementación canónica vive en el kit `src/core/ui/`** (ADR-005): `PressButton` (patrones 1, 2 y 9), `useAutoFocus` (patrón 8), `CountdownBar` + `useSecondsLeft` (patrón 11) — los juegos los importan en vez de copiar el código.
 
 **Táctil (celular es la plataforma principal):**
 

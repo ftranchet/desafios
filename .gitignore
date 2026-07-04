@@ -19,3 +19,7 @@ yarn-error.log*
 
 # PWA generated files (built by vite-plugin-pwa)
 dev-dist/
+
+# Playwright (E2E)
+test-results/
+playwright-report/

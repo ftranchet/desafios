@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   consumeDirection,
@@ -32,37 +33,6 @@ const KEY_DIRECTIONS: Record<string, Direction> = {
   d: 'right',
 };
 
-interface DPadButtonProps {
-  label: string;
-  ariaLabel: string;
-  onPress: () => void;
-  className?: string;
-}
-
-function DPadButton({ label, ariaLabel, onPress, className = '' }: DPadButtonProps) {
-  return (
-    <button
-      type="button"
-      // La acción dispara al apoyar el dedo (pointerdown), no al soltarlo
-      // (click): en un juego en tiempo real esa diferencia se siente (RNF-03).
-      // preventDefault evita que el botón robe el foco del tablero.
-      onPointerDown={(event) => {
-        event.preventDefault();
-        onPress();
-      }}
-      // Enter/Espacio generan un click sintético con detail 0 — única vía que
-      // se atiende acá, porque los de puntero ya se manejaron en pointerdown.
-      onClick={(event) => {
-        if (event.detail === 0) onPress();
-      }}
-      aria-label={ariaLabel}
-      className={`min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary active:bg-accent-primary active:text-bg ${className}`}
-    >
-      {label}
-    </button>
-  );
-}
-
 function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
   const cell = CANVAS_SIZE / state.gridSize;
   const gap = Math.max(1, cell * 0.08);
@@ -83,7 +53,9 @@ function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
 }
 
 export function SnakeGame({ config, onFinish }: GameProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Foco inmediato al contenedor: las flechas funcionan apenas arranca la
+  // partida, sin exigir un clic previo sobre el tablero (RNF-11).
+  const containerRef = useAutoFocus<HTMLDivElement>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<SnakeState | null>(null);
   // Cola de inputs pendientes (no una sola dirección): así encadenar dos giros
@@ -154,10 +126,6 @@ export function SnakeGame({ config, onFinish }: GameProps) {
 
     const ctx = canvas?.getContext('2d');
     if (ctx) drawState(ctx, initial);
-
-    // Foco inmediato al contenedor: las flechas funcionan apenas arranca la
-    // partida, sin exigir un clic previo sobre el tablero (RNF-11).
-    containerRef.current?.focus({ preventScroll: true });
 
     scheduleTick(initial.intervalMs);
 
@@ -238,30 +206,34 @@ export function SnakeGame({ config, onFinish }: GameProps) {
         role="group"
         aria-label="Controles direccionales"
       >
-        <DPadButton
-          label="▲"
+        <PressButton
           ariaLabel="Mover arriba"
           onPress={() => requestDirection('up')}
           className="col-start-2 row-start-1"
-        />
-        <DPadButton
-          label="◀"
+        >
+          ▲
+        </PressButton>
+        <PressButton
           ariaLabel="Mover a la izquierda"
           onPress={() => requestDirection('left')}
           className="col-start-1 row-start-2"
-        />
-        <DPadButton
-          label="▶"
+        >
+          ◀
+        </PressButton>
+        <PressButton
           ariaLabel="Mover a la derecha"
           onPress={() => requestDirection('right')}
           className="col-start-3 row-start-2"
-        />
-        <DPadButton
-          label="▼"
+        >
+          ▶
+        </PressButton>
+        <PressButton
           ariaLabel="Mover abajo"
           onPress={() => requestDirection('down')}
           className="col-start-2 row-start-3"
-        />
+        >
+          ▼
+        </PressButton>
       </div>
       <p className="max-w-xs text-center text-sm text-text-secondary">
         Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los botones o las

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
+import { useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   createRoundPlans,
@@ -21,10 +22,12 @@ const PHASE_BG: Record<Exclude<Phase, 'feedback'>, string> = {
   decoy: 'bg-accent-error',
 };
 
-export function ReactionTimeGame({ config, onFinish }: GameProps) {
+export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   const params = getLevelParams(config.level);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Foco al área de juego: Espacio/Enter empiezan y responden desde el
+  // arranque, sin exigir un clic previo (RNF-11).
+  const containerRef = useAutoFocus<HTMLDivElement>();
   const plansRef = useRef<RoundPlan[]>([]);
   const outcomesRef = useRef<RoundOutcome[]>([]);
   const roundStartRef = useRef(0);
@@ -58,9 +61,6 @@ export function ReactionTimeGame({ config, onFinish }: GameProps) {
   }
 
   useEffect(() => {
-    // Foco al área de juego: Espacio/Enter empiezan y responden desde el
-    // arranque, sin exigir un clic previo (RNF-11).
-    containerRef.current?.focus({ preventScroll: true });
     return () => {
       if (roundTimersRef.current.change !== null)
         window.clearTimeout(roundTimersRef.current.change);
@@ -85,6 +85,7 @@ export function ReactionTimeGame({ config, onFinish }: GameProps) {
 
     const outcome = resolveRoundTap(plan, tapAtMs);
     outcomesRef.current[index] = outcome;
+    audio?.play(outcome.correct ? 'success' : 'error');
     setLastOutcome(outcome);
     setPhase('feedback');
 

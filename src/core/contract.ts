@@ -37,10 +37,22 @@ export interface GameResult {
   timestamp: string; // ISO 8601
 }
 
+export type GameSoundEffect = 'success' | 'error' | 'record' | 'gameover';
+
+// Capacidad de audio inyectada por el shell, ya gateada por la configuración
+// del usuario (ADR-006): el juego declara qué quiere sonar; si el sonido está
+// deshabilitado, el shell inyecta una implementación nula. Los juegos nunca
+// tocan Web Audio ni leen configuración global.
+export interface GameAudio {
+  play(effect: GameSoundEffect): void; // efectos comunes del sistema
+  tone(frequency: number, durationMs: number): void; // tonos propios del juego
+}
+
 export interface GameProps {
   config: GameConfig;
   onFinish(result: GameResult): void; // El juego terminó (única vía de salida de datos)
   onQuit(): void; // El usuario abandonó
+  audio?: GameAudio; // Opcional (ADR-006): retrocompatible con juegos y tests previos
 }
 
 export interface GameModule {

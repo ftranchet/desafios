@@ -1,0 +1,84 @@
+import { expect, test } from '@playwright/test';
+
+// Humo E2E (PRD 5.6): los flujos centrales del producto en un navegador real.
+// Cada spec arranca de cero (localStorage limpio) para ser determinística.
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('./');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+});
+
+test('el catálogo muestra todos los juegos y la navegación', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
+  // Una tarjeta por juego registrado (los enlaces a /game/).
+  const cards = page.locator('a[href*="#/game/"]');
+  await expect(cards).toHaveCount(8);
+  await expect(page.getByRole('navigation')).toBeVisible();
+});
+
+test('partida completa de Snake: resultado y persistencia versionada', async ({ page }) => {
+  await page.locator('a[href*="#/game/snake"]').first().tap();
+  await page.getByRole('button', { name: 'Jugar' }).tap();
+  // Sin tocar nada, la víbora avanza hacia la pared y pierde sola.
+  await expect(page.getByText('Resultado')).toBeVisible({ timeout: 15_000 });
+
+  const stored = await page.evaluate(() => {
+    const raw = localStorage.getItem('dm:results');
+    return raw ? (JSON.parse(raw) as { schemaVersion?: number; results?: unknown[] }) : null;
+  });
+  expect(stored?.schemaVersion).toBe(1);
+  expect(stored?.results).toHaveLength(1);
+
+  await page.getByRole('button', { name: 'Reintentar' }).tap();
+  await expect(page.getByRole('button', { name: 'Jugar' })).toBeVisible();
+});
+
+test('el keypad de Aritmética responde y muestra el feedback', async ({ page }) => {
+  await page.goto('./#/game/quick-math');
+  await page.getByRole('button', { name: 'Jugar' }).tap();
+
+  // Cuenta regresiva numérica visible (respaldo de la barra, RNF-06).
+  await expect(page.locator('span[aria-label*="segundos restantes"]')).toHaveText(/\d+ s/);
+
+  await page.getByRole('button', { name: '1', exact: true }).tap();
+  await expect(page.getByLabel('Tu respuesta')).toHaveText('1');
+  await page.getByRole('button', { name: 'Responder' }).tap();
+  await expect(page.getByText(/¡Correcto!|Incorrecto/)).toBeVisible();
+});
+
+test('en la ruta de juego no hay navegación inferior y Volver funciona', async ({ page }) => {
+  await page.goto('./#/game/simon');
+  await expect(page.getByRole('navigation')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Volver' }).tap();
+  await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
+  await expect(page.getByRole('navigation')).toBeVisible();
+});
+
+test('salir de una partida pide confirmación y Escape la cancela', async ({ page }) => {
+  await page.goto('./#/game/cascada');
+  await page.getByRole('button', { name: 'Jugar' }).tap();
+  await page.getByRole('button', { name: 'Salir' }).tap();
+
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  // La partida sigue: el tablero está presente.
+  await expect(page.locator('canvas')).toBeVisible();
+});
+
+test('configuración: los toggles cambian de estado', async ({ page }) => {
+  await page.goto('./#/config');
+  const soundToggle = page.getByRole('switch', { name: 'Sonido' });
+  await expect(soundToggle).toHaveAttribute('aria-checked', 'true');
+  await soundToggle.tap();
+  await expect(soundToggle).toHaveAttribute('aria-checked', 'false');
+});
+
+test('las estadísticas abren vacías con la invitación a jugar', async ({ page }) => {
+  await page.goto('./#/stats');
+  await expect(page.getByRole('heading', { name: 'Estadísticas' })).toBeVisible();
+  await expect(
+    page.getByText('Todavía no jugaste ninguna partida', { exact: false }),
+  ).toBeVisible();
+});

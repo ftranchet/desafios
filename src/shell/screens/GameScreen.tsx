@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { GameResult } from '../../core/contract';
+import type { GameAudio, GameResult } from '../../core/contract';
 import { getGameById } from '../../core/registry';
-import { playSound, warmUpAudio } from '../../core/sound';
+import { playSound, playTone, warmUpAudio } from '../../core/sound';
 import { storage } from '../../core/storage';
 import { vibrate } from '../../core/vibration';
 import { strings } from '../../i18n/es';
@@ -36,6 +36,17 @@ export function GameScreen() {
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [sessionStart, setSessionStart] = useState(0);
+
+  // Capacidad de audio para el juego (ADR-006), ya gateada por la
+  // configuración: con sonido apagado se inyecta la implementación nula, así
+  // los juegos nunca ramifican por preferencia del usuario.
+  const gameAudio: GameAudio = useMemo(
+    () =>
+      soundEnabled
+        ? { play: playSound, tone: playTone }
+        : { play: () => undefined, tone: () => undefined },
+    [soundEnabled],
+  );
 
   if (!game) {
     return (
@@ -151,7 +162,12 @@ export function GameScreen() {
 
       {phase === 'playing' && (
         <GameErrorBoundary onExit={() => navigate('/')}>
-          <game.Component config={{ level }} onFinish={handleFinish} onQuit={handleAbandon} />
+          <game.Component
+            config={{ level }}
+            onFinish={handleFinish}
+            onQuit={handleAbandon}
+            audio={gameAudio}
+          />
         </GameErrorBoundary>
       )}
 
