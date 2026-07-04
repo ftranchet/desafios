@@ -2,6 +2,24 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.7.0] — Robustez del shell
+
+Sesión enfocada en que sumar juegos sea de bajo riesgo: las garantías quedan documentadas en la sección 5.6 del PRD.
+
+### Agregado
+
+- **Error boundary alrededor de cada juego**: una excepción en el render de un juego ya no tira abajo toda la app a pantalla blanca — muestra "El juego falló" con salida al catálogo, con el shell y los récords intactos.
+- **Test de contrato del registro** (`registry.test.ts`): valida los metadatos de todos los juegos registrados (id único kebab-case, 5 niveles numerados 1–5, textos no vacíos, ícono, duración). Un juego nuevo queda cubierto con solo registrarse.
+- **Smoke test de render** (`registry.render.test.tsx`): monta el componente de cada juego con semilla fija en niveles 1/3/5 (jsdom + Testing Library) — atrapa crashes de `ui.tsx` que los tests de lógica pura no ven.
+- **CI en ramas** (`ci.yml`): formato, lint, tipos, tests y build corren en cada push a cualquier rama y en cada pull request, no solo antes del deploy de `main`.
+- Tests de la capa de persistencia real (formato versionado, datos legados/corruptos, tope con retención de récords, saneo, cuota llena).
+
+### Cambiado
+
+- **El shell normaliza el `GameResult` en la frontera**: `gameId` y `level` se toman del juego/nivel que el shell montó, no de lo que el juego devuelva — un `buildResult` copiado de otro juego no puede corromper récords ajenos.
+- **Persistencia blindada**: esquema versionado con lectura del formato legado, historial acotado a 500 resultados con retención del mejor por (juego, nivel) — los récords no caducan —, lectura que descarta entradas corruptas, saneo de números no finitos/negativos, y escritura tolerante a cuota llena o modo privado (fallar al persistir jamás rompe el cierre de una partida).
+- El store de configuración persiste con versión de esquema explícita (mecanismo de migración listo para cambios futuros).
+
 ## [0.6.0] — Auditoría de usabilidad táctil y de escritorio
 
 ### Corregido

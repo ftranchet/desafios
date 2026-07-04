@@ -7,6 +7,7 @@ import { storage } from '../../core/storage';
 import { vibrate } from '../../core/vibration';
 import { strings } from '../../i18n/es';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { GameErrorBoundary } from '../components/GameErrorBoundary';
 import { LevelPicker } from '../components/LevelPicker';
 import { ResultPanel } from '../components/ResultPanel';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -57,16 +58,31 @@ export function GameScreen() {
   }
 
   function handleFinish(gameResult: GameResult) {
-    storage.saveResult(gameResult);
+    if (!game) return;
+    // Frontera desconfiada (PRD 5.6): el shell conoce el juego y el nivel que
+    // montó — no depende de que el juego los devuelva bien. Un buildResult
+    // copiado de otro juego con el gameId viejo no puede corromper récords.
+    if (gameResult.gameId !== game.metadata.id || gameResult.level !== level) {
+      console.warn(
+        `GameResult inconsistente (gameId="${gameResult.gameId}", level=${gameResult.level}); ` +
+          `se normaliza a "${game.metadata.id}" nivel ${level}.`,
+      );
+    }
+    const result: GameResult = {
+      ...gameResult,
+      gameId: game.metadata.id,
+      level,
+    };
+    storage.saveResult(result);
     // Récord solo si supera el mejor puntaje previo (o 0 si es la primera vez):
     // así una primera partida perdida con 0 no se marca como récord nuevo.
-    const isRecord = gameResult.score > (previousBest ?? 0);
+    const isRecord = result.score > (previousBest ?? 0);
     if (soundEnabled) {
-      playSound(isRecord ? 'record' : gameResult.completed ? 'success' : 'error');
+      playSound(isRecord ? 'record' : result.completed ? 'success' : 'error');
     }
     if (vibrationEnabled && isRecord) vibrate([40, 30, 40]);
     setIsNewRecord(isRecord);
-    setResult(gameResult);
+    setResult(result);
     setPhase('result');
   }
 
@@ -134,7 +150,9 @@ export function GameScreen() {
       )}
 
       {phase === 'playing' && (
-        <game.Component config={{ level }} onFinish={handleFinish} onQuit={handleAbandon} />
+        <GameErrorBoundary onExit={() => navigate('/')}>
+          <game.Component config={{ level }} onFinish={handleFinish} onQuit={handleAbandon} />
+        </GameErrorBoundary>
       )}
 
       {phase === 'result' && result && (

@@ -33,6 +33,13 @@ export const useSettingsStore = create<SettingsState>()(
       toggleReduceAnimations: () => set((s) => ({ reduceAnimations: !s.reduceAnimations })),
       setLastPlayed: (entry) => set({ lastPlayed: entry }),
     }),
-    { name: 'dm:settings' },
+    {
+      name: 'dm:settings',
+      // Versión explícita del esquema persistido: deja listo el mecanismo de
+      // migración para cambios futuros. La forma 0→1 no cambió, así que la
+      // migración conserva el estado guardado tal cual.
+      version: 1,
+      migrate: (persisted) => persisted as SettingsState,
+    },
   ),
 );

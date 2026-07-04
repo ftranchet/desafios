@@ -34,6 +34,10 @@ export const strings = {
     quitConfirmBody: 'Se va a perder el progreso de esta partida.',
     quitConfirmAccept: 'Salir',
     quitConfirmCancel: 'Seguir jugando',
+    crashTitle: 'El juego falló',
+    crashBody:
+      'Algo salió mal dentro de este juego. El resto de la app y tus récords están a salvo.',
+    crashBack: 'Volver al catálogo',
   },
   result: {
     title: 'Resultado',

@@ -11,6 +11,7 @@
 | 0.3     | Julio 2026 | Replanteo de la dirección visual: se abandona el pixel art de 8 bits (no funcionaba estéticamente) a favor de un **minimalismo moderno** sobre el mismo tema oscuro — ver sección 10 y ADR-004. La paleta de colores validada en ADR-003 se mantiene sin cambios                                                                                                        |
 | 0.4     | Julio 2026 | Revisión de controles tras Fase 2: se agrega RNF-11 (operabilidad completa por teclado en escritorio; controles táctiles directos en pantalla para juegos en tiempo real, en vez de depender solo de gestos de deslizamiento). Motivo: el deslizamiento resultó engorroso para jugar Snake y Cascada en celular                                                         |
 | 0.5     | Julio 2026 | Auditoría integral de usabilidad táctil y de escritorio: los patrones que funcionaron y son replicables quedan documentados en la **sección 10.7** (foco automático, acción en `pointerdown`, keypad propio en pantalla, endurecimiento táctil global, partida a pantalla completa, diálogos accesibles, canvas fluido). La checklist de terminado (12.3) los incorpora |
+| 0.6     | Julio 2026 | Robustez del shell como base para escalar el catálogo: **sección 5.6** — aislamiento de fallas por juego (error boundary), frontera desconfiada para `GameResult`, persistencia acotada con retención de récords y esquema versionado, test de contrato + smoke de render sobre el registro (un juego queda cubierto al registrarse), y CI en ramas además del deploy   |
 
 ---
 
@@ -235,6 +236,16 @@ export interface StorageService {
 6. Verificar la checklist de terminado (sección 12.3).
 
 **Criterio de éxito arquitectónico:** este flujo se completa sin tocar ningún archivo del shell.
+
+### 5.6 Garantías de robustez del shell (v0.6)
+
+El objetivo del sistema es que agregar juegos sea de bajo riesgo. Estas garantías, verificadas por tests, definen qué puede romper un juego defectuoso — y qué no puede romper jamás:
+
+1. **Aislamiento de fallas.** El componente de cada juego se monta dentro de un _error boundary_ (`GameErrorBoundary`): una excepción durante el render o un ciclo de vida del juego muestra un panel de falla con salida al catálogo, con el shell, los récords y la navegación intactos. El peor caso de un juego roto es ese panel, nunca una pantalla en blanco.
+2. **Frontera desconfiada.** El shell no confía en el `GameResult` que emite un juego: normaliza `gameId` y `level` con lo que él mismo montó (un `buildResult` copiado de otro juego no puede corromper récords ajenos), y la capa de persistencia rechaza resultados sin forma válida y normaliza números no finitos o negativos (un puntaje `NaN` no envenena las comparaciones de récord).
+3. **Persistencia acotada y tolerante.** El historial persiste con esquema versionado (con lectura del formato legado), está acotado a `MAX_STORED_RESULTS` con retención del mejor resultado por (juego, nivel) — el historial es finito, los récords no caducan —, la lectura descarta entradas corruptas en vez de romper, y la escritura tolera cuota llena o modo privado sin tirar excepción: fallar al persistir jamás rompe el cierre de una partida.
+4. **Contrato verificado por tests, automáticamente.** `registry.test.ts` valida los metadatos de todos los juegos registrados (id único en kebab-case, exactamente 5 niveles numerados, textos visibles no vacíos, ícono, duración estimada) y `registry.render.test.tsx` monta el componente de cada juego con semilla fija en tres niveles. **Registrar un juego es quedar cubierto por la batería de tests del shell** — sin escribir ni un test extra.
+5. **CI en ramas.** Los checks completos (formato, lint, tipos, tests, build) corren en cada push a cualquier rama y en cada pull request (`ci.yml`), no solo en el deploy de `main` (`deploy.yml`): una rama rota se entera antes de mergear.
 
 ---
 
