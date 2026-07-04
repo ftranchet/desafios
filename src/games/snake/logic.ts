@@ -284,7 +284,14 @@ export function step(state: SnakeState, requestedDirection: Direction): SnakeSta
     // obstáculo más (determinístico: mismo seed, misma partida).
     const newStage = stageForFood(newFoodCount);
     if (newStage > stage) {
+      // El obstáculo nuevo nunca aparece pegado a la cabeza (distancia
+      // Chebyshev <= 2): subir de grado no puede matar de forma injusta.
       const occupiedNow = new Set([...newSnake, ...obstacles, state.food].map(posKey));
+      for (let dy = -2; dy <= 2; dy += 1) {
+        for (let dx = -2; dx <= 2; dx += 1) {
+          occupiedNow.add(posKey({ x: newHead.x + dx, y: newHead.y + dy }));
+        }
+      }
       const obstacle = pickFreeCell(
         foodRngFor(state.seed, 500 + newStage),
         state.gridSize,

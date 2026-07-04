@@ -327,7 +327,12 @@ export function CascadaGame({ config, onFinish }: GameProps) {
       </div>
       {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
       {config.mode === 'zen' && (
-        <PressButton variant="primary" ariaLabel="Terminar la partida" onPress={finishGame}>
+        <PressButton
+          variant="primary"
+          ariaLabel="Terminar la partida"
+          onPress={finishGame}
+          className="px-8"
+        >
           Terminar
         </PressButton>
       )}

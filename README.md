@@ -14,7 +14,7 @@ Es una PWA: se puede instalar en la pantalla de inicio del celular y funciona si
 
 ## Correr localmente
 
-Requiere Node.js 20+.
+Requiere Node.js 22+.
 
 ```bash
 npm install

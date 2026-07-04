@@ -10,7 +10,7 @@ export interface LevelParams {
   minDelayMs: number;
   maxDelayMs: number;
   decoyChance: number;
-  [key: string]: number; // index signature para encajar con DifficultyLevel['params']
+  [key: string]: number; // index signature para encajar con GameMode['params']
 }
 
 // easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).

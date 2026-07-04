@@ -26,9 +26,12 @@ export default defineConfig({
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },
   webServer: {
-    command: 'npm run preview -- --port 4173 --strictPort',
+    // --host 127.0.0.1 explícito: en los runners de CI con Node moderno,
+    // `localhost` puede resolver solo a IPv6 (::1) y el health-check de
+    // Playwright contra 127.0.0.1 se queda esperando hasta el timeout.
+    command: 'npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173/desafios/',
     reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
+    timeout: 60_000,
   },
 });
