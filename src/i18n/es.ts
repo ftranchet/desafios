@@ -23,6 +23,9 @@ export const strings = {
     bestScore: (score: number) => `Récord: ${score}`,
     noScore: 'Sin partidas todavía',
     continueLast: 'Seguir jugando',
+    favoritesTitle: 'Favoritos',
+    favoriteAdd: 'Agregar a favoritos',
+    favoriteRemove: 'Quitar de favoritos',
   },
   // Los nombres y descripciones de los modos (Fácil, Tranquilo, Progresivo...)
   // viven en src/core/modes.ts: son vocabulario del contrato (ADR-007) y los
@@ -85,5 +88,15 @@ export const strings = {
     back: 'Volver',
     on: 'Activado',
     off: 'Desactivado',
+  },
+  appCrash: {
+    title: 'Algo salió mal',
+    body: 'La aplicación tuvo un problema inesperado. Tus datos guardados están a salvo; recargá para seguir.',
+    reload: 'Recargar',
+  },
+  notFound: {
+    title: 'No encontramos esta pantalla',
+    body: 'El enlace no corresponde a ninguna sección de la app.',
+    backToCatalog: 'Ir al catálogo',
   },
 };

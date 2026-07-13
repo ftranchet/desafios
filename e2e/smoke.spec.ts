@@ -111,3 +111,27 @@ test('las estadísticas abren vacías con la invitación a jugar', async ({ page
     page.getByText('Todavía no jugaste ninguna partida', { exact: false }),
   ).toBeVisible();
 });
+
+test('favoritos: marcar un juego lo suma a la sección y sobrevive un reload', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByText('Favoritos')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Agregar a favoritos' }).first().tap();
+  await expect(page.getByRole('heading', { name: 'Favoritos' })).toBeVisible();
+  // Dos tarjetas del mismo juego (la de la sección y la de la grilla general)
+  // ya ofrecen "Quitar de favoritos".
+  await expect(page.getByRole('button', { name: 'Quitar de favoritos' })).toHaveCount(2);
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Favoritos' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Quitar de favoritos' }).first().tap();
+  await expect(page.getByText('Favoritos')).toHaveCount(0);
+});
+
+test('una ruta que no existe no deja la app en blanco', async ({ page }) => {
+  await page.goto('./#/esto-no-existe');
+  await expect(page.getByRole('heading', { name: 'No encontramos esta pantalla' })).toBeVisible();
+  await page.getByRole('link', { name: 'Ir al catálogo' }).tap();
+  await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
+});

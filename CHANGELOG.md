@@ -2,6 +2,20 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.15.0] — Favoritos en el catálogo
+
+### Agregado
+
+- **Sección "Favoritos"**: cada tarjeta del catálogo suma una estrella para marcar/desmarcar el juego; los favoritos aparecen en una sección propia arriba de la grilla general (se oculta si no hay ninguno) y se persisten en `dm:settings` (v3), sobreviven a un reload. El botón de favorito es un elemento hermano del enlace de la tarjeta, no anidado dentro — un toque ahí nunca navega al juego.
+
+## [0.14.0] — Red de contención en todo el shell
+
+### Corregido
+
+- **Pantalla en blanco en cualquier falla fuera de un juego**: `GameErrorBoundary` (PRD 5.6) solo protegía al componente del juego en sí — una excepción en el catálogo, las estadísticas, el selector de modo o el panel de resultado tumbaba todo el árbol de React sin ningún mensaje. Ahora `AppErrorBoundary` envuelve toda la app desde `main.tsx`: cualquier falla del shell muestra un panel con la opción de recargar en vez de dejar la pantalla vacía.
+- **Ruta inexistente dejaba el área de contenido vacía**: `Routes` no tenía una ruta comodín, así que un hash que no matcheaba ninguna de las cuatro rutas declaradas (enlace viejo, typo, deep link roto) renderizaba `null` dentro de `<main>`. Se agrega `NotFoundScreen` en `path="*"` con una salida al catálogo.
+- Encontrado en una revisión de código pedida tras un reporte de "sitio en blanco" en producción; no se pudo reproducir el reporte puntual (el pipeline de deploy y la actualización del service worker entre versiones probaron estar sanos), pero estos dos huecos eran una causa real y concreta de pantalla en blanco que ya no depende de reproducir el caso original para corregirse.
+
 ## [0.13.0] — Tabla de Schulte: undécimo juego del catálogo
 
 ### Agregado

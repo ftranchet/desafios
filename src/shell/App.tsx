@@ -4,6 +4,7 @@ import { AppHeader } from './components/AppHeader';
 import { CatalogScreen } from './screens/CatalogScreen';
 import { ConfigScreen } from './screens/ConfigScreen';
 import { GameScreen } from './screens/GameScreen';
+import { NotFoundScreen } from './screens/NotFoundScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import { useSettingsStore } from './store/useSettingsStore';
 
@@ -26,6 +27,7 @@ function Shell() {
           <Route path="/game/:gameId" element={<GameScreen key={location.pathname} />} />
           <Route path="/stats" element={<StatsScreen />} />
           <Route path="/config" element={<ConfigScreen />} />
+          <Route path="*" element={<NotFoundScreen />} />
         </Routes>
       </main>
       {!inGame && <AppHeader />}

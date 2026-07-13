@@ -5,23 +5,41 @@ import { CATEGORY_LABELS, strings } from '../../i18n/es';
 interface GameCardProps {
   metadata: GameMetadata;
   bestScore: number | null;
+  isFavorite: boolean;
+  onToggleFavorite(gameId: string): void;
 }
 
-export function GameCard({ metadata, bestScore }: GameCardProps) {
+export function GameCard({ metadata, bestScore, isFavorite, onToggleFavorite }: GameCardProps) {
   return (
-    <Link
-      to={`/game/${metadata.id}`}
-      className="flex flex-col gap-2 rounded-xl border border-surface-alt bg-surface p-4 transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:border-accent-primary"
-    >
-      <img src={metadata.icon} alt="" className="h-8 w-8" width={32} height={32} />
-      <h2 className="font-display text-base font-bold text-text-primary">{metadata.name}</h2>
-      <p className="text-sm text-text-secondary">{metadata.description}</p>
-      <div className="mt-auto flex flex-col gap-1 pt-2 text-xs">
-        <span className="text-accent-primary">{CATEGORY_LABELS[metadata.category]}</span>
-        <span className="text-text-secondary">
-          {bestScore === null ? strings.catalog.noScore : strings.catalog.bestScore(bestScore)}
+    // El botón de favorito es hermano del Link (no anidado dentro), posicionado
+    // encima con absolute: evita anidar un <button> dentro de un <a> y un toque
+    // ahí nunca navega, sin necesitar preventDefault/stopPropagation.
+    <div className="relative">
+      <Link
+        to={`/game/${metadata.id}`}
+        className="flex flex-col gap-2 rounded-xl border border-surface-alt bg-surface p-4 pr-11 transition-colors hover:border-accent-primary/60 focus:outline-none focus-visible:border-accent-primary"
+      >
+        <img src={metadata.icon} alt="" className="h-8 w-8" width={32} height={32} />
+        <h2 className="font-display text-base font-bold text-text-primary">{metadata.name}</h2>
+        <p className="text-sm text-text-secondary">{metadata.description}</p>
+        <div className="mt-auto flex flex-col gap-1 pt-2 text-xs">
+          <span className="text-accent-primary">{CATEGORY_LABELS[metadata.category]}</span>
+          <span className="text-text-secondary">
+            {bestScore === null ? strings.catalog.noScore : strings.catalog.bestScore(bestScore)}
+          </span>
+        </div>
+      </Link>
+      <button
+        type="button"
+        aria-label={isFavorite ? strings.catalog.favoriteRemove : strings.catalog.favoriteAdd}
+        aria-pressed={isFavorite}
+        onClick={() => onToggleFavorite(metadata.id)}
+        className="absolute right-1 top-1 z-10 flex min-h-touch min-w-touch items-center justify-center rounded-full text-xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      >
+        <span aria-hidden="true" className={isFavorite ? 'text-game-1' : 'text-text-secondary'}>
+          {isFavorite ? '★' : '☆'}
         </span>
-      </div>
-    </Link>
+      </button>
+    </div>
   );
 }

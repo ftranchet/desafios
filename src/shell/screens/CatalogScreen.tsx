@@ -17,6 +17,8 @@ function bestScoreFor(gameId: string): number | null {
 export function CatalogScreen() {
   const [category, setCategory] = useState<string>('all');
   const lastPlayed = useSettingsStore((s) => s.lastPlayed);
+  const favorites = useSettingsStore((s) => s.favorites);
+  const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
 
   const categories = useMemo(() => {
     const present = new Set(GAMES.map((g) => g.metadata.category));
@@ -26,6 +28,13 @@ export function CatalogScreen() {
   const filteredGames = useMemo(
     () => (category === 'all' ? GAMES : GAMES.filter((g) => g.metadata.category === category)),
     [category],
+  );
+
+  // Orden del catálogo, no el de marcado: agregar/quitar favoritos no
+  // reordena la sección mientras se navega.
+  const favoriteGames = useMemo(
+    () => GAMES.filter((g) => favorites.includes(g.metadata.id)),
+    [favorites],
   );
 
   const lastPlayedGame = lastPlayed ? getGameById(lastPlayed.gameId) : undefined;
@@ -43,6 +52,25 @@ export function CatalogScreen() {
         >
           {strings.catalog.continueLast}: {lastPlayedGame.metadata.name}
         </Link>
+      )}
+
+      {favoriteGames.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-display text-base font-bold text-text-primary">
+            {strings.catalog.favoritesTitle}
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {favoriteGames.map((game) => (
+              <GameCard
+                key={game.metadata.id}
+                metadata={game.metadata}
+                bestScore={bestScoreFor(game.metadata.id)}
+                isFavorite
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <div className="flex flex-wrap gap-2">
@@ -78,6 +106,8 @@ export function CatalogScreen() {
               key={game.metadata.id}
               metadata={game.metadata}
               bestScore={bestScoreFor(game.metadata.id)}
+              isFavorite={favorites.includes(game.metadata.id)}
+              onToggleFavorite={toggleFavorite}
             />
           ))}
         </div>
