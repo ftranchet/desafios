@@ -17,7 +17,12 @@ function Shell() {
   const inGame = location.pathname.startsWith('/game/');
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg text-text-primary">
+    <div
+      // Degradé radial muy sutil entre surface y bg (ADR-008): rompe la
+      // sensación de fondo plano sin agregar un color nuevo ni comprometer el
+      // minimalismo — son los dos mismos tokens de siempre, combinados.
+      className="flex min-h-dvh flex-col bg-[radial-gradient(ellipse_at_top,theme(colors.surface),theme(colors.bg)_70%)] text-text-primary"
+    >
       {/* Ancho de contenido acotado y centrado (PC/tablet): en un celular esto
           no hace nada (ya es más angosto que el tope), pero evita que catálogo,
           estadísticas y configuración se estiren de punta a punta en pantallas

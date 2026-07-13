@@ -37,7 +37,7 @@ export function StatsScreen() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex animate-fade-in flex-col gap-6 p-4">
       <h1 className="font-display text-xl font-extrabold text-text-primary">
         {strings.stats.title}
       </h1>
@@ -57,7 +57,7 @@ export function StatsScreen() {
             {records.map((entry, i) => (
               <li
                 key={i}
-                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
+                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary shadow-card"
               >
                 <span>
                   {entry.gameName} · {entry.modeLabel}
@@ -80,7 +80,7 @@ export function StatsScreen() {
             {history.map((result, i) => (
               <li
                 key={i}
-                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary"
+                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary shadow-card"
               >
                 <span>
                   {formatDate(result.timestamp)} · {gameName(result.gameId)} ·{' '}

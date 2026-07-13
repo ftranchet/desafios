@@ -11,15 +11,18 @@ export type PressButtonVariant = 'control' | 'key' | 'primary' | 'bare';
 
 const BASE = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary';
 
+// transition (no solo transition-colors) + active:scale (ADR-008): el toque
+// anima color y tamaño juntos, para que se sienta con peso físico y no solo
+// como un cambio de color instantáneo.
+const PRESS_SCALE = 'active:scale-95 disabled:active:scale-100';
+
 const VARIANTS: Record<PressButtonVariant, string> = {
   // Botón de control de tiempo real (D-pad, mover/rotar): cuadrado táctil.
-  control:
-    'min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors hover:border-accent-primary/60 active:bg-accent-primary active:text-bg disabled:opacity-40',
+  control: `min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition hover:border-accent-primary/60 active:bg-accent-primary active:text-bg disabled:opacity-40 ${PRESS_SCALE}`,
   // Tecla de keypad numérico.
-  key: 'min-h-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition-colors active:bg-surface-alt disabled:opacity-40',
+  key: `min-h-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary transition active:bg-surface-alt disabled:opacity-40 ${PRESS_SCALE}`,
   // Acción principal del keypad (enviar).
-  primary:
-    'min-h-touch rounded-lg bg-accent-primary font-display text-lg font-bold text-bg transition-colors disabled:opacity-40',
+  primary: `min-h-touch rounded-lg bg-accent-primary font-display text-lg font-bold text-bg shadow-card transition disabled:opacity-40 disabled:shadow-none ${PRESS_SCALE}`,
   // Sin estilo propio: el juego trae todas sus clases (pads de Simon).
   bare: '',
 };

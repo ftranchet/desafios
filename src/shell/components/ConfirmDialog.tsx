@@ -56,7 +56,7 @@ export function ConfirmDialog({
       onKeyDown={handleKeyDown}
       onClick={handleBackdropClick}
     >
-      <div className="w-full max-w-xs rounded-xl border border-surface-alt bg-surface p-5 shadow-lg">
+      <div className="w-full max-w-xs animate-fade-in rounded-xl border border-surface-alt bg-surface p-5 shadow-raised">
         <h2
           id="confirm-dialog-title"
           className="mb-2 font-display text-base font-bold text-text-primary"
@@ -68,7 +68,7 @@ export function ConfirmDialog({
           <button
             ref={acceptRef}
             type="button"
-            className="min-h-touch rounded-lg bg-accent-error px-4 font-body text-base font-semibold text-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+            className="min-h-touch rounded-lg bg-accent-error px-4 font-body text-base font-semibold text-bg transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
             onClick={onAccept}
           >
             {acceptLabel}
@@ -76,7 +76,7 @@ export function ConfirmDialog({
           <button
             ref={cancelRef}
             type="button"
-            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
             onClick={onCancel}
           >
             {cancelLabel}
