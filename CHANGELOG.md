@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.13.0] — Tabla de Schulte: undécimo juego del catálogo
+
+### Agregado
+
+- **Tabla de Schulte** (Velocidad): tocá los números de una grilla mezclada en orden ascendente, lo más rápido posible. Fácil/Medio/Difícil varían el tamaño de la grilla (4×4 a 6×6, la clásica de 5×5 en Medio); **Tranquilo** encadena 3 grillas sin cronómetro visible ni puntaje por tiempo (no compite); **Progresivo** recorre los 10 grados de ADR-007 con una grilla por grado — el tamaño se topa en el de Difícil (una grilla más grande bajaría las celdas de los 44 px mínimos de RNF-04 en un celular de 360 px), así que los grados 9-10 extrapolan exigiendo más velocidad en vez de una grilla más grande. En escritorio se tipea el número y Enter lo confirma, ya que una grilla de hasta 36 celdas no admite un atajo de teclado por celda.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.12.0] — Memoria espacial: décimo juego del catálogo
 
 ### Agregado
