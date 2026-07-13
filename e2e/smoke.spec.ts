@@ -11,9 +11,13 @@ test.beforeEach(async ({ page }) => {
 
 test('el catálogo muestra todos los juegos y la navegación', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
-  // Una tarjeta por juego registrado (los enlaces a /game/).
+  // Una tarjeta por juego registrado (los enlaces a /game/). Playwright corre
+  // en Node sin el pipeline de assets de Vite, así que no puede importar
+  // registry.ts directamente (rompe en el import de los icon.svg) — este
+  // número se actualiza a mano al sumar un juego, no participa del criterio
+  // de éxito de PRD 5.5 (que solo exige no tocar src/shell/ ni src/core/).
   const cards = page.locator('a[href*="#/game/"]');
-  await expect(cards).toHaveCount(25);
+  await expect(cards).toHaveCount(26);
   await expect(page.getByRole('navigation')).toBeVisible();
 });
 

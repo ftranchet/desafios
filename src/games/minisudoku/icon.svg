@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Una caja de Minisudoku: grilla 2x3 (más ancha que alta) con una celda completada -->
+  <rect x="2" y="5" width="20" height="14" rx="2" stroke="#3fa7d6" stroke-width="1.5" />
+  <path d="M9 5v14M15 5v14M2 12h20" stroke="#3fa7d6" stroke-width="1" opacity="0.5" />
+  <circle cx="12" cy="8.5" r="1.8" fill="#3fa7d6" />
+</svg>

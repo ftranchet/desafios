@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.32.0] — Minisudoku: vigésimo sexto juego del catálogo
+
+### Agregado
+
+- **Minisudoku** (Lógica): Sudoku 6×6, cajas de 2×3 — completá la grilla sin repetir 1-6 en fila, columna o caja. Nombre original (PRD 11.2): inspirado en el "Mini Sudoku" de LinkedIn; "Sudoku" en sí es un término genérico, no hace falta evitarlo (como el Sudoku 9×9 de este catálogo). A diferencia de ese Sudoku 9×9 (banco curado: verificar solución única en vivo a 9×9 es caro), una grilla de 36 celdas es lo bastante chica para generar y verificar unicidad en vivo con un solver de backtracking, mismo criterio que el verificador de unicidad de Nonograma agregado en la auditoría de julio. Fácil/Medio/Difícil varían la cantidad de celdas dadas; Tranquilo usa dificultad suave sin puntaje por eficiencia. Sin Progresivo, a propósito: como Sudoku, es una ronda única de pensamiento.
+- Grilla de 6 columnas: a diferencia del Sudoku 9×9, acá las celdas entran cómodas en un celular angosto sin necesitar la excepción de RNF-04 que sí documenta ese juego.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos. `logic.test.ts` verifica que la generación nunca produce un puzzle ambiguo, en varias semillas y las 4 dificultades.
+
 ## [0.31.0] — Pulido visual: color por categoría, elevación, tipografía y movimiento
 
 Ver ADR-008. El "minimalismo moderno" de ADR-004 se quedaba corto de detalle:
