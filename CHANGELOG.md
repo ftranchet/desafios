@@ -2,6 +2,12 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.16.1] — Crédito de autoría
+
+### Agregado
+
+- Línea de crédito al pie de Configuración: "Por **Francisco Tranchet** + IA.", con el nombre enlazado a LinkedIn (se abre en pestaña nueva) manteniendo el color del texto que lo rodea.
+
 ## [0.16.0] — Palabra del día: duodécimo juego, primero en la categoría Palabras
 
 ### Agregado

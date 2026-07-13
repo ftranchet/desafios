@@ -27,6 +27,8 @@ function ToggleRow({ label, value, onToggle }: ToggleRowProps) {
   );
 }
 
+const AUTHOR_LINKEDIN_URL = 'https://www.linkedin.com/in/ftranchet/';
+
 function exportData() {
   const json = storage.exportAll();
   const blob = new Blob([json], { type: 'application/json' });
@@ -113,6 +115,19 @@ export function ConfigScreen() {
           onCancel={() => setClearStep('idle')}
         />
       )}
+
+      <p className="text-center text-xs text-text-secondary">
+        {strings.config.creditBefore}
+        <a
+          href={AUTHOR_LINKEDIN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold"
+        >
+          {strings.config.creditName}
+        </a>
+        {strings.config.creditAfter}
+      </p>
     </div>
   );
 }

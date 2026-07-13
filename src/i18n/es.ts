@@ -81,6 +81,9 @@ export const strings = {
     clearConfirmCancel: 'Cancelar',
     clearConfirmFinalTitle: 'Confirmá de nuevo',
     clearConfirmFinalBody: 'Última confirmación: se borra todo para siempre.',
+    creditBefore: 'Por ',
+    creditName: 'Francisco Tranchet',
+    creditAfter: ' + IA.',
   },
   common: {
     cancel: 'Cancelar',
