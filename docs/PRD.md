@@ -451,6 +451,16 @@ La secuencia es deliberada: la prioridad del product owner es Tetris, Snake y ma
 
 Las **mecánicas** de juego en general no gozan de protección de derechos de autor, pero los **nombres, marcas registradas y la estética** sí pueden estarlo. El caso Tetris Holding contra Xio Interactive (2012) llegó a proteger incluso el aspecto visual de Tetris. Regla práctica del proyecto: mecánicas inspiradas sí; **nombres, gráficos, sonidos y paletas siempre originales**. Por eso el clon de Tetris se llama "Cascada" y el estilo Wordle se llama "Palabra del día". Esto es una consideración práctica estándar, no asesoramiento legal.
 
+### 11.3 Backlog nuevo: clones de LinkedIn Games y Elevate
+
+Propuesta (julio 2026, sin implementar todavía): 9 juegos inspirados en los
+minijuegos de LinkedIn (Queens, Tango, Zip, Patches, Mini Sudoku) y los daily
+puzzles de Elevate (Daily Crossword, Daily Colorlink, Daily Crossmath, Daily
+Wordbend). Análisis en profundidad, nombres propuestos, estrategia de
+generación por juego y orden de implementación sugerido en
+`docs/game-plans/linkedin-elevate-clones.md` — no se repite acá para no
+duplicar mantenimiento.
+
 ---
 
 ## 12. Flujo de trabajo con Claude Code
