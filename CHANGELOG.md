@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.22.0] — Anagramas: decimoctavo juego del catálogo
+
+### Agregado
+
+- **Anagramas** (Palabras): reordená las fichas de letras tocándolas hasta formar la palabra oculta. Cada toque en la bandeja coloca la ficha en el próximo casillero libre de la respuesta; tocar un casillero ocupado la devuelve a la bandeja. Sin límite de intentos ni game over: el puntaje premia la eficiencia de movimientos contra el mínimo teórico (una colocación por letra). Banco propio de palabras por largo (4/5/6, mismo criterio de "sin tildes ni eñe" que Palabra del día, aunque en su propia carpeta autocontenida). Fácil/Medio/Difícil varían el largo de palabra (4 a 6) con 5 palabras por sesión; Tranquilo encadena 8 palabras sin puntaje por eficiencia; Progresivo recorre los 10 grados — el largo topa en 6 letras (el diccionario no llega más lejos, igual que Palabra del día) y los grados 9-10 extrapolan agregando fichas señuelo (letras de más, ajenas a la palabra) en vez de alargarla más.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.21.0] — Nonograma: decimoséptimo juego del catálogo
 
 ### Agregado
