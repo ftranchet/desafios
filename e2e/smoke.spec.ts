@@ -13,7 +13,7 @@ test('el catálogo muestra todos los juegos y la navegación', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
   // Una tarjeta por juego registrado (los enlaces a /game/).
   const cards = page.locator('a[href*="#/game/"]');
-  await expect(cards).toHaveCount(14);
+  await expect(cards).toHaveCount(15);
   await expect(page.getByRole('navigation')).toBeVisible();
 });
 

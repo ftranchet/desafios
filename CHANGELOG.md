@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.19.0] — Apagá todo: decimoquinto juego del catálogo
+
+### Agregado
+
+- **Apagá todo** (Lógica, estilo Lights Out): tocá las celdas para apagar toda la grilla — cada toque prende o apaga esa celda y sus vecinas ortogonales. Prendido/apagado se distingue por brillo, no por matiz (RNF-05): una diferencia de luminancia se percibe igual con daltonismo. La grilla se arma presionando celdas al azar desde el estado apagado, así queda garantizado que siempre tiene solución sin necesitar un solver. Fácil/Medio/Difícil varían el tamaño de grilla (4×4 a 6×6, la clásica 5×5 en Medio) y la mezcla; Tranquilo encadena 3 grillas; Progresivo recorre los 10 grados — el tamaño se topa en el de Difícil por los objetivos táctiles (RNF-04, mismo criterio que Tabla de Schulte) y los grados 9-10 extrapolan con más mezcla en vez de una grilla más grande. Nombre original (11.2): el juguete electrónico "Lights Out" es una marca registrada de Tiger Electronics.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.18.0] — Torres de Hanoi: decimocuarto juego del catálogo
 
 ### Agregado
