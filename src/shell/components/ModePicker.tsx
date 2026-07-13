@@ -20,7 +20,7 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
   const specials = modes.filter((m) => !(DIFFICULTY_MODE_IDS as readonly string[]).includes(m.id));
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6">
+    <div className="flex w-full animate-fade-in flex-col items-center gap-6 p-6">
       <h2 className="font-display text-lg font-bold text-text-primary">
         {strings.modePicker.title}
       </h2>
@@ -33,9 +33,9 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
               key={mode.id}
               type="button"
               aria-pressed={mode.id === selectedMode}
-              className={`min-h-touch rounded-lg border px-3 text-sm font-medium transition-colors ${
+              className={`min-h-touch rounded-lg border px-3 text-sm font-medium transition active:scale-95 ${
                 mode.id === selectedMode
-                  ? 'border-accent-primary bg-accent-primary text-bg'
+                  ? 'border-accent-primary bg-accent-primary text-bg shadow-card'
                   : 'border-surface-alt bg-surface text-text-primary hover:border-accent-primary/60'
               }`}
               onClick={() => onSelect(mode.id)}
@@ -58,9 +58,9 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
               key={mode.id}
               type="button"
               aria-pressed={mode.id === selectedMode}
-              className={`flex min-h-touch flex-col items-start gap-0.5 rounded-lg border px-4 py-3 text-left transition-colors ${
+              className={`flex min-h-touch flex-col items-start gap-0.5 rounded-lg border px-4 py-3 text-left transition active:scale-[0.98] ${
                 mode.id === selectedMode
-                  ? 'border-accent-primary bg-accent-primary/10'
+                  ? 'border-accent-primary bg-accent-primary/10 shadow-card'
                   : 'border-surface-alt bg-surface hover:border-accent-primary/60'
               }`}
               onClick={() => onSelect(mode.id)}
@@ -82,7 +82,7 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
 
       <button
         type="button"
-        className="min-h-touch rounded-lg bg-accent-primary px-8 font-display text-base font-bold text-bg"
+        className="min-h-touch rounded-lg bg-accent-primary px-8 font-display text-base font-bold text-bg shadow-card transition active:scale-95"
         onClick={onPlay}
       >
         {strings.modePicker.play}

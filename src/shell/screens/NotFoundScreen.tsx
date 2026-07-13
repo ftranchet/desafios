@@ -7,12 +7,12 @@ import { strings } from '../../i18n/es';
 
 export function NotFoundScreen() {
   return (
-    <div className="flex min-h-[70dvh] flex-col items-center justify-center gap-4 p-6 text-center">
+    <div className="flex min-h-[70dvh] animate-fade-in flex-col items-center justify-center gap-4 p-6 text-center">
       <h1 className="font-display text-lg font-bold text-text-primary">{strings.notFound.title}</h1>
       <p className="max-w-xs text-sm text-text-secondary">{strings.notFound.body}</p>
       <Link
         to="/"
-        className="min-h-touch flex items-center rounded-lg bg-accent-primary px-6 font-display text-base font-bold text-bg"
+        className="flex min-h-touch items-center rounded-lg bg-accent-primary px-6 font-display text-base font-bold text-bg shadow-card transition active:scale-95"
       >
         {strings.notFound.backToCatalog}
       </Link>

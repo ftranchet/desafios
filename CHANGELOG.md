@@ -2,6 +2,43 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.31.0] — Pulido visual: color por categoría, elevación, tipografía y movimiento
+
+Ver ADR-008. El "minimalismo moderno" de ADR-004 se quedaba corto de detalle:
+un solo color activo (`accent-primary`) en todo el shell, cero elevación,
+una sola animación custom en toda la app y una escala tipográfica que salta
+de 1rem a 2rem sin nada en el medio. Este pase agrega la capa de detalle sin
+salir del minimalismo — todo vive en el shell y en el kit `core/ui/`, así que
+llega gratis a los ~25 juegos sin tocar ninguno.
+
+### Agregado
+
+- **Color por categoría** (`src/shell/categoryColors.ts`): cada una de las 6
+  categorías del catálogo tiene ahora un color propio (2 tokens nuevos,
+  `game-5`/`game-6`, verificados con la misma fórmula de contraste AA de
+  ADR-003) que tiñe la etiqueta de categoría, el chip de ícono y el filtro
+  activo de `CatalogScreen` — antes todo eso era el mismo teal.
+- Dos tamaños tipográficos nuevos (`md`, `2xl`): el puntaje de `ResultPanel`
+  ya no comparte tamaño con un título de sección cualquiera.
+- Dos niveles de sombra (`shadow-card`/`shadow-raised`) aplicados a tarjetas,
+  filas de lista, diálogos y al panel de resultado.
+- Micro-interacción de toque (`active:scale-95` + `transition`, en vez de
+  `transition-colors` solo) en `PressButton` (así llega a los ~25 juegos que
+  ya lo usan) y en todos los botones del shell.
+- Celebración de récord nuevo: el puntaje pasa a verde con una animación de
+  entrada (`animate-pop`) — antes solo lo indicaba una línea de texto chica,
+  pese a que el sonido y la vibración de récord (ADR-006) ya existían.
+- Entrada suave (`animate-fade-in`) al montar cada pantalla del shell.
+- Degradé radial sutil de fondo (`surface` → `bg`) en vez de un color plano.
+
+### Auditado sin cambios
+
+- Los 25 `icon.svg` comparten `viewBox="0 0 24 24"`; el grosor de trazo
+  variable entre íconos resultó intencional (glifos de un solo trazo como
+  Serpiente o el "+" de Aritmética usan trazos gruesos para tener presencia;
+  íconos con varias formas usan trazos finos para no verse recargados), no
+  una inconsistencia — no se tocó.
+
 ## [0.30.0] — Auditoría integral: robustez, responsividad y consistencia
 
 ### Corregido

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GAMES, getGameById } from '../../core/registry';
 import { storage } from '../../core/storage';
 import { CATEGORY_LABELS, strings } from '../../i18n/es';
+import { CATEGORY_ACCENT } from '../categoryColors';
 import { GameCard } from '../components/GameCard';
 import { useSettingsStore } from '../store/useSettingsStore';
 
@@ -55,7 +56,7 @@ export function CatalogScreen() {
   const lastPlayedGame = lastPlayed ? getGameById(lastPlayed.gameId) : undefined;
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex animate-fade-in flex-col gap-4 p-4">
       <h1 className="font-display text-xl font-extrabold text-text-primary">
         {strings.catalog.title}
       </h1>
@@ -63,7 +64,7 @@ export function CatalogScreen() {
       {lastPlayedGame && (
         <Link
           to={`/game/${lastPlayedGame.metadata.id}`}
-          className="min-h-touch flex items-center justify-center rounded-lg border border-accent-primary bg-surface px-4 text-sm text-accent-primary"
+          className="flex min-h-touch items-center justify-center rounded-lg border border-accent-primary bg-surface px-4 text-sm text-accent-primary shadow-card transition active:scale-[0.98]"
         >
           {strings.catalog.continueLast}: {lastPlayedGame.metadata.name}
         </Link>
@@ -92,26 +93,29 @@ export function CatalogScreen() {
         <button
           type="button"
           aria-pressed={category === 'all'}
-          className={`min-h-touch rounded-lg px-3 text-sm font-medium transition-colors ${
+          className={`min-h-touch rounded-lg px-3 text-sm font-medium transition active:scale-95 ${
             category === 'all' ? 'bg-accent-primary text-bg' : 'bg-surface text-text-secondary'
           }`}
           onClick={() => setCategory('all')}
         >
           {strings.catalog.filterAll}
         </button>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            aria-pressed={category === cat}
-            className={`min-h-touch rounded-lg px-3 text-sm font-medium transition-colors ${
-              category === cat ? 'bg-accent-primary text-bg' : 'bg-surface text-text-secondary'
-            }`}
-            onClick={() => setCategory(cat)}
-          >
-            {CATEGORY_LABELS[cat]}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const accent = CATEGORY_ACCENT[cat];
+          return (
+            <button
+              key={cat}
+              type="button"
+              aria-pressed={category === cat}
+              className={`min-h-touch rounded-lg px-3 text-sm font-medium transition active:scale-95 ${
+                category === cat ? `${accent.activeBg} text-bg` : 'bg-surface text-text-secondary'
+              }`}
+              onClick={() => setCategory(cat)}
+            >
+              {CATEGORY_LABELS[cat]}
+            </button>
+          );
+        })}
       </div>
 
       {filteredGames.length === 0 ? (
