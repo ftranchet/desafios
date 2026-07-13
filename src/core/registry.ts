@@ -15,6 +15,7 @@ import { memoryMatch } from '../games/memory-match';
 import { hanoiTowers } from '../games/hanoi-towers';
 import { lightsOut } from '../games/lights-out';
 import { sudoku } from '../games/sudoku';
+import { nonogram } from '../games/nonogram';
 
 // Agregar un juego = importar y sumar una línea acá. Nada más (PRD sección 5.3).
 export const GAMES: GameModule[] = [
@@ -34,6 +35,7 @@ export const GAMES: GameModule[] = [
   hanoiTowers,
   lightsOut,
   sudoku,
+  nonogram,
 ];
 
 export function getGameById(id: string): GameModule | undefined {

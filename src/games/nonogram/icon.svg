@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Grilla de Nonograma con una cruz pintada, como el puzzle de Tranquilo -->
+  <rect x="2" y="2" width="20" height="20" rx="2" stroke="#3fa7d6" stroke-width="1.5" opacity="0.45" />
+  <path d="M9 2v20M15 2v20M2 9h20M2 15h20" stroke="#3fa7d6" stroke-width="1" opacity="0.3" />
+  <rect x="9" y="2" width="6" height="20" fill="#3fa7d6" />
+  <rect x="2" y="9" width="20" height="6" fill="#3fa7d6" />
+</svg>

@@ -2,6 +2,15 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.21.0] — Nonograma: decimoséptimo juego del catálogo
+
+### Agregado
+
+- **Nonograma** (Lógica, estilo Picross): pintá las celdas según las pistas numéricas de fila y columna hasta revelar el dibujo oculto. Banco de 4 imágenes precargadas y verificadas (`puzzles.ts`) por el mismo motivo que Sudoku (PRD sección 16): garantizar solución única generando en vivo es difícil, así que cada imagen se verificó offline con un solver de propagación de restricciones + backtracking que confirmó exactamente una solución antes de entrar al banco. Las pistas de fila/columna se derivan en tiempo de ejecución a partir de la imagen. Fácil/Medio/Difícil varían el tamaño de la grilla (5×5 a 10×10); Tranquilo usa una grilla 6×6 sin puntaje por eficiencia. Sin condición de derrota: el puntaje pondera cantidad de celdas pintadas contra los toques totales. Sin Progresivo, a propósito: como Cifras y Sudoku, es una ronda única de pensamiento, no un juego de rampa de 10 grados.
+- Cada pista de fila/columna ya satisfecha se atenúa y se tacha en la interfaz — una señal tipográfica además del color (RNF-05), no solo un cambio de matiz.
+- Nota de diseño documentada sobre RNF-04: igual que en Sudoku, una grilla de hasta 10 columnas no puede tener celdas de 44 px en un celular angosto — acá no hay forma de separar selección de acción (cada toque pinta una celda), así que se acepta el mismo trade-off que usan las apps de Picross en móvil.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos.
+
 ## [0.20.0] — Sudoku: decimosexto juego del catálogo
 
 ### Agregado
