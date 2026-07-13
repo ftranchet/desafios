@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.12.0] — Memoria espacial: décimo juego del catálogo
+
+### Agregado
+
+- **Memoria espacial** (Memoria, tipo Corsi): memorizá y repetí la secuencia de celdas que se van iluminando en una grilla de 3×3 — la única pista es la posición, nunca el color (RNF-05), y cada celda suena con un tono propio al destellar y al tocarla. Misma estructura que Simon (referencia de ADR-007 para juegos de secuencia creciente): Fácil/Medio/Difícil varían la velocidad de reproducción y el tope de rondas; **Tranquilo** hace que fallar repita la ronda en vez de terminar; **Progresivo** acelera la reproducción por grado con puntaje acumulativo multiplicado.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.11.0] — Código secreto: noveno juego del catálogo
 
 ### Agregado
