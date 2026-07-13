@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.20.0] — Sudoku: decimosexto juego del catálogo
+
+### Agregado
+
+- **Sudoku** (Lógica): el clásico 9×9 — completá la grilla sin repetir número en fila, columna o caja de 3×3. Banco de 8 puzzles precargados y verificados (`puzzles.ts`) en vez de un generador en vivo: la generación de puzzles con solución única es difícil de garantizar (riesgo ya anotado en PRD sección 16), así que se usa el mismo patrón que el diccionario de Palabra del día — cada puzzle se generó por backtracking aleatorio y se verificó con un contador de soluciones que confirma exactamente una antes de entrar al banco. Fácil/Medio/Difícil varían la cantidad de celdas reveladas (40 a 25); Tranquilo usa una dificultad suave sin puntaje por eficiencia. Sin Progresivo, a propósito: como Cifras, es una ronda única de pensamiento, no un juego de rampa.
+- Nota de diseño documentada sobre RNF-04: una grilla de 9 columnas no puede tener celdas de 44 px en un celular de 360 px — restricción matemática de la grilla clásica, no una elección. Se compensa así: el toque en la grilla solo selecciona una celda (acción puntual, no repetida); completar el número se hace en un teclado aparte de abajo, con teclas de 44 px de sobra. La corrección de cada celda combina color y peso de fuente (RNF-05): dada = negrita, ingresada bien = acento, mal = error — y las reglas del Sudoku siempre se pueden verificar mirando los números, nunca dependen solo del color.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos.
+
 ## [0.19.0] — Apagá todo: decimoquinto juego del catálogo
 
 ### Agregado
