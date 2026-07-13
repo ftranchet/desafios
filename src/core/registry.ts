@@ -17,6 +17,7 @@ import { lightsOut } from '../games/lights-out';
 import { sudoku } from '../games/sudoku';
 import { nonogram } from '../games/nonogram';
 import { anagrams } from '../games/anagrams';
+import { stroop } from '../games/stroop';
 
 // Agregar un juego = importar y sumar una línea acá. Nada más (PRD sección 5.3).
 export const GAMES: GameModule[] = [
@@ -38,6 +39,7 @@ export const GAMES: GameModule[] = [
   sudoku,
   nonogram,
   anagrams,
+  stroop,
 ];
 
 export function getGameById(id: string): GameModule | undefined {

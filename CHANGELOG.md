@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.23.0] — Nombra el color: decimonoveno juego del catálogo
+
+### Agregado
+
+- **Nombra el color** (Velocidad, efecto Stroop): tocá el botón del color en el que está pintada la palabra, ignorando lo que dice — a veces coinciden (ensayo congruente), a veces no (incongruente, el conflicto clásico del efecto Stroop). Fácil/Medio/Difícil varían la proporción de ensayos incongruentes (20% a 85%) y el tiempo por pregunta (5 s a 3 s); Tranquilo usa conflicto medio sin reloj; Progresivo recorre los 10 grados, con los grados 9-10 extrapolando la proporción de conflicto más allá del 85% de Difícil (sin problema de dificultad estructural: a diferencia de Sudoku o Nonograma, acá no hay grilla que tope un tamaño de celda).
+- Nota de diseño documentada sobre RNF-05: en este juego el color ES la información a evaluar — es la esencia del efecto Stroop, un paradigma científico y no una elección de diseño evitable. Se usan los 4 colores del sistema con mayor separación de matiz entre sí (amarillo/violeta/naranja/celeste), evitando a propósito el par rojo/verde —el más común entre daltonismos— para no sumarle al juego una dificultad ajena a su propósito; además cada botón de respuesta siempre lleva el nombre del color en texto, así identificar las opciones nunca depende solo del color.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.22.0] — Anagramas: decimoctavo juego del catálogo
 
 ### Agregado
