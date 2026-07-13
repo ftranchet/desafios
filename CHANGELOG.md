@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.28.0] — Buscaminas: vigésimo cuarto juego del catálogo
+
+### Agregado
+
+- **Buscaminas** (Lógica): descubrí todas las celdas sin minas, guiándote por los números vecinos; una celda con 0 minas vecinas revela en cascada, como el clásico. El primer toque siempre es seguro: las minas recién se colocan después de conocerlo, evitando esa celda y sus vecinas, para que nunca termine la partida de entrada ni deje un tablero trivial. Un botón de "modo bandera" reemplaza al clic derecho de la versión de escritorio (no hay equivalente táctil estándar): activado, tocar una celda la marca o desmarca en vez de descubrirla. Fácil/Medio/Difícil varían la densidad de minas (no el tamaño de grilla, topado en 6×6 a 9×9 por RNF-04 — bien por debajo del clásico 9×9/16×16/16×30 de escritorio); Tranquilo (ADR-007, "sin game over") arma un tablero nuevo al tocar una mina en vez de terminar la sesión, igual que el respawn de Serpiente, hasta que el jugador toca "Terminar". Sin Progresivo: como Sudoku, Nonograma y Empuja cajas, es una ronda única de pensamiento.
+- Cada celda descubierta muestra la cantidad de minas vecinas como número, nunca solo un color (RNF-05); las celdas sin marcar, marcadas y descubiertas también se distinguen por su contenido (vacía, bandera, número o mina), no solo por el estilo.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos.
+
 ## [0.27.0] — Empuja cajas: vigésimo tercer juego del catálogo
 
 ### Agregado
