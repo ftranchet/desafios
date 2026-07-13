@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Una caja empujada hacia su objetivo -->
+  <rect x="2" y="8" width="8" height="8" rx="1.5" fill="#8a6dff" />
+  <rect x="14" y="8" width="8" height="8" rx="1.5" stroke="#3fd0c9" stroke-width="1.5" stroke-dasharray="3 2" />
+  <path d="M11 12h2" stroke="#8a6dff" stroke-width="1.8" stroke-linecap="round" />
+  <path d="M11.5 9.5 14 12l-2.5 2.5" stroke="#8a6dff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

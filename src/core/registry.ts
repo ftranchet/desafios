@@ -21,6 +21,7 @@ import { stroop } from '../games/stroop';
 import { slidingPuzzle } from '../games/sliding-puzzle';
 import { trios } from '../games/trios';
 import { nBack } from '../games/n-back';
+import { sokoban } from '../games/sokoban';
 
 // Agregar un juego = importar y sumar una línea acá. Nada más (PRD sección 5.3).
 export const GAMES: GameModule[] = [
@@ -46,6 +47,7 @@ export const GAMES: GameModule[] = [
   slidingPuzzle,
   trios,
   nBack,
+  sokoban,
 ];
 
 export function getGameById(id: string): GameModule | undefined {

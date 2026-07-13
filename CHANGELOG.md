@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.27.0] — Empuja cajas: vigésimo tercer juego del catálogo
+
+### Agregado
+
+- **Empuja cajas** (Lógica, estilo Sokoban): empujá las cajas hasta que todas queden sobre su objetivo, moviéndote en las 4 direcciones (D-pad o flechas del teclado); una caja solo se empuja si no hay pared ni otra caja detrás. Nombre original (PRD 11.2): "Sokoban" es una marca históricamente asociada a Thinking Rabbit. Banco de 8 niveles precargados y verificados (`puzzles.ts`, 2 por dificultad) en vez de generación en vivo: Sokoban es PSPACE-completo en general, así que garantizar que un nivel al azar sea resoluble es difícil (riesgo ya anotado en PRD sección 16). Cada nivel se verificó con un solver de BFS sobre (posición del jugador, posiciones de las cajas) que confirmó que es resoluble y calculó el largo de una solución óptima exacta (no una referencia aproximada) — el mismo solver se reescribió en los tests para verificarlo de forma permanente, no solo al transcribir. Empujar una caja a un rincón sin objetivo puede dejar el nivel sin solución: en vez de detectar puntos muertos, hay un botón de reinicio siempre disponible. Fácil/Medio/Difícil varían la cantidad de cajas (1 a 3); Tranquilo usa un nivel de dificultad media sin puntaje por eficiencia. Sin Progresivo, a propósito: como Sudoku y Nonograma, es una ronda única de pensamiento sobre un nivel curado.
+- Cada caja ya colocada en su objetivo se marca con un tilde además de cambiar de color (RNF-05): nunca depende solo del color.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos.
+
 ## [0.26.0] — ¿Coincide?: vigésimo segundo juego del catálogo
 
 ### Agregado
