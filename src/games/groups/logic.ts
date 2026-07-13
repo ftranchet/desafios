@@ -21,6 +21,8 @@ import { createRng, randomInt, type Rng } from '../../core/random';
 
 const EMPTY = -1;
 
+export const TILE_TYPE_COUNT = 5; // tipos de ficha disponibles (color+glifo, ver ui.tsx)
+
 export interface ModeParams extends Record<string, number> {
   rows: number;
   cols: number;
@@ -47,7 +49,9 @@ export function stageParams(stage: number): ModeParams {
   return {
     rows: Math.round(lerp(easy.rows, hard.rows, t)),
     cols: Math.round(lerp(easy.cols, hard.cols, t)),
-    colorCount: Math.round(lerp(easy.colorCount, hard.colorCount, t)),
+    // Se topa en TILE_TYPE_COUNT: no hay más tipos de ficha (color+glifo) para
+    // extrapolar, a diferencia de filas/columnas que sí pueden seguir creciendo.
+    colorCount: Math.min(TILE_TYPE_COUNT, Math.round(lerp(easy.colorCount, hard.colorCount, t))),
   };
 }
 

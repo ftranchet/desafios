@@ -127,7 +127,7 @@ export function GameScreen() {
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex flex-1 flex-col">
       <header className="flex min-h-touch items-center justify-between border-b border-surface-alt px-4">
         <div className="flex items-center gap-1">
           {/* Sin navegación inferior en esta ruta, la vuelta al catálogo vive acá;
@@ -157,35 +157,43 @@ export function GameScreen() {
         )}
       </header>
 
-      {phase === 'select-mode' && (
-        <ModePicker
-          modes={game.metadata.modes}
-          selectedMode={mode}
-          onSelect={setMode}
-          onPlay={handlePlay}
-        />
-      )}
-
-      {phase === 'playing' && (
-        <GameErrorBoundary onExit={() => navigate('/')}>
-          <game.Component
-            config={{ mode }}
-            onFinish={handleFinish}
-            onQuit={handleAbandon}
-            audio={gameAudio}
+      {/* Centrado vertical: en un celular esto no se nota (la pantalla ya
+          mide poco más que el contenido), pero evita que el selector de modo
+          o el resultado queden pegados arriba con un vacío grande debajo en
+          tablet/PC. Cada juego ya centra su propio contenido igual durante
+          la partida (min-h-[70dvh] + justify-center); esto solo extiende el
+          mismo criterio a las otras dos fases. */}
+      <div className="flex flex-1 flex-col items-center justify-center">
+        {phase === 'select-mode' && (
+          <ModePicker
+            modes={game.metadata.modes}
+            selectedMode={mode}
+            onSelect={setMode}
+            onPlay={handlePlay}
           />
-        </GameErrorBoundary>
-      )}
+        )}
 
-      {phase === 'result' && result && (
-        <ResultPanel
-          result={result}
-          previousBest={previousBest}
-          isNewRecord={isNewRecord}
-          onRetry={handleRetry}
-          onBackToCatalog={() => navigate('/')}
-        />
-      )}
+        {phase === 'playing' && (
+          <GameErrorBoundary onExit={() => navigate('/')}>
+            <game.Component
+              config={{ mode }}
+              onFinish={handleFinish}
+              onQuit={handleAbandon}
+              audio={gameAudio}
+            />
+          </GameErrorBoundary>
+        )}
+
+        {phase === 'result' && result && (
+          <ResultPanel
+            result={result}
+            previousBest={previousBest}
+            isNewRecord={isNewRecord}
+            onRetry={handleRetry}
+            onBackToCatalog={() => navigate('/')}
+          />
+        )}
+      </div>
 
       {showQuitConfirm && (
         <ConfirmDialog

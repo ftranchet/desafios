@@ -145,7 +145,7 @@ export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className={`flex h-full min-h-[70vh] flex-col items-center justify-center gap-6 p-6 ${background}`}
+      className={`flex h-full min-h-[70dvh] flex-col items-center justify-center gap-6 p-6 ${background}`}
       role="button"
       tabIndex={0}
       aria-label="Área de juego: tocá cuando cambie a turquesa"

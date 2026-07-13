@@ -130,7 +130,7 @@ export function SpatialMemoryGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center justify-center gap-8 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center justify-center gap-8 p-6 focus:outline-none"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -156,7 +156,7 @@ export function SpatialMemoryGame({ config, onFinish, audio }: GameProps) {
           const isFlashing = activeCell === index;
           const isPressed = pressedCell === index;
           const stateClass = isFlashing
-            ? 'bg-accent-primary scale-105 ring-4 ring-text-primary/70 shadow-[0_0_24px_rgba(63,208,201,0.5)] z-10'
+            ? 'bg-accent-primary scale-105 ring-4 ring-text-primary/70 shadow-[0_0_24px_theme(colors.accent-primary/50%)] z-10'
             : isPressed
               ? 'bg-surface-alt scale-95'
               : 'bg-surface';

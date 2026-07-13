@@ -51,7 +51,7 @@ export function NonogramGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center gap-3 p-4 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center gap-3 p-4 focus:outline-none"
       tabIndex={0}
     >
       <div className="w-full max-w-[24rem] text-center text-sm text-text-secondary">

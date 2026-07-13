@@ -2,8 +2,9 @@ import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { lerp, PROGRESSIVE_STAGES, progressiveT } from '../../core/modes';
 import { createRng, randomInt, type Rng } from '../../core/random';
 
-// Lógica pura de Cascada (clon de Tetris) — sin React ni canvas. Construida
-// sobre el mismo bucle de tiempo real que validó Snake (PRD 11.1).
+// Lógica pura de "Cascada" (estilo Tetris) — sin React ni canvas. Construida
+// sobre el mismo bucle de tiempo real que validó Snake (PRD 11.1). Nombre
+// original (PRD 11.2): "Tetris" es marca registrada de The Tetris Company.
 
 export const BOARD_WIDTH = 10;
 export const BOARD_HEIGHT = 20;

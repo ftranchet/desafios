@@ -31,7 +31,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg p-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-bg p-6 text-center">
         <h1 className="font-display text-lg font-bold text-text-primary">
           {strings.appCrash.title}
         </h1>

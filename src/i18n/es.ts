@@ -18,6 +18,7 @@ export const strings = {
   },
   catalog: {
     title: 'Desafíos Mentales',
+    filterByCategory: 'Filtrar por categoría',
     filterAll: 'Todos',
     empty: 'Todavía no hay juegos en esta categoría.',
     bestScore: (score: number) => `Récord: ${score}`,
@@ -49,7 +50,6 @@ export const strings = {
   },
   result: {
     title: 'Resultado',
-    score: (score: number) => `Puntaje: ${score}`,
     newRecord: '¡Récord nuevo!',
     previousRecord: (score: number) => `Récord anterior: ${score}`,
     noPreviousRecord: 'Primera partida en este modo',

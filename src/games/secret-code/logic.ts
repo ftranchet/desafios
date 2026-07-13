@@ -118,6 +118,7 @@ export interface GameState {
   rounds: RoundSpec[];
   roundIndex: number;
   attempts: Attempt[]; // intentos de la ronda actual
+  totalAttempts: number; // intentos acumulados de toda la sesión (no se reinicia entre rondas)
   solvedRounds: number;
   score: number;
   roundOver: boolean; // la ronda actual terminó (resuelta, o agotada en Tranquilo)
@@ -132,6 +133,7 @@ export function createInitialState(mode: ModeId, seed: number): GameState {
     rounds: buildRounds(mode, seed),
     roundIndex: 0,
     attempts: [],
+    totalAttempts: 0,
     solvedRounds: 0,
     score: 0,
     roundOver: false,
@@ -163,6 +165,7 @@ export function submitGuess(state: GameState, digits: number[]): GameState {
 
   const feedback = evaluateGuess(round.code, digits);
   const attempts = [...state.attempts, { digits, ...feedback }];
+  const totalAttempts = state.totalAttempts + 1;
   const won = feedback.exact === round.code.length;
   const isLastRound = state.roundIndex === state.rounds.length - 1;
 
@@ -171,6 +174,7 @@ export function submitGuess(state: GameState, digits: number[]): GameState {
     return {
       ...state,
       attempts,
+      totalAttempts,
       score,
       solvedRounds: state.solvedRounds + 1,
       roundOver: true,
@@ -180,15 +184,23 @@ export function submitGuess(state: GameState, digits: number[]): GameState {
   }
 
   if (attempts.length < round.maxGuesses) {
-    return { ...state, attempts };
+    return { ...state, attempts, totalAttempts };
   }
 
   // Se agotaron los intentos sin resolver.
   if (state.mode === 'zen') {
     // Tranquilo: no hay game over — se revela el código y se sigue.
-    return { ...state, attempts, roundOver: true, roundWon: false, gameOver: isLastRound };
+    return { ...state, attempts, totalAttempts, roundOver: true, roundWon: false, gameOver: isLastRound };
   }
-  return { ...state, attempts, roundOver: true, roundWon: false, gameOver: true, failed: true };
+  return {
+    ...state,
+    attempts,
+    totalAttempts,
+    roundOver: true,
+    roundWon: false,
+    gameOver: true,
+    failed: true,
+  };
 }
 
 /** Avanza a la próxima ronda una vez que la actual terminó (y la sesión sigue). */
@@ -226,7 +238,7 @@ export function buildResult(
     metrics: {
       solvedRounds: state.solvedRounds,
       totalRounds: state.rounds.length,
-      attemptsUsed: state.attempts.length,
+      attemptsUsed: state.totalAttempts,
       maxStage: round?.stage ?? 1,
     },
     timestamp: new Date().toISOString(),

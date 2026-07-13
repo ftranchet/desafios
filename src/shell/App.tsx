@@ -17,8 +17,13 @@ function Shell() {
   const inGame = location.pathname.startsWith('/game/');
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-text-primary">
-      <main className="flex flex-1 flex-col">
+    <div className="flex min-h-dvh flex-col bg-bg text-text-primary">
+      {/* Ancho de contenido acotado y centrado (PC/tablet): en un celular esto
+          no hace nada (ya es más angosto que el tope), pero evita que catálogo,
+          estadísticas y configuración se estiren de punta a punta en pantallas
+          grandes. Los juegos ya traen su propio ancho interno (max-w-xs, etc.);
+          este tope solo les da un marco centrado en vez de pegarse al borde. */}
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
         <Routes>
           <Route path="/" element={<CatalogScreen />} />
           {/* key por ruta: cambiar de juego vía URL/historial remonta la

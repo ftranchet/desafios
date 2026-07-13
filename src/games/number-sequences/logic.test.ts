@@ -78,6 +78,18 @@ describe('computeScore', () => {
     seconds,
   });
 
+  it('modo fijo: base + bono por tiempo restante', () => {
+    const questions = [question(1, 10), question(1, 10)];
+    const answers: AnswerRecord[] = [
+      { correct: true, responseMs: 0 }, // bono completo
+      { correct: false, responseMs: 1000 },
+    ];
+    const { score, metrics } = computeScore('medium', answers, questions);
+    expect(score).toBe(150);
+    expect(metrics.correct).toBe(1);
+    expect(metrics.incorrect).toBe(1);
+  });
+
   it('Tranquilo: punto fijo por acierto, sin bono', () => {
     const questions = [question(1, 0), question(1, 0)];
     const answers: AnswerRecord[] = [

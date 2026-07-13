@@ -66,7 +66,7 @@ export function LightsOutGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center gap-4 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center gap-4 p-6 focus:outline-none"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -91,7 +91,7 @@ export function LightsOutGame({ config, onFinish, audio }: GameProps) {
             ariaLabel={`Celda ${cellIndex + 1}, ${isOn ? 'prendida' : 'apagada'}`}
             className={`aspect-square rounded-md border transition-colors duration-150 ${
               isOn
-                ? 'border-game-1 bg-game-1 shadow-[0_0_10px_rgba(255,205,75,0.5)]'
+                ? 'border-game-1 bg-game-1 shadow-[0_0_10px_theme(colors.game-1/50%)]'
                 : 'border-surface-alt bg-surface-alt'
             }`}
           >

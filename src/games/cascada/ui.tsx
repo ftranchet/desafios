@@ -257,7 +257,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center gap-3 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      className="flex min-h-[70dvh] flex-col items-center gap-3 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
       aria-label="Tablero de Cascada: arrastrá la pieza con el dedo, tocá para rotar, envión hacia abajo para caída rápida; también botones y flechas"
       tabIndex={0}

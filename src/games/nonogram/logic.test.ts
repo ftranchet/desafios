@@ -61,6 +61,93 @@ describe('computeClues', () => {
   });
 });
 
+// El banco de imágenes se documenta como "verificado con un solver de
+// propagación + backtracking" (ver puzzles.ts) pero nada lo comprobaba en
+// código: si alguien edita una imagen a mano y rompe la unicidad, nada lo
+// detecta. Este solver de fuerza bruta (con poda por columna) cuenta
+// soluciones hasta un tope de 2 y confirma que cada imagen del banco admite
+// exactamente una.
+function lineFillings(clue: readonly number[], length: number): number[][] {
+  const k = clue.length;
+  if (k === 0) return [Array(length).fill(0)];
+  const sumGroups = clue.reduce((a, b) => a + b, 0);
+  const free = length - sumGroups - (k - 1);
+  if (free < 0) return [];
+  const results: number[][] = [];
+  const gaps: number[] = [];
+  function recurse(slot: number, remaining: number): void {
+    if (slot === k + 1) {
+      if (remaining !== 0) return;
+      const row: number[] = [];
+      for (let i = 0; i < k; i += 1) {
+        row.push(...(Array(gaps[i]).fill(0) as number[]));
+        if (i > 0) row.push(0);
+        row.push(...(Array(clue[i]).fill(1) as number[]));
+      }
+      row.push(...(Array(gaps[k]).fill(0) as number[]));
+      results.push(row);
+      return;
+    }
+    for (let g = 0; g <= remaining; g += 1) {
+      gaps[slot] = g;
+      recurse(slot + 1, remaining - g);
+    }
+  }
+  recurse(0, free);
+  return results;
+}
+
+function countSolutions(
+  rowClues: number[][],
+  colClues: number[][],
+  rows: number,
+  cols: number,
+  limit: number,
+): number {
+  const rowOptions = rowClues.map((clue) => lineFillings(clue, cols));
+  const colOptions = colClues.map((clue) => lineFillings(clue, rows));
+  const grid: number[][] = [];
+  let count = 0;
+
+  function columnsFeasible(uptoRow: number): boolean {
+    for (let c = 0; c < cols; c += 1) {
+      const prefix: number[] = [];
+      for (let r = 0; r <= uptoRow; r += 1) prefix.push(grid[r]![c]!);
+      const ok = colOptions[c]!.some((filling) => prefix.every((v, i) => filling[i] === v));
+      if (!ok) return false;
+    }
+    return true;
+  }
+
+  function backtrack(r: number): void {
+    if (count >= limit) return;
+    if (r === rows) {
+      count += 1;
+      return;
+    }
+    for (const rowPattern of rowOptions[r]!) {
+      grid[r] = rowPattern;
+      if (columnsFeasible(r)) {
+        backtrack(r + 1);
+        if (count >= limit) return;
+      }
+    }
+  }
+  backtrack(0);
+  return count;
+}
+
+describe('unicidad de solución del banco de imágenes', () => {
+  it('cada imagen es la única solución posible de sus propias pistas', () => {
+    for (const bank of Object.values(IMAGES_BY_TIER)) {
+      for (const { image, rows, cols } of bank) {
+        const { rowClues, colClues } = computeClues(image, rows, cols);
+        expect(countSolutions(rowClues, colClues, rows, cols, 2)).toBe(1);
+      }
+    }
+  });
+});
+
 describe('selectImage', () => {
   it('misma semilla, misma imagen', () => {
     expect(selectImage('medium', SEED)).toEqual(selectImage('medium', SEED));

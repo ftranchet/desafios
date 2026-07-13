@@ -31,7 +31,7 @@ export class GameErrorBoundary extends Component<GameErrorBoundaryProps, GameErr
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex min-h-[70dvh] flex-col items-center justify-center gap-4 p-6 text-center">
         <h2 className="font-display text-lg font-bold text-text-primary">
           {strings.game.crashTitle}
         </h2>

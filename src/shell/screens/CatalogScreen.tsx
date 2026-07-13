@@ -14,6 +14,11 @@ function bestScoreFor(gameId: string): number | null {
   return Math.max(...results.map((r) => r.score));
 }
 
+// Grilla responsiva: 2 columnas en celular, más columnas a medida que hay
+// lugar en tablet/PC, sin achicar nunca las tarjetas por debajo de un tamaño
+// cómodo (el tope de ancho general vive en App.tsx).
+const CARD_GRID_CLASSES = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4';
+
 export function CatalogScreen() {
   const [category, setCategory] = useState<string>('all');
   const lastPlayed = useSettingsStore((s) => s.lastPlayed);
@@ -37,6 +42,16 @@ export function CatalogScreen() {
     [favorites],
   );
 
+  // Se calcula una sola vez por montaje: los puntajes no cambian mientras se
+  // navega dentro del catálogo (solo cambian al jugar una partida, y volver
+  // del juego remonta esta pantalla desde cero). Marcar/desmarcar favoritos
+  // no debería recorrer localStorage para las ~25 tarjetas de nuevo.
+  const bestScores = useMemo(() => {
+    const scores = new Map<string, number | null>();
+    for (const game of GAMES) scores.set(game.metadata.id, bestScoreFor(game.metadata.id));
+    return scores;
+  }, []);
+
   const lastPlayedGame = lastPlayed ? getGameById(lastPlayed.gameId) : undefined;
 
   return (
@@ -59,12 +74,12 @@ export function CatalogScreen() {
           <h2 className="font-display text-base font-bold text-text-primary">
             {strings.catalog.favoritesTitle}
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={CARD_GRID_CLASSES}>
             {favoriteGames.map((game) => (
               <GameCard
                 key={game.metadata.id}
                 metadata={game.metadata}
-                bestScore={bestScoreFor(game.metadata.id)}
+                bestScore={bestScores.get(game.metadata.id) ?? null}
                 isFavorite
                 onToggleFavorite={toggleFavorite}
               />
@@ -73,9 +88,10 @@ export function CatalogScreen() {
         </section>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={strings.catalog.filterByCategory}>
         <button
           type="button"
+          aria-pressed={category === 'all'}
           className={`min-h-touch rounded-lg px-3 text-sm font-medium transition-colors ${
             category === 'all' ? 'bg-accent-primary text-bg' : 'bg-surface text-text-secondary'
           }`}
@@ -87,6 +103,7 @@ export function CatalogScreen() {
           <button
             key={cat}
             type="button"
+            aria-pressed={category === cat}
             className={`min-h-touch rounded-lg px-3 text-sm font-medium transition-colors ${
               category === cat ? 'bg-accent-primary text-bg' : 'bg-surface text-text-secondary'
             }`}
@@ -100,12 +117,12 @@ export function CatalogScreen() {
       {filteredGames.length === 0 ? (
         <p className="text-sm text-text-secondary">{strings.catalog.empty}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className={CARD_GRID_CLASSES}>
           {filteredGames.map((game) => (
             <GameCard
               key={game.metadata.id}
               metadata={game.metadata}
-              bestScore={bestScoreFor(game.metadata.id)}
+              bestScore={bestScores.get(game.metadata.id) ?? null}
               isFavorite={favorites.includes(game.metadata.id)}
               onToggleFavorite={toggleFavorite}
             />

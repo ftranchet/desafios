@@ -437,7 +437,7 @@ Criterios de puntuación (1 a 5, juicio del equipo): **Diversión** = calidad pr
 
 \* Snake integra el MVP como **validador técnico del bucle de tiempo real** que Cascada necesita (ver 11.1).
 
-Eliminados del catálogo por decisión del product owner (v0.2): 2048, Buscaminas, Kakuro.
+Eliminados del catálogo por decisión del product owner (v0.2): 2048, Kakuro. Buscaminas, eliminado en la misma decisión v0.2, fue revisado más adelante y sí se sumó al catálogo como juego #24 (ver CHANGELOG 0.28.0); no figura en la tabla anterior porque esa tabla quedó congelada en la selección post-MVP de la v0.2.
 
 ### 11.1 Selección para el MVP (Fase 1) y su justificación
 
@@ -585,7 +585,9 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 | 5   | Idioma del código                     | Inglés en código; español en textos visibles y documentación                                   |
 | 6   | Juego trivial de validación de Fase 0 | "Tiempo de reacción" (medir milisegundos al tocar cuando cambia el color)                      |
 | 7   | Dirección visual                      | Pixel art minimalista (sección 10)                                                             |
-| 8   | Prioridades del catálogo              | Tetris (Cascada), Snake y juegos de matemática al frente; eliminados 2048, Buscaminas y Kakuro |
+| 8   | Prioridades del catálogo              | Tetris (Cascada), Snake y juegos de matemática al frente; eliminados 2048, Buscaminas\* y Kakuro |
+
+\* Decisión revisada más adelante: Buscaminas se reincorporó al catálogo como juego #24 (ver sección 11 y CHANGELOG 0.28.0). Esta tabla documenta la decisión tal como se tomó en v0.2, no el estado actual del catálogo.
 
 ### 17.2 Decisiones pendientes (se resuelven en Fase 0, como ADR-003)
 

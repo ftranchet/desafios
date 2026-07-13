@@ -27,11 +27,12 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
 
       <div className="flex w-full max-w-sm flex-col gap-2">
         <p className="text-sm text-text-secondary">{strings.modePicker.difficulty}</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label={strings.modePicker.difficulty}>
           {difficulties.map((mode) => (
             <button
               key={mode.id}
               type="button"
+              aria-pressed={mode.id === selectedMode}
               className={`min-h-touch rounded-lg border px-3 text-sm font-medium transition-colors ${
                 mode.id === selectedMode
                   ? 'border-accent-primary bg-accent-primary text-bg'
@@ -46,12 +47,17 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
       </div>
 
       {specials.length > 0 && (
-        <div className="flex w-full max-w-sm flex-col gap-2">
+        <div
+          className="flex w-full max-w-sm flex-col gap-2"
+          role="group"
+          aria-label={strings.modePicker.special}
+        >
           <p className="text-sm text-text-secondary">{strings.modePicker.special}</p>
           {specials.map((mode) => (
             <button
               key={mode.id}
               type="button"
+              aria-pressed={mode.id === selectedMode}
               className={`flex min-h-touch flex-col items-start gap-0.5 rounded-lg border px-4 py-3 text-left transition-colors ${
                 mode.id === selectedMode
                   ? 'border-accent-primary bg-accent-primary/10'

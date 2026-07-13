@@ -2,6 +2,34 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.30.0] — Auditoría integral: robustez, responsividad y consistencia
+
+### Corregido
+
+- **Grupos**: en Progresivo, el grado 10 podía pedir 6 tipos de ficha cuando la interfaz solo dibuja 5, haciendo crashear el juego al llegar tan lejos. Se topa `colorCount` en `TILE_TYPE_COUNT`, igual que ya hacía Memorama con sus pares.
+- **Mastermind numérico**: `attemptsUsed` solo contaba los intentos de la última ronda jugada (se reiniciaba en cada ronda nueva), subestimando el total real en Tranquilo y Progresivo. Ahora acumula los intentos de toda la sesión en un contador aparte que nunca se resetea entre rondas.
+- El selector de modo y la pantalla de resultado quedaban pegados arriba con un vacío grande debajo en tablet/PC (afectaba a todos los juegos por igual, ya que vive en el shell): la causa era un `min-h-full` que no se resuelve de forma confiable contra un padre cuya altura sale de `flex-grow`; se reemplazó por `flex-1`.
+
+### Cambiado
+
+- **Responsividad (PC/celular/tablet, vertical/horizontal)**: el contenido de toda la app ahora vive en un contenedor centrado de ancho acotado (`max-w-4xl`) en vez de estirarse a todo el ancho en pantallas grandes; la grilla del catálogo pasa de 2 columnas fijas a 2/3/4 según el ancho disponible. Se reemplazó `min-h-screen`/`vh` por `min-h-dvh`/`dvh` en los 25 juegos y el shell para evitar saltos de layout cuando la barra de direcciones del navegador móvil aparece o desaparece.
+- **Cifras**: era el único juego sin sonido; ahora usa `audio` (ADR-006) para fichas, combinaciones, deshacer, reiniciar y envío. Se migró del `setInterval` propio a `useSecondsLeft`/`CountdownBar`/`PressButton` del kit de interacción (ADR-005, mismo patrón que el resto del catálogo) y se agregaron atajos de teclado (dígitos para elegir fichas, `+-*/` para combinar, Enter para enviar, Backspace para deshacer).
+- Simon, Lights Out y Memoria espacial reemplazan sombras con color hardcodeado (`rgba(...)`) por `theme(colors.*)`, así quedan atados a la paleta de `tailwind.config.ts` en vez de duplicar sus valores.
+- El catálogo memoiza los récords de los ~25 juegos en un solo cálculo por montaje en vez de recalcularlos en cada card en cada render.
+- Se agregaron `role="group"`/`aria-pressed` a los selectores de categoría, dificultad y modos especiales para que su estado se anuncie correctamente con lector de pantalla.
+- Cascada ahora documenta en su encabezado, como el resto de los clones, el nombre original de la mecánica que evita usar por marca registrada (PRD 11.2).
+- `docs/PRD.md`: se corrige la sección 11 y el registro de decisiones (17.1), que seguían listando Buscaminas como eliminado del catálogo pese a haberse sumado como juego #24.
+
+### Eliminado
+
+- `src/core/timer.ts` (`createCountdown`/`createInterval`) y `randomFloat` de `src/core/random.ts`: sin ningún uso en el código, cada juego con reloj ya resuelve el suyo con `setTimeout`/`setInterval` propio o con `useSecondsLeft`.
+- Formatter `strings.result.score` sin uso (el panel de resultado ya renderiza el puntaje directo).
+
+### Tests
+
+- Nuevos casos para el crash de Grupos, el conteo acumulado de Mastermind numérico, y los modos fijos (base + bono por tiempo) de Secuencias numéricas y Estimación relámpago, que solo tenían cobertura de Tranquilo/Progresivo.
+- Nonograma suma un solver de fuerza bruta con poda por columna que verifica en cada corrida que las imágenes del banco (`puzzles.ts`) tengan solución única, en vez de confiar solo en el comentario que dice que se verificaron a mano.
+
 ## [0.29.0] — Grupos: vigésimo quinto juego del catálogo
 
 ### Agregado

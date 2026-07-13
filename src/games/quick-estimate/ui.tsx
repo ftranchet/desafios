@@ -124,7 +124,7 @@ export function QuickEstimateGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center gap-8 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center gap-8 p-6 focus:outline-none"
       role="group"
       aria-label="Elegí la expresión de mayor valor"
       tabIndex={0}

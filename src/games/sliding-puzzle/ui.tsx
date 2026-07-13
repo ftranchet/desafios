@@ -70,7 +70,7 @@ export function SlidingPuzzleGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center gap-4 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center gap-4 p-6 focus:outline-none"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >

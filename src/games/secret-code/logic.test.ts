@@ -205,4 +205,83 @@ describe('buildResult', () => {
     const result = buildResult({ mode: 'progressive', seed: SEED }, state, 1000);
     expect(result.metrics.maxStage).toBe(2);
   });
+
+  it('attemptsUsed acumula intentos de TODAS las rondas jugadas, no solo la última', () => {
+    let state: GameState = createInitialState('zen', SEED);
+    const wrongDigitFor = (code: number[]) =>
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((d) => !code.includes(d))!;
+
+    // Ronda 1: un intento fallido + uno ganador (2 intentos).
+    const code0 = state.rounds[0]!.code;
+    state = submitGuess(state, [wrongDigitFor(code0), ...code0.slice(1)]);
+    state = submitGuess(state, code0);
+    expect(state.roundWon).toBe(true);
+    state = advanceRound(state);
+
+    // Ronda 2: gana directo (1 intento). Total acumulado esperado: 3.
+    const code1 = state.rounds[1]!.code;
+    state = submitGuess(state, code1);
+
+    const result = buildResult({ mode: 'zen', seed: SEED }, state, 1000);
+    expect(result.metrics.attemptsUsed).toBe(3);
+  });
+
+  it('menos intentos puntúa más que más intentos, a igual código', () => {
+    const efficientState = (() => {
+      let state: GameState = createInitialState('easy', SEED);
+      state = submitGuess(state, state.rounds[0]!.code);
+      return state;
+    })();
+    const wastefulState = (() => {
+      let state: GameState = createInitialState('easy', SEED);
+      const code = state.rounds[0]!.code;
+      const wrongDigit = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((d) => !code.includes(d))!;
+      state = submitGuess(state, [wrongDigit, ...code.slice(1)]);
+      state = submitGuess(state, [wrongDigit, ...code.slice(1)]);
+      state = submitGuess(state, code);
+      return state;
+    })();
+    const efficientResult = buildResult({ mode: 'easy', seed: SEED }, efficientState, 1000);
+    const wastefulResult = buildResult({ mode: 'easy', seed: SEED }, wastefulState, 1000);
+    expect(efficientResult.score).toBeGreaterThan(wastefulResult.score);
+  });
+
+  it('Tranquilo: puntaje fijo por ronda ganada, sin importar los intentos', () => {
+    let state: GameState = createInitialState('zen', SEED);
+    const code = state.rounds[0]!.code;
+    const wrongDigit = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((d) => !code.includes(d))!;
+    state = submitGuess(state, [wrongDigit, ...code.slice(1)]);
+    state = submitGuess(state, code);
+    const result = buildResult({ mode: 'zen', seed: SEED }, state, 1000);
+    expect(result.score).toBe(100);
+  });
+
+  it('progresivo: el grado multiplica el puntaje de una ronda ganada (mismo código, mismos intentos)', () => {
+    const code = [1, 2, 3];
+    const buildSingleRoundState = (stage: number): GameState => ({
+      mode: 'progressive',
+      rounds: [{ code, maxGuesses: 10, stage }],
+      roundIndex: 0,
+      attempts: [],
+      totalAttempts: 0,
+      solvedRounds: 0,
+      score: 0,
+      roundOver: false,
+      roundWon: false,
+      gameOver: false,
+      failed: false,
+    });
+
+    const stage1Result = buildResult(
+      { mode: 'progressive', seed: SEED },
+      submitGuess(buildSingleRoundState(1), code),
+      1000,
+    );
+    const stage8Result = buildResult(
+      { mode: 'progressive', seed: SEED },
+      submitGuess(buildSingleRoundState(8), code),
+      1000,
+    );
+    expect(stage8Result.score).toBeGreaterThan(stage1Result.score);
+  });
 });

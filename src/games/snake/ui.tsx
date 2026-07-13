@@ -184,7 +184,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center gap-4 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      className="flex min-h-[70dvh] flex-col items-center gap-4 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
       role="application"
       aria-label="Tablero de Snake: mantené el dedo para que la víbora te siga, o usá los botones o las flechas"
       tabIndex={0}

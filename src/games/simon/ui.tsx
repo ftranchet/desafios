@@ -132,7 +132,7 @@ export function SimonGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center justify-center gap-8 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center justify-center gap-8 p-6 focus:outline-none"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -160,7 +160,7 @@ export function SimonGame({ config, onFinish, audio }: GameProps) {
           // Reposo bien atenuado; el flash de reproducción da un salto grande de
           // brillo + agranda + resplandor, inconfundible frente al resto apagado.
           const stateClass = isFlashing
-            ? 'brightness-110 scale-105 ring-4 ring-text-primary/70 shadow-[0_0_24px_rgba(244,244,242,0.4)] z-10'
+            ? 'brightness-110 scale-105 ring-4 ring-text-primary/70 shadow-[0_0_24px_theme(colors.text-primary/40%)] z-10'
             : isPressed
               ? 'brightness-110 scale-95'
               : 'brightness-[.5] saturate-[.85]';
@@ -174,7 +174,7 @@ export function SimonGame({ config, onFinish, audio }: GameProps) {
               className={`relative flex aspect-square items-center justify-center rounded-xl border border-surface-alt transition-all duration-150 ${pad.color} ${stateClass}`}
             >
               <span
-                className={`font-display text-[1.75rem] font-bold text-bg transition-opacity ${
+                className={`font-display text-xl font-bold text-bg transition-opacity ${
                   isFlashing ? 'opacity-90' : 'opacity-40'
                 }`}
               >

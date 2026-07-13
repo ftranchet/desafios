@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { CountdownBar } from '../../core/ui';
+import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import {
   buildResult,
   closestToTarget,
@@ -23,16 +23,18 @@ const OPERATORS: { op: Op; symbol: string }[] = [
   { op: '/', symbol: '÷' },
 ];
 
-function formatSeconds(ms: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+function formatSeconds(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-export function CifrasGame({ config, onFinish }: GameProps) {
+export function CifrasGame({ config, onFinish, audio }: GameProps) {
   const params = getModeParams(config.mode);
 
+  // Foco al contenedor: los dígitos 1-9 eligen fichas, +−×÷ combinan y Enter
+  // envía desde la primera jugada, sin exigir tabular hasta los botones (RNF-11).
+  const containerRef = useAutoFocus<HTMLDivElement>();
   const puzzleRef = useRef<Puzzle>({ numbers: [], target: 0 });
   const originalTilesRef = useRef<Tile[]>([]);
   const tilesRef = useRef<Tile[]>([]);
@@ -40,15 +42,17 @@ export function CifrasGame({ config, onFinish }: GameProps) {
   const sessionStartRef = useRef(0);
   const resolvedRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
-  const tickRef = useRef<number | null>(null);
 
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   // Pila de estados previos a cada combinación: permite deshacer de a un paso
   // en vez de obligar a reiniciar toda la partida por un error.
   const [history, setHistory] = useState<Tile[][]>([]);
-  const [remainingMs, setRemainingMs] = useState(params.timeLimitMs);
   const [target, setTarget] = useState(0);
+  const [finished, setFinished] = useState(false);
+
+  const timed = params.timeLimitMs > 0; // Tranquilo: sin límite de tiempo (ADR-007)
+  const secondsLeft = useSecondsLeft(params.timeLimitMs / 1000, timed && !finished, 0);
 
   useEffect(() => {
     tilesRef.current = tiles;
@@ -64,17 +68,12 @@ export function CifrasGame({ config, onFinish }: GameProps) {
     sessionStartRef.current = performance.now();
 
     // Tranquilo: sin límite de tiempo — no se programa reloj alguno (ADR-007).
-    if (params.timeLimitMs > 0) {
+    if (timed) {
       timeoutRef.current = window.setTimeout(() => submitAnswer(), params.timeLimitMs);
-      tickRef.current = window.setInterval(() => {
-        const elapsed = performance.now() - sessionStartRef.current;
-        setRemainingMs(Math.max(0, params.timeLimitMs - elapsed));
-      }, 250);
     }
 
     return () => {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-      if (tickRef.current !== null) window.clearInterval(tickRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -82,14 +81,15 @@ export function CifrasGame({ config, onFinish }: GameProps) {
   function submitAnswer() {
     if (resolvedRef.current) return;
     resolvedRef.current = true;
+    setFinished(true);
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-    if (tickRef.current !== null) window.clearInterval(tickRef.current);
 
     const currentTiles = tilesRef.current;
     const achieved = closestToTarget(
       currentTiles.map((t) => t.value),
       puzzleRef.current.target,
     );
+    audio?.play(achieved === puzzleRef.current.target ? 'success' : 'error');
     const now = performance.now();
     const durationMs = Math.round(now - sessionStartRef.current);
     const timeRemainingMs = Math.max(0, params.timeLimitMs - durationMs);
@@ -99,6 +99,7 @@ export function CifrasGame({ config, onFinish }: GameProps) {
   }
 
   function toggleTile(id: number) {
+    audio?.tone(260, 40);
     if (selected.includes(id)) {
       setSelected(selected.filter((s) => s !== id));
     } else if (selected.length < 2) {
@@ -125,6 +126,7 @@ export function CifrasGame({ config, onFinish }: GameProps) {
     if (!a || !b) return;
     const result = combine(a.value, b.value, op);
     if (result === null) return;
+    audio?.tone(340, 60);
     const newTile: Tile = { id: nextIdRef.current++, value: result };
     setHistory([...history, tiles]);
     setTiles(tiles.filter((t) => t.id !== idA && t.id !== idB).concat(newTile));
@@ -134,26 +136,58 @@ export function CifrasGame({ config, onFinish }: GameProps) {
   function handleUndo() {
     const previous = history[history.length - 1];
     if (!previous) return;
+    audio?.tone(200, 50);
     setTiles(previous);
     setHistory(history.slice(0, -1));
     setSelected([]);
   }
 
   function handleReset() {
+    if (history.length === 0) return;
+    audio?.tone(180, 80);
     setTiles(originalTilesRef.current.map((t) => ({ ...t })));
     setHistory([]);
     setSelected([]);
   }
 
+  // Atajos de escritorio: 1-9 elige la ficha en esa posición, +−×÷ combina la
+  // selección, Enter envía la respuesta y Backspace deshace el último paso.
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const digitIndex = '123456789'.indexOf(event.key);
+    if (digitIndex !== -1 && tiles[digitIndex]) {
+      event.preventDefault();
+      toggleTile(tiles[digitIndex]!.id);
+      return;
+    }
+    const operator = OPERATORS.find((o) => o.op === event.key);
+    if (operator && isOpValid(operator.op)) {
+      event.preventDefault();
+      handleCombine(operator.op);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitAnswer();
+    } else if (event.key === 'Backspace') {
+      event.preventDefault();
+      handleUndo();
+    }
+  }
+
   return (
-    <div className="flex min-h-[70vh] flex-col items-center gap-6 p-6">
+    <div
+      ref={containerRef}
+      className="flex min-h-[70dvh] flex-col items-center gap-6 p-6 focus:outline-none"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
       <div className="w-full max-w-sm">
         <div className="mb-2 flex justify-between text-sm text-text-secondary">
           <span>Objetivo</span>
-          {params.timeLimitMs > 0 && <span>{formatSeconds(remainingMs)}</span>}
+          {timed && <span>{formatSeconds(secondsLeft)}</span>}
         </div>
-        {params.timeLimitMs > 0 && (
-          <CountdownBar durationMs={params.timeLimitMs} running resetKey={0} />
+        {timed && (
+          <CountdownBar durationMs={params.timeLimitMs} running={!finished} resetKey={0} />
         )}
       </div>
 
@@ -161,10 +195,10 @@ export function CifrasGame({ config, onFinish }: GameProps) {
 
       <div className="grid w-full max-w-sm grid-cols-3 gap-2">
         {tiles.map((tile) => (
-          <button
+          <PressButton
             key={tile.id}
-            type="button"
-            onClick={() => toggleTile(tile.id)}
+            variant="bare"
+            onPress={() => toggleTile(tile.id)}
             className={`min-h-touch rounded-lg border font-display text-lg font-bold transition-colors ${
               selected.includes(tile.id)
                 ? 'border-accent-primary bg-accent-primary text-bg'
@@ -172,49 +206,34 @@ export function CifrasGame({ config, onFinish }: GameProps) {
             }`}
           >
             {tile.value}
-          </button>
+          </PressButton>
         ))}
       </div>
 
       <div className="flex gap-2">
         {OPERATORS.map(({ op, symbol }) => (
-          <button
+          <PressButton
             key={op}
-            type="button"
+            variant="control"
             disabled={!isOpValid(op)}
-            onClick={() => handleCombine(op)}
-            className="min-h-touch min-w-touch rounded-lg border border-surface-alt bg-surface font-display text-lg font-bold text-text-primary disabled:opacity-30"
+            onPress={() => handleCombine(op)}
           >
             {symbol}
-          </button>
+          </PressButton>
         ))}
       </div>
 
       <div className="mt-auto flex w-full max-w-sm flex-col gap-2">
-        <button
-          type="button"
-          onClick={submitAnswer}
-          className="min-h-touch rounded-lg bg-accent-primary px-4 font-display text-base font-bold text-bg"
-        >
+        <PressButton variant="primary" onPress={submitAnswer}>
           Enviar respuesta
-        </button>
+        </PressButton>
         <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={history.length === 0}
-            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary disabled:opacity-40"
-          >
+          <PressButton variant="key" disabled={history.length === 0} onPress={handleUndo}>
             Deshacer
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={history.length === 0}
-            className="min-h-touch rounded-lg bg-surface-alt px-4 font-body text-base text-text-primary disabled:opacity-40"
-          >
+          </PressButton>
+          <PressButton variant="key" disabled={history.length === 0} onPress={handleReset}>
             Reiniciar
-          </button>
+          </PressButton>
         </div>
       </div>
     </div>

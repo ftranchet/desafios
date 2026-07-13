@@ -10,6 +10,7 @@ import {
   MODE_PARAMS,
   stageParams,
   tapCell,
+  TILE_TYPE_COUNT,
   ZEN_ROUND_COUNT,
   type RoundProgress,
   type RoundSpec,
@@ -89,9 +90,15 @@ describe('stageParams', () => {
     expect(stageParams(8).colorCount).toBe(MODE_PARAMS.hard.colorCount);
   });
 
-  it('los grados 9-10 superan a Difícil (sin techo, a diferencia de Apagá todo)', () => {
+  it('los grados 9-10 agrandan filas y columnas sin techo (a diferencia de Apagá todo)', () => {
     expect(stageParams(10).rows).toBeGreaterThan(MODE_PARAMS.hard.rows);
-    expect(stageParams(10).colorCount).toBeGreaterThanOrEqual(MODE_PARAMS.hard.colorCount);
+  });
+
+  it('colorCount se topa en TILE_TYPE_COUNT: no hay más tipos de ficha para extrapolar', () => {
+    for (let stage = 1; stage <= 10; stage += 1) {
+      expect(stageParams(stage).colorCount).toBeLessThanOrEqual(TILE_TYPE_COUNT);
+    }
+    expect(stageParams(10).colorCount).toBe(TILE_TYPE_COUNT);
   });
 });
 
