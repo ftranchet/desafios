@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.26.0] — ¿Coincide?: vigésimo segundo juego del catálogo
+
+### Agregado
+
+- **¿Coincide?** (Memoria, estilo N-back): una secuencia de símbolos aparece de a uno; para cada uno hay que decidir si es igual al de N lugares atrás. N (cuántos lugares hay que recordar) es la palanca principal de dificultad: Fácil compara con el símbolo inmediato anterior (1 atrás), Medio con el de hace 2, Difícil con el de hace 3; Tranquilo usa 2 atrás sin reloj; Progresivo recorre los 10 grados sin techo de N. Cada secuencia se genera con una proporción controlada de coincidencias reales (si fuera puro azar, "no coincide" sería casi siempre la respuesta trivial). Presentado sin ninguna promesa de mejora cognitiva (PRD 1.1) — es un desafío de memoria momentánea puntual, como Simon o Memorama, no una herramienta de entrenamiento.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.25.0] — Tríos: vigésimo primer juego del catálogo
 
 ### Agregado
