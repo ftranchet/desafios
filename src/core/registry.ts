@@ -11,6 +11,7 @@ import { secretCode } from '../games/secret-code';
 import { spatialMemory } from '../games/spatial-memory';
 import { schulteTable } from '../games/schulte-table';
 import { wordOfTheDay } from '../games/word-of-the-day';
+import { memoryMatch } from '../games/memory-match';
 
 // Agregar un juego = importar y sumar una línea acá. Nada más (PRD sección 5.3).
 export const GAMES: GameModule[] = [
@@ -26,6 +27,7 @@ export const GAMES: GameModule[] = [
   spatialMemory,
   schulteTable,
   wordOfTheDay,
+  memoryMatch,
 ];
 
 export function getGameById(id: string): GameModule | undefined {

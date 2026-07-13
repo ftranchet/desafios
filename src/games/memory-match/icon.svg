@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Dos cartas: una tapada, otra dada vuelta con el símbolo emparejado -->
+  <rect x="2" y="6" width="8" height="12" rx="2" fill="#26223a" stroke="#3fd0c9" stroke-width="1.5" />
+  <rect x="14" y="6" width="8" height="12" rx="2" fill="#3fd0c9" fill-opacity="0.2" stroke="#3fd0c9" stroke-width="1.5" />
+  <circle cx="18" cy="12" r="2.4" fill="#3fd0c9" />
+</svg>

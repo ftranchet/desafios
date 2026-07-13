@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.17.0] — Memorama: decimotercer juego del catálogo
+
+### Agregado
+
+- **Memorama** (Memoria): encontrá las parejas de cartas iguales dando vuelta de a dos. Cada carta es un glifo distinto (●■▲◆★✚▼◇□△✦✕), nunca solo un color (RNF-05). No hay forma de "perder" — el puntaje premia la eficiencia de movimientos en vez de una condición de derrota. Fácil/Medio/Difícil varían la cantidad de pares (6 a 10); **Tranquilo** encadena 3 tableros sin puntaje por eficiencia; **Progresivo** recorre los 10 grados con un tablero por grado, cada vez con más pares. El tablero fijo en 4 columnas evita el problema de tamaño de celda de Tabla de Schulte: acá agrandar la dificultad agrega filas, nunca achica las celdas por debajo de los 44 px mínimos (RNF-04).
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.16.1] — Crédito de autoría
 
 ### Agregado
