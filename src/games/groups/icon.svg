@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Un grupo de fichas iguales conectadas, a punto de limpiarse -->
+  <circle cx="6" cy="7" r="3.4" fill="#ffcd4b" />
+  <circle cx="13" cy="7" r="3.4" fill="#ffcd4b" />
+  <circle cx="9.5" cy="13.5" r="3.4" fill="#ffcd4b" />
+  <rect x="4" y="18" width="6" height="6" rx="1.5" fill="#8a6dff" opacity="0.5" />
+</svg>

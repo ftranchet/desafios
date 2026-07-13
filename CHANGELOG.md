@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.29.0] — Grupos: vigésimo quinto juego del catálogo
+
+### Agregado
+
+- **Grupos** (Espacial, estilo SameGame): tocá un grupo de 2 o más fichas iguales, conectadas en horizontal o vertical, para limpiarlas; las de arriba caen y las columnas vacías se corren hacia la izquierda. Cuantas más fichas tenga el grupo, más puntos — conviene esperar grupos grandes en vez de tocar el primero que aparece. Nombre original (PRD 11.2): el mecanismo nació como "Chain Shot!" y se popularizó como "SameGame", de dominio público, pero se usa un nombre en español por consistencia con el resto del catálogo. Fácil/Medio/Difícil varían el tamaño del tablero y la cantidad de colores; Tranquilo encadena 3 tableros con puntos fijos por grupo (sin premiar los grupos grandes); Progresivo recorre los 10 grados, un tablero por grado, sin techo de tamaño. Sin tensión con RNF-04: el ancho de grilla se mantiene en 5-6 columnas en todas las dificultades.
+- Cada tipo de ficha combina color y glifo (RNF-05): agrupar nunca depende solo del color, alcanza con la forma (círculo, cuadrado, triángulo, diamante, estrella).
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.28.0] — Buscaminas: vigésimo cuarto juego del catálogo
 
 ### Agregado
