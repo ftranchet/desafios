@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Corona simple: una por fila, columna y región de color -->
+  <path d="M4 17h16v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2Z" fill="#8a6dff" />
+  <path
+    d="M4 17 3 9l4.5 3L12 6l4.5 6L21 9l-1 8H4Z"
+    fill="none"
+    stroke="#8a6dff"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <circle cx="3" cy="9" r="1.3" fill="#8a6dff" />
+  <circle cx="12" cy="6" r="1.3" fill="#8a6dff" />
+  <circle cx="21" cy="9" r="1.3" fill="#8a6dff" />
+</svg>

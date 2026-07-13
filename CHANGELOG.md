@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.33.0] — Coronas: vigésimo séptimo juego del catálogo
+
+### Agregado
+
+- **Coronas** (Lógica): grilla N×N dividida en N regiones de color — colocá una corona por fila, columna y región, sin que dos coronas se toquen ni ortogonal ni diagonalmente. Nombre original (PRD 11.2): inspirado en "Queens" de LinkedIn, con nombre propio para no usar el del producto. Se genera y verifica en vivo (a diferencia de Sudoku 9×9/Empuja cajas, que usan banco curado): arma una solución, hace crecer regiones al azar alrededor y, como eso casi nunca da solución única por sí solo (docenas de soluciones alternativas es lo típico), repara el tablero fusionando regiones hasta que la única solución posible sea la que se generó — preservando que cada región siga siendo una sola pieza conexa. Fácil (6×6), Medio (7×7) y Difícil (8×8, ya entra cómodo en celda de 44px sin necesitar la excepción de RNF-04 que sí documentan Sudoku/Nonograma); Tranquilo usa grilla chica sin puntaje por eficiencia. Sin Progresivo, a propósito: como Sudoku/Nonograma, es una ronda única de pensamiento. La generación en la dificultad más alta puede tardar unos cientos de milisegundos: se difiere un tick para pintar primero "Generando…" en vez de congelar la pantalla.
+- Cada región combina color de fondo y un borde más grueso en su límite (RNF-05): nunca depende solo del matiz. Una corona en conflicto (misma fila/columna/región, o adyacente a otra) se marca en rojo además de sumar al contador de errores.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos. `logic.test.ts` verifica que la generación nunca produce un tablero ambiguo (varias semillas y las 4 dificultades) y que las regiones quedan siempre conexas.
+
 ## [0.32.0] — Minisudoku: vigésimo sexto juego del catálogo
 
 ### Agregado
