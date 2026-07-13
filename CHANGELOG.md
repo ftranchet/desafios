@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.25.0] — Tríos: vigésimo primer juego del catálogo
+
+### Agregado
+
+- **Tríos** (Lógica, estilo SET): de un tablero de cartas, encontrá 3 cuya combinación de color, forma, cantidad y relleno sea siempre "todas iguales o todas distintas" en cada atributo. Nombre original (PRD 11.2): el juego de cartas "SET" es marca registrada de SET Enterprises. Cada tablero se arma garantizando un trío por construcción —dadas dos cartas cualesquiera del mazo de 81, existe exactamente una tercera que completa un trío válido— en vez de mezclar al azar y verificar por fuerza bruta, mismo criterio que Apagá todo o el Rompecabezas deslizante. Fácil/Medio/Difícil varían el tamaño del tablero (9 a 15 cartas) y el tiempo por tablero; Tranquilo usa tablero medio sin reloj; Progresivo recorre los 10 grados sin techo de tablero. Un trío inválido no termina el tablero: da aviso y se puede reintentar, solo resta puntos por eficiencia.
+- Nota breve sobre RNF-05: de los 4 atributos, 3 nunca dependen del color (forma, cantidad y relleno se distinguen por trazo/opacidad); el color es apenas uno de cuatro, y se usan 3 colores del sistema con separación de matiz alta (amarillo/violeta/celeste), evitando el par rojo/verde, igual criterio que Nombra el color.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.24.0] — Rompecabezas deslizante: vigésimo juego del catálogo
 
 ### Agregado
