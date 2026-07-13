@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.24.0] — Rompecabezas deslizante: vigésimo juego del catálogo
+
+### Agregado
+
+- **Rompecabezas deslizante** (Espacial, estilo 15-puzzle): deslizá las fichas hacia el hueco hasta ordenarlas 1..n²-1. El tablero se arma deslizando fichas al azar desde el estado ordenado (evitando deshacer el último movimiento), así queda garantizado que siempre es resoluble sin necesitar detectar la paridad de la permutación —el problema clásico de mezclar un 15-puzzle al azar—; verificado además de forma independiente con la fórmula estándar de paridad de inversiones en los tests. Sin condición de derrota: el puntaje pondera movimientos contra la cantidad usada para mezclar (una referencia razonable, no necesariamente la óptima). Fácil/Medio/Difícil son el clásico 8-puzzle/15-puzzle/24-puzzle (3×3 a 5×5); Tranquilo encadena 3 tableros sin puntaje por eficiencia; Progresivo recorre los 10 grados — a diferencia de Apagá todo o Tabla de Schulte, acá el tamaño de grilla no tiene que toparse por RNF-04 (hasta un tablero de 6×6 deja celdas muy por encima de los 44 px mínimos), así que crece libremente en los grados 9-10.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.23.0] — Nombra el color: decimonoveno juego del catálogo
 
 ### Agregado
