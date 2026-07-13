@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.18.0] — Torres de Hanoi: decimocuarto juego del catálogo
+
+### Agregado
+
+- **Torres de Hanoi** (Lógica): mové toda la torre de discos al último poste en el mínimo de movimientos, sin poner nunca un disco más grande sobre uno más chico. Tocá un poste para levantar su disco de arriba, tocá otro para soltarlo; un movimiento inválido se rechaza con un destello, sin consumir el movimiento ni terminar la partida. Sin condición de derrota: el puntaje premia la eficiencia contra el óptimo matemático (2ⁿ−1 movimientos). Fácil/Medio/Difícil varían la cantidad de discos (3 a 5); Tranquilo encadena 3 torres sin puntaje por eficiencia; Progresivo recorre los 10 grados. Sin aleatoriedad (el puzzle siempre arranca igual): la única lógica pura de todo el catálogo que no necesita semilla.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.17.0] — Memorama: decimotercer juego del catálogo
 
 ### Agregado
