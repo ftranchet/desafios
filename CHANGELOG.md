@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.16.0] — Palabra del día: duodécimo juego, primero en la categoría Palabras
+
+### Agregado
+
+- **Palabra del día** (Palabras): adiviná la palabra secreta en una cantidad limitada de intentos — cada uno marca, letra por letra, si está en el lugar correcto, si está en la palabra pero en otro lugar, o si no está (estilo Wordle). Teclado propio en pantalla (QWERTY en español, con Ñ) en vez del teclado del sistema (PRD 10.7.3), coloreado con el mejor estado visto de cada letra. El estado de cada ficha nunca depende solo del color (RNF-05): las correctas llevan un ✓ y las presentes un ○, además del verde/amarillo. Fácil/Medio/Difícil varían el largo de palabra (4 a 6 letras); **Tranquilo** encadena 5 palabras sin game over; **Progresivo** recorre los 10 grados de ADR-007 — el largo de palabra se topa en 6 letras (el diccionario de este banco no tiene palabras más largas) y de ahí los grados 9-10 extrapolan acortando los intentos en vez de alargar la palabra.
+- Banco de ~160 sustantivos comunes en español (sin tildes ni eñe — simplificación deliberada de v1) en `words.ts`, usado tanto para elegir el objetivo como para validar que un intento sea una palabra real.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.15.0] — Favoritos en el catálogo
 
 ### Agregado
