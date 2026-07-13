@@ -7,6 +7,7 @@ import { cascada } from '../games/cascada';
 import { numberSequences } from '../games/number-sequences';
 import { quickEstimate } from '../games/quick-estimate';
 import { simon } from '../games/simon';
+import { secretCode } from '../games/secret-code';
 
 // Agregar un juego = importar y sumar una línea acá. Nada más (PRD sección 5.3).
 export const GAMES: GameModule[] = [
@@ -18,6 +19,7 @@ export const GAMES: GameModule[] = [
   numberSequences,
   quickEstimate,
   simon,
+  secretCode,
 ];
 
 export function getGameById(id: string): GameModule | undefined {

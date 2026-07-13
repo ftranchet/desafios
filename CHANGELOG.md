@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.11.0] — Código secreto: noveno juego del catálogo
+
+### Agregado
+
+- **Código secreto** (Lógica): deducí un código de dígitos distintos a partir de pistas de cada intento (exactos: dígito y posición correctos; parciales: dígito correcto en otra posición) — estilo Toro y vacas. Fácil/Medio/Difícil varían el largo del código (3 a 5 dígitos) y la cantidad de intentos; **Tranquilo** encadena 5 códigos sin game over (agotar los intentos de uno solo revela el código y pasa al siguiente); **Progresivo** recorre los 10 grados de ADR-007 con un código por grado, cada vez más largo y con menos intentos — fallar un grado termina la partida, como en Snake. Primer juego en usar la categoría "Lógica" del catálogo.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 5 modos.
+
 ## [0.10.1] — Deploy reparado y pulido
 
 ### Corregido
