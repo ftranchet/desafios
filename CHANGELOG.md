@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.35.0] — Sol y luna: vigésimo octavo juego del catálogo
+
+### Agregado
+
+- **Sol y luna** (Lógica, estilo Binairo/Takuzu): completá la grilla 6×6 con soles y lunas — 3 de cada símbolo por fila y columna, nunca 3 iguales consecutivas, ninguna fila ni columna se repite — guiándote por pistas de igualdad (=) o diferencia (×) entre pares de celdas adyacentes. Nombre original (PRD 11.2): el género genérico es "Binairo"/"Takuzu" (nombres de dominio público); se evita "Tango" (producto de LinkedIn en el que se inspira).
+- Ajuste sobre el plan original (`docs/game-plans/linkedin-elevate-clones.md`): con pistas puramente relacionales, invertir sol↔luna en todo el tablero preserva exactamente las mismas relaciones de igualdad/diferencia, así que ningún conjunto de pistas de relación puede romper esa simetría global por sí solo — el tablero nunca sería único. Se revelan también 2 celdas absolutas fijas (independientes de la dificultad) que anclan la simetría, igual que hace el "Tango" real. La dificultad varía la cantidad de pistas de relación reveladas (22/15/9 en Fácil/Medio/Difícil), no las celdas absolutas.
+- Se genera y verifica en vivo: arma una solución completa (backtracking sobre filas válidas precalculadas — 3/3 sin tripleta consecutiva), ancla las 2 celdas absolutas y parte de las 60 pistas de relación posibles reveladas (unicidad trivial con todo dado); saca pistas de a una en orden al azar mientras la solución siga siendo única, mismo criterio que el verificador de Nonograma/Minisudoku/Coronas. Tranquilo usa el nivel Medio sin puntaje por eficiencia; sin Progresivo, a propósito: como esos tres, es una ronda única de pensamiento sobre una grilla fija, no una rampa de 10 grados.
+- Sol y luna se distinguen por glifo (☀/☾), nunca solo por color (RNF-05); las pistas de relación se dibujan como una insignia (=/×) sobre el borde compartido entre las dos celdas que involucran, nunca como un cambio de color de fondo.
+- Generado con `npm run new-game` y registrado en `registry.ts`; cubierto por el test de contrato y el smoke de render en los 4 modos. `logic.test.ts` verifica que la generación nunca produce un tablero ambiguo (varias semillas y las 4 dificultades) y que la solución cumple las reglas de conteo, no-tripleta y unicidad de filas/columnas.
+
 ## [0.34.0] — Primitiva de arrastre de trazo (`useGridPathDrag`)
 
 ### Agregado

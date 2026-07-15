@@ -26,6 +26,7 @@ import { minesweeper } from '../games/minesweeper';
 import { groups } from '../games/groups';
 import { minisudoku } from '../games/minisudoku';
 import { coronas } from '../games/coronas';
+import { takuzu } from '../games/takuzu';
 
 // Agregar un juego = importar y sumar una línea acá. Nada más (PRD sección 5.3).
 export const GAMES: GameModule[] = [
@@ -56,6 +57,7 @@ export const GAMES: GameModule[] = [
   groups,
   minisudoku,
   coronas,
+  takuzu,
 ];
 
 export function getGameById(id: string): GameModule | undefined {

@@ -17,7 +17,7 @@ test('el catálogo muestra todos los juegos y la navegación', async ({ page }) 
   // número se actualiza a mano al sumar un juego, no participa del criterio
   // de éxito de PRD 5.5 (que solo exige no tocar src/shell/ ni src/core/).
   const cards = page.locator('a[href*="#/game/"]');
-  await expect(cards).toHaveCount(27);
+  await expect(cards).toHaveCount(28);
   await expect(page.getByRole('navigation')).toBeVisible();
 });
 
