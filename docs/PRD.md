@@ -1,7 +1,7 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.9 · Julio 2026
-**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6), catálogo listo para escalar (ADR-005/006, generador, E2E) y sistema de dificultad renovado: 3 dificultades + modos Tranquilo y Progresivo (sección 7, ADR-007).
+**Documento de requisitos de producto (PRD)** · Versión 0.10 · Julio 2026
+**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6), catálogo listo para escalar (ADR-005/006, generador, E2E), sistema de dificultad renovado (sección 7, ADR-007) y pulido visual con color por categoría y movimiento (ADR-008). Catálogo en curso de expansión con los clones de LinkedIn Games/Elevate (sección 11.3): ver `CHANGELOG.md` para el detalle juego por juego, más actualizado que esta tabla de versiones.
 **Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
 
 | Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -15,6 +15,7 @@
 | 0.7     | Julio 2026 | Escalabilidad del catálogo: **ADR-005** (kit de interacción `src/core/ui/` — implementación canónica de los patrones 10.7), **ADR-006** (primera ampliación del contrato: `GameProps.audio`, sonido dentro de los juegos gateado por el shell — Simon suena), generador `npm run new-game` (esqueleto compilable, testeado y registrado), y suite E2E de humo en CI                                                                               |
 | 0.8     | Julio 2026 | **ADR-007 — dificultades y modos**: los 5 niveles se reemplazan por 3 dificultades (Fácil/Medio/Difícil) + 2 modos especiales declarados por juego — **Tranquilo** (sin relojes ni game over, no compite) y **Progresivo** (10 grados de fácil a más-que-difícil, récord = hasta dónde llegaste). Sección 7 reescrita, contrato con `modes`/`ModeId`, récords migrados del esquema de niveles (v2), Aritmética y Snake como referencias completas |
 | 0.9     | Julio 2026 | Cobertura completa de modos en el catálogo: Cascada, Simon, Secuencias y Estimación suman Tranquilo y Progresivo; Cifras suma Tranquilo (sin Progresivo: ronda única de pensamiento). Los 8 juegos declaran sus modos definitivos (sección 7)                                                                                                                                                                                                     |
+| 0.10    | Julio 2026 | El encabezado de este documento había quedado desactualizado (seguía diciendo "0.9" y describía un catálogo de 8 juegos) mientras el catálogo creció a más de 25 en sesiones sucesivas — las secciones 7, 11 y 11.3 sí se habían ido actualizando en el camino, solo el encabezado no. Se corrige y se deja constancia de que `CHANGELOG.md` es la fuente más al día para el estado juego por juego: este documento fija arquitectura y decisiones, no un inventario en tiempo real            |
 
 ---
 
