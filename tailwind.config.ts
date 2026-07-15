@@ -2,35 +2,42 @@ import type { Config } from 'tailwindcss';
 
 // Tokens de diseño — contrato visual del proyecto (PRD sección 10.1).
 // Ningún juego define colores, fuentes ni escalas fuera de este archivo.
-// Paleta validada contra contraste AA (WCAG) sobre bg/surface — ver ADR-003.
-// Tipografía y geometría: minimalismo moderno sobre tema oscuro — ver ADR-004
-// (reemplaza el pixel art de la ADR-003; la paleta de colores sigue vigente).
+//
+// Desde ADR-009 los colores son una capa semántica sobre variables CSS: cada
+// token apunta a una variable definida en src/styles/index.css, con un valor
+// por tema (claro por defecto, oscuro vía [data-theme='dark']). Las clases de
+// Tailwind que usan los juegos y el shell no cambian — `bg-surface` significa
+// "superficie del tema activo", sea cual sea. Ambas paletas están validadas
+// contra contraste AA (ADR-003 para la oscura, ADR-009 para la clara); el
+// documento de referencia visual completo es docs/design-system.md.
+//
+// El formato `rgb(var(--x) / <alpha-value>)` conserva los modificadores de
+// opacidad (`bg-game-1/25`, `border-game-2/40`) que ya usa todo el catálogo.
+function token(name: string): string {
+  return `rgb(var(--color-${name}) / <alpha-value>)`;
+}
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  darkMode: 'class',
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
-      bg: '#0f0e17',
-      surface: '#1a1826',
-      'surface-alt': '#26223a',
-      'text-primary': '#f4f4f2',
-      'text-secondary': '#a6a2bd',
-      'accent-primary': '#3fd0c9',
-      'accent-success': '#6bcf63',
-      'accent-error': '#f4557a',
-      'game-1': '#ffcd4b',
-      'game-2': '#8a6dff',
-      'game-3': '#ff8b3d',
-      'game-4': '#3fa7d6',
-      // game-5/game-6 (ADR-008): completan la paleta a 6 colores para poder
-      // asignar uno distinto a cada categoría del catálogo (CATEGORY_LABELS)
-      // sin repetir matiz con los ya existentes ni con los semánticos
-      // (accent-success/accent-error). Contraste verificado ≥4.5:1 sobre
-      // bg y surface, mismo criterio que el resto de la paleta (ADR-003).
-      'game-5': '#b56ee0', // orquídea
-      'game-6': '#6b7ff0', // índigo
+      bg: token('bg'),
+      surface: token('surface'),
+      'surface-alt': token('surface-alt'),
+      'text-primary': token('text-primary'),
+      'text-secondary': token('text-secondary'),
+      'accent-primary': token('accent-primary'),
+      'accent-success': token('accent-success'),
+      'accent-error': token('accent-error'),
+      'game-1': token('game-1'),
+      'game-2': token('game-2'),
+      'game-3': token('game-3'),
+      'game-4': token('game-4'),
+      'game-5': token('game-5'),
+      'game-6': token('game-6'),
     },
     fontFamily: {
       // Una sola familia (Inter): "display" y "body" son roles de peso/tamaño,
@@ -62,11 +69,12 @@ export default {
       },
       // Elevación (ADR-008): "card" para lo apoyado en la superficie (tarjetas,
       // filas de lista), "raised" para lo que flota sobre el contenido
-      // (diálogos, panel de resultado). Neutras (negro), no atadas a un color
-      // de marca — no necesitan theme() porque el negro no cambia.
+      // (diálogos, panel de resultado). Desde ADR-009 el valor vive en una
+      // variable por tema: el oscuro necesita sombras más marcadas (hay poco
+      // contraste tonal contra el fondo), el claro las lleva suaves y difusas.
       boxShadow: {
-        card: '0 1px 2px rgba(0,0,0,0.24), 0 6px 16px -6px rgba(0,0,0,0.32)',
-        raised: '0 4px 8px rgba(0,0,0,0.28), 0 16px 32px -8px rgba(0,0,0,0.4)',
+        card: 'var(--shadow-card)',
+        raised: 'var(--shadow-raised)',
       },
       keyframes: {
         'fade-in': {

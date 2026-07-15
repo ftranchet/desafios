@@ -15,6 +15,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Temas (ADR-009): los tokens de tailwind.config.ts apuntan a estas
+   variables. Tripletas RGB sin envolver para que los modificadores de
+   opacidad de Tailwind (`bg-game-1/25`) sigan funcionando. Ambas paletas
+   validadas contra contraste AA (>= 4.5:1 sobre bg y surface): la clara en
+   ADR-009, la oscura en ADR-003/008 — los valores oscuros son exactamente
+   los históricos, sin cambios. Referencia completa: docs/design-system.md. */
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-bg: 244 242 250; /* #f4f2fa */
+    --color-surface: 255 255 255; /* #ffffff */
+    --color-surface-alt: 228 224 240; /* #e4e0f0 */
+    --color-text-primary: 33 29 54; /* #211d36 */
+    --color-text-secondary: 90 84 116; /* #5a5474 */
+    --color-accent-primary: 10 115 108; /* #0a736c */
+    --color-accent-success: 51 122 43; /* #337a2b */
+    --color-accent-error: 201 19 78; /* #c9134e */
+    --color-game-1: 138 106 0; /* #8a6a00 ámbar */
+    --color-game-2: 106 63 216; /* #6a3fd8 violeta */
+    --color-game-3: 164 74 5; /* #a44a05 naranja */
+    --color-game-4: 11 106 158; /* #0b6a9e celeste */
+    --color-game-5: 147 54 143; /* #93368f orquídea */
+    --color-game-6: 74 81 216; /* #4a51d8 índigo */
+    --shadow-card: 0 1px 2px rgba(33, 29, 54, 0.06), 0 6px 16px -6px rgba(33, 29, 54, 0.1);
+    --shadow-raised: 0 4px 12px rgba(33, 29, 54, 0.08), 0 16px 40px -8px rgba(33, 29, 54, 0.16);
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --color-bg: 15 14 23; /* #0f0e17 */
+    --color-surface: 26 24 38; /* #1a1826 */
+    --color-surface-alt: 38 34 58; /* #26223a */
+    --color-text-primary: 244 244 242; /* #f4f4f2 */
+    --color-text-secondary: 166 162 189; /* #a6a2bd */
+    --color-accent-primary: 63 208 201; /* #3fd0c9 */
+    --color-accent-success: 107 207 99; /* #6bcf63 */
+    --color-accent-error: 244 85 122; /* #f4557a */
+    --color-game-1: 255 205 75; /* #ffcd4b amarillo */
+    --color-game-2: 138 109 255; /* #8a6dff violeta */
+    --color-game-3: 255 139 61; /* #ff8b3d naranja */
+    --color-game-4: 63 167 214; /* #3fa7d6 celeste */
+    --color-game-5: 181 110 224; /* #b56ee0 orquídea */
+    --color-game-6: 107 127 240; /* #6b7ff0 índigo */
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24), 0 6px 16px -6px rgba(0, 0, 0, 0.32);
+    --shadow-raised: 0 4px 8px rgba(0, 0, 0, 0.28), 0 16px 32px -8px rgba(0, 0, 0, 0.4);
+  }
+}
+
 @layer base {
   /* Endurecimiento táctil global (RNF-03/RNF-04):
      - overscroll-behavior-y: un deslizamiento hacia abajo dentro de un juego

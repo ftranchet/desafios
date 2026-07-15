@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { storage } from '../../core/storage';
 import { strings } from '../../i18n/es';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { useSettingsStore } from '../store/useSettingsStore';
+import { useSettingsStore, type ThemePreference } from '../store/useSettingsStore';
 
 interface ToggleRowProps {
   label: string;
@@ -27,6 +27,45 @@ function ToggleRow({ label, value, onToggle }: ToggleRowProps) {
   );
 }
 
+const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
+  { value: 'light', label: strings.config.themeLight },
+  { value: 'dark', label: strings.config.themeDark },
+  { value: 'system', label: strings.config.themeSystem },
+];
+
+// Selector de tema (ADR-009): fila de 3 opciones exclusivas, mismo patrón
+// accesible que el selector de dificultad (role group + aria-pressed).
+function ThemeRow({
+  value,
+  onSelect,
+}: {
+  value: ThemePreference;
+  onSelect(theme: ThemePreference): void;
+}) {
+  return (
+    <div className="flex min-h-touch w-full items-center justify-between gap-3 rounded-lg border border-surface-alt bg-surface px-4 py-2 shadow-card">
+      <span className="text-base text-text-primary">{strings.config.theme}</span>
+      <div className="flex gap-1" role="group" aria-label={strings.config.theme}>
+        {THEME_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={value === option.value}
+            onClick={() => onSelect(option.value)}
+            className={`min-h-touch rounded-lg px-3 text-sm font-bold transition active:scale-95 ${
+              value === option.value
+                ? 'bg-accent-primary text-bg'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const AUTHOR_LINKEDIN_URL = 'https://www.linkedin.com/in/ftranchet/';
 
 function exportData() {
@@ -48,9 +87,11 @@ export function ConfigScreen() {
   const sound = useSettingsStore((s) => s.sound);
   const vibration = useSettingsStore((s) => s.vibration);
   const reduceAnimations = useSettingsStore((s) => s.reduceAnimations);
+  const theme = useSettingsStore((s) => s.theme);
   const toggleSound = useSettingsStore((s) => s.toggleSound);
   const toggleVibration = useSettingsStore((s) => s.toggleVibration);
   const toggleReduceAnimations = useSettingsStore((s) => s.toggleReduceAnimations);
+  const setTheme = useSettingsStore((s) => s.setTheme);
 
   const [clearStep, setClearStep] = useState<'idle' | 'first' | 'final'>('idle');
 
@@ -66,6 +107,7 @@ export function ConfigScreen() {
       </h1>
 
       <div className="flex flex-col gap-2">
+        <ThemeRow value={theme} onSelect={setTheme} />
         <ToggleRow label={strings.config.sound} value={sound} onToggle={toggleSound} />
         <ToggleRow label={strings.config.vibration} value={vibration} onToggle={toggleVibration} />
         <ToggleRow

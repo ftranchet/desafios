@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
+import { themeColor, themeColorWithAlpha } from '../../core/theme';
 import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   BOARD_HEIGHT,
@@ -25,20 +26,41 @@ const CANVAS_HEIGHT = BOARD_HEIGHT * CELL_SIZE;
 const TAP_THRESHOLD = 10; // px: por debajo de esto un toque cuenta como "tap" (rotar)
 const FLICK_THRESHOLD = 40; // px hacia abajo: un envión que dispara la caída rápida
 
-// Colores del sistema (tailwind.config.ts) — el canvas necesita valores
-// hexadecimales reales. Una entrada por tipo de pieza, en el orden de
-// PIECE_ORDER (I,O,T,S,Z,J,L): usa los 7 colores "vivos" de la paleta.
-const COLOR_SURFACE = '#1a1826';
-const COLOR_SURFACE_ALT = '#26223a';
-const COLOR_GHOST = 'rgba(244, 244, 242, 0.3)';
-const PIECE_COLORS = ['#3fd0c9', '#6bcf63', '#f4557a', '#ffcd4b', '#8a6dff', '#ff8b3d', '#3fa7d6'];
-
-function pieceColor(type: PieceType): string {
-  return PIECE_COLORS[PIECE_ORDER.indexOf(type)] ?? COLOR_SURFACE_ALT;
+// Colores del sistema — el canvas necesita valores de color reales, no puede
+// consumir clases de Tailwind. Se resuelven del tema activo al montar
+// (ADR-009), en vez de copiar los hex de tailwind.config.ts a mano. Una
+// entrada por tipo de pieza, en el orden de PIECE_ORDER (I,O,T,S,Z,J,L):
+// usa los 7 colores "vivos" de la paleta.
+interface BoardColors {
+  surface: string;
+  surfaceAlt: string;
+  ghost: string;
+  pieces: string[];
 }
 
-function drawState(ctx: CanvasRenderingContext2D, state: CascadaState) {
-  ctx.fillStyle = COLOR_SURFACE;
+function readBoardColors(): BoardColors {
+  return {
+    surface: themeColor('surface'),
+    surfaceAlt: themeColor('surface-alt'),
+    ghost: themeColorWithAlpha('text-primary', 0.3),
+    pieces: [
+      themeColor('accent-primary'),
+      themeColor('accent-success'),
+      themeColor('accent-error'),
+      themeColor('game-1'),
+      themeColor('game-2'),
+      themeColor('game-3'),
+      themeColor('game-4'),
+    ],
+  };
+}
+
+function pieceColor(colors: BoardColors, type: PieceType): string {
+  return colors.pieces[PIECE_ORDER.indexOf(type)] ?? colors.surfaceAlt;
+}
+
+function drawState(ctx: CanvasRenderingContext2D, state: CascadaState, colors: BoardColors) {
+  ctx.fillStyle = colors.surface;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   const gap = 1.5;
@@ -55,11 +77,11 @@ function drawState(ctx: CanvasRenderingContext2D, state: CascadaState) {
 
   state.board.forEach((row, y) => {
     row.forEach((value, x) => {
-      if (value !== 0) drawCell(x, y, PIECE_COLORS[value - 1] ?? COLOR_SURFACE_ALT);
+      if (value !== 0) drawCell(x, y, colors.pieces[value - 1] ?? colors.surfaceAlt);
     });
   });
 
-  ctx.strokeStyle = COLOR_GHOST;
+  ctx.strokeStyle = colors.ghost;
   ctx.lineWidth = 2;
   for (const cell of getOccupiedCells(getGhostPiece(state))) {
     if (cell.y >= 0) {
@@ -67,16 +89,16 @@ function drawState(ctx: CanvasRenderingContext2D, state: CascadaState) {
     }
   }
 
-  const color = pieceColor(state.current.type);
+  const color = pieceColor(colors, state.current.type);
   for (const cell of getOccupiedCells(state.current)) {
     drawCell(cell.x, cell.y, color);
   }
 }
 
-function NextPiecePreview({ type }: { type: PieceType | undefined }) {
+function NextPiecePreview({ type, colors }: { type: PieceType | undefined; colors: BoardColors }) {
   const cells = type ? getCellsForRotation(type, 0) : [];
   const filled = new Set(cells.map((c) => `${c.x},${c.y}`));
-  const color = type ? pieceColor(type) : 'transparent';
+  const color = type ? pieceColor(colors, type) : 'transparent';
   return (
     <div className="grid grid-cols-4 gap-0.5" aria-hidden="true">
       {Array.from({ length: 16 }, (_, i) => {
@@ -111,6 +133,9 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     lastCol: number;
     moved: boolean;
   } | null>(null);
+  // Paleta del tema activo, resuelta una vez al montar: el tema no puede
+  // cambiar en medio de una partida (se elige en Configuración).
+  const colorsRef = useRef<BoardColors>(readBoardColors());
 
   const [score, setScore] = useState(0);
   const [stage, setStage] = useState(1);
@@ -122,7 +147,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     setStage(state.stage);
     setNextType(state.queue[0]);
     const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) drawState(ctx, state);
+    if (ctx) drawState(ctx, state, colorsRef.current);
   }
 
   function finishGame() {
@@ -274,7 +299,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
         </p>
         <div className="flex flex-col items-center gap-1">
           <span className="text-xs text-text-secondary">Próxima</span>
-          <NextPiecePreview type={nextType} />
+          <NextPiecePreview type={nextType} colors={colorsRef.current} />
         </div>
       </div>
       {/* Alto acotado al viewport: en pantallas bajas el tablero se achica en

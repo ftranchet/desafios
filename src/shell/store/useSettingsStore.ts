@@ -12,15 +12,25 @@ export interface LastPlayed {
   mode: ModeId;
 }
 
+// Tema visual (ADR-009): claro por defecto, oscuro como opción, o seguir la
+// preferencia del sistema. El shell lo aplica estampando data-theme en <html>.
+export type ThemePreference = 'light' | 'dark' | 'system';
+
+export function isThemePreference(value: unknown): value is ThemePreference {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
 interface SettingsState {
   sound: boolean;
   vibration: boolean;
   reduceAnimations: boolean;
+  theme: ThemePreference;
   lastPlayed: LastPlayed | null;
   favorites: string[]; // ids de juego, orden de agregado (PRD: sin backend, solo local)
   toggleSound(): void;
   toggleVibration(): void;
   toggleReduceAnimations(): void;
+  setTheme(theme: ThemePreference): void;
   setLastPlayed(entry: LastPlayed): void;
   toggleFavorite(gameId: string): void;
 }
@@ -31,11 +41,13 @@ export const useSettingsStore = create<SettingsState>()(
       sound: true,
       vibration: true,
       reduceAnimations: false,
+      theme: 'light',
       lastPlayed: null,
       favorites: [],
       toggleSound: () => set((s) => ({ sound: !s.sound })),
       toggleVibration: () => set((s) => ({ vibration: !s.vibration })),
       toggleReduceAnimations: () => set((s) => ({ reduceAnimations: !s.reduceAnimations })),
+      setTheme: (theme) => set({ theme }),
       setLastPlayed: (entry) => set({ lastPlayed: entry }),
       toggleFavorite: (gameId) =>
         set((s) => ({
@@ -47,11 +59,15 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'dm:settings',
       // v3: se suma favorites (lista de ids de juego, vacía por defecto).
-      version: 3,
+      // v4 (ADR-009): se suma theme ('light' por defecto, también para quien
+      // migra — el tema claro es la cara nueva del producto; el oscuro queda
+      // a un toque en Configuración).
+      version: 4,
       migrate: (persisted) => {
         const state = persisted as Partial<SettingsState> & {
           lastPlayed?: { gameId?: string; level?: number; mode?: unknown } | null;
           favorites?: unknown;
+          theme?: unknown;
         };
         const last = state.lastPlayed;
         if (last && typeof last.gameId === 'string') {
@@ -68,6 +84,7 @@ export const useSettingsStore = create<SettingsState>()(
         state.favorites = Array.isArray(state.favorites)
           ? state.favorites.filter((id): id is string => typeof id === 'string')
           : [];
+        state.theme = isThemePreference(state.theme) ? state.theme : 'light';
         return state as SettingsState;
       },
     },

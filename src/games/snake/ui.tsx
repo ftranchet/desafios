@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
+import { themeColor } from '../../core/theme';
 import { PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
@@ -13,13 +14,26 @@ import {
   type SnakeState,
 } from './logic';
 
-// Colores del sistema (tailwind.config.ts) — el canvas necesita valores
-// hexadecimales reales, no puede consumir clases de Tailwind.
-const COLOR_SURFACE = '#1a1826';
-const COLOR_SNAKE = '#6bcf63';
-const COLOR_SNAKE_HEAD = '#3fd0c9';
-const COLOR_FOOD = '#f4557a';
-const COLOR_OBSTACLE = '#a6a2bd';
+// Colores del sistema — el canvas necesita valores de color reales, no puede
+// consumir clases de Tailwind. Se resuelven del tema activo al montar
+// (ADR-009), en vez de copiar los hex de tailwind.config.ts a mano.
+interface BoardColors {
+  surface: string;
+  snake: string;
+  snakeHead: string;
+  food: string;
+  obstacle: string;
+}
+
+function readBoardColors(): BoardColors {
+  return {
+    surface: themeColor('surface'),
+    snake: themeColor('accent-success'),
+    snakeHead: themeColor('accent-primary'),
+    food: themeColor('accent-error'),
+    obstacle: themeColor('text-secondary'),
+  };
+}
 
 const CANVAS_SIZE = 320;
 
@@ -34,11 +48,11 @@ const KEY_DIRECTIONS: Record<string, Direction> = {
   d: 'right',
 };
 
-function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
+function drawState(ctx: CanvasRenderingContext2D, state: SnakeState, colors: BoardColors) {
   const cell = CANVAS_SIZE / state.gridSize;
   const gap = Math.max(1, cell * 0.08);
 
-  ctx.fillStyle = COLOR_SURFACE;
+  ctx.fillStyle = colors.surface;
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
   function drawCell(x: number, y: number, color: string) {
@@ -46,10 +60,10 @@ function drawState(ctx: CanvasRenderingContext2D, state: SnakeState) {
     ctx.fillRect(x * cell + gap / 2, y * cell + gap / 2, cell - gap, cell - gap);
   }
 
-  for (const obstacle of state.obstacles) drawCell(obstacle.x, obstacle.y, COLOR_OBSTACLE);
-  drawCell(state.food.x, state.food.y, COLOR_FOOD);
+  for (const obstacle of state.obstacles) drawCell(obstacle.x, obstacle.y, colors.obstacle);
+  drawCell(state.food.x, state.food.y, colors.food);
   state.snake.forEach((segment, i) => {
-    drawCell(segment.x, segment.y, i === 0 ? COLOR_SNAKE_HEAD : COLOR_SNAKE);
+    drawCell(segment.x, segment.y, i === 0 ? colors.snakeHead : colors.snake);
   });
 }
 
@@ -67,6 +81,9 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   const targetRef = useRef<Position | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
+  // Paleta del tema activo, resuelta una vez al montar: el tema no puede
+  // cambiar en medio de una partida (se elige en Configuración).
+  const colorsRef = useRef<BoardColors>(readBoardColors());
 
   const [hud, setHud] = useState({ score: 0, stage: 1 });
 
@@ -99,7 +116,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (ctx) drawState(ctx, next);
+    if (ctx) drawState(ctx, next, colorsRef.current);
 
     if (next.gameOver) {
       finishGame();
@@ -126,7 +143,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
     setHud({ score: 0, stage: 1 });
 
     const ctx = canvas?.getContext('2d');
-    if (ctx) drawState(ctx, initial);
+    if (ctx) drawState(ctx, initial, colorsRef.current);
 
     scheduleTick(initial.intervalMs);
 

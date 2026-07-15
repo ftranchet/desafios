@@ -16,6 +16,7 @@
 | 0.8     | Julio 2026 | **ADR-007 — dificultades y modos**: los 5 niveles se reemplazan por 3 dificultades (Fácil/Medio/Difícil) + 2 modos especiales declarados por juego — **Tranquilo** (sin relojes ni game over, no compite) y **Progresivo** (10 grados de fácil a más-que-difícil, récord = hasta dónde llegaste). Sección 7 reescrita, contrato con `modes`/`ModeId`, récords migrados del esquema de niveles (v2), Aritmética y Snake como referencias completas |
 | 0.9     | Julio 2026 | Cobertura completa de modos en el catálogo: Cascada, Simon, Secuencias y Estimación suman Tranquilo y Progresivo; Cifras suma Tranquilo (sin Progresivo: ronda única de pensamiento). Los 8 juegos declaran sus modos definitivos (sección 7)                                                                                                                                                                                                     |
 | 0.10    | Julio 2026 | El encabezado de este documento había quedado desactualizado (seguía diciendo "0.9" y describía un catálogo de 8 juegos) mientras el catálogo creció a más de 25 en sesiones sucesivas — las secciones 7, 11 y 11.3 sí se habían ido actualizando en el camino, solo el encabezado no. Se corrige y se deja constancia de que `CHANGELOG.md` es la fuente más al día para el estado juego por juego: este documento fija arquitectura y decisiones, no un inventario en tiempo real            |
+| 0.11    | Julio 2026 | **ADR-009 — sistema de diseño**: los tokens de color pasan a una capa semántica sobre variables CSS con dos temas — claro (default, estilo Elevate) y oscuro (la paleta histórica) — más la opción "Sistema"; sección 10.1 actualizada. Nace `docs/design-system.md` como fuente única de referencia visual (roles de tokens, layout responsive, anatomía de componentes)                                                                                                                     |
 
 ---
 
@@ -351,9 +352,9 @@ Cobertura del catálogo actual: **Aritmética, Snake, Cascada, Simon, Secuencias
 
 Los tokens viven en la configuración de Tailwind (`tailwind.config`). Ningún juego usa colores, fuentes ni tamaños fuera de este sistema: es lo que garantiza que módulos construidos en sesiones distintas de Claude Code parezcan de la misma familia (O6).
 
-- **Paleta:** máximo 12 colores nombrados, validada contra contraste AA sobre el fondo (ADR-003) — sigue vigente sin cambios en v0.3, los colores nunca fueron el problema.
-- **Roles de color:** fondo, superficie, texto principal, texto secundario, acento primario (interacción), acento de éxito, acento de error, y 4 colores de juego para íconos y elementos de juego.
-- **Tema:** v1 con **tema oscuro único** (simplifica la validación de contraste). Tema claro como mejora posterior.
+- **Paleta:** colores nombrados por rol, validados contra contraste AA sobre el fondo de su tema (ADR-003 para el oscuro, ADR-009 para el claro).
+- **Roles de color:** fondo, superficie, texto principal, texto secundario, acento primario (interacción), acento de éxito, acento de error, y 6 colores de juego/categoría para íconos y elementos de juego.
+- **Tema:** claro (default, estilo Elevate) y oscuro (la paleta histórica), más "Sistema" — ADR-009 reemplaza el "tema oscuro único" de v1. Los tokens son una capa semántica sobre variables CSS: los juegos no saben de temas. La referencia visual completa vive en `docs/design-system.md`.
 
 ### 10.2 Tipografía por roles
 

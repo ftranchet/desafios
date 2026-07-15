@@ -20,8 +20,11 @@ export default defineConfig({
         start_url: '/desafios/',
         scope: '/desafios/',
         display: 'standalone',
-        background_color: '#0f0e17',
-        theme_color: '#0f0e17',
+        // Splash e interfaz de la PWA instalada: el tema claro por defecto
+        // (ADR-009). El meta theme-color del documento sí sigue al tema activo
+        // en vivo (App.tsx); el manifest es estático y toma el default.
+        background_color: '#f4f2fa',
+        theme_color: '#f4f2fa',
         icons: [
           {
             src: 'icons/icon-192.png',

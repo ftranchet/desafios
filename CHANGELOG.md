@@ -2,6 +2,28 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.36.0] — Sistema de diseño: capa semántica de tokens y tema claro/oscuro
+
+Ver ADR-009 y el nuevo `docs/design-system.md` (fuente única de referencia
+visual: roles de tokens, layout responsive y anatomía de componentes).
+
+### Agregado
+
+- **Tema claro (default, estilo Elevate) y oscuro, más "Sistema"**: los tokens de color de `tailwind.config.ts` pasan de valores hex a una capa semántica sobre variables CSS (`rgb(var(--color-x) / <alpha-value>)`, definidas por tema en `src/styles/index.css`). Las clases que usan el shell y los 28 juegos no cambian — `bg-surface` significa "superficie del tema activo" — así que todo el catálogo hereda ambos temas sin tocar una línea propia. La paleta clara está validada contra el mismo criterio AA de siempre (≥4.5:1 sobre bg y surface, tabla completa en ADR-009); la oscura es exactamente la histórica, sin cambios.
+- **Selector de tema en Configuración** (Claro/Oscuro/Sistema, `dm:settings` v4, claro por defecto también para quien migra). Un script inline en `index.html` aplica la preferencia persistida antes del primer paint (sin flash de tema equivocado); `App.tsx` la mantiene al vivo — incluye seguir los cambios de `prefers-color-scheme` en modo Sistema — y alinea el `meta theme-color` (barra de estado del navegador) con el fondo del tema activo leyendo el token resuelto, sin duplicar valores. `color-scheme` en CSS hace que scrollbars y controles nativos acompañen.
+- **`src/core/theme.ts`**: `themeColor()`/`themeColorWithAlpha()` resuelven un token contra las variables CSS del tema activo — para los juegos que dibujan en canvas y no pueden usar clases de Tailwind. Snake y Cascada dejan de llevar copias hex de la paleta (se desactualizaban y además ignoraban el tema): ahora leen los tokens al montar. Fallback a la paleta oscura para jsdom (los smoke tests no cargan CSS).
+- Las sombras (`shadow-card`/`shadow-raised`) también se tokenizan por tema: marcadas en oscuro (poco contraste tonal contra el fondo), suaves y difusas en claro, al estilo Elevate.
+
+### Cambiado
+
+- El manifest de la PWA (splash) y el `meta theme-color` inicial pasan a los colores del tema claro por defecto.
+- `docs/PRD.md` sección 10.1: el "tema oscuro único" de v1 queda reemplazado por el sistema de dos temas (v0.11); `CLAUDE.md` apunta a `docs/design-system.md` como referencia visual vigente.
+
+### Pendientes conocidos (documentados en ADR-009)
+
+- Los 28 `icon.svg` llevan los hex brillantes de la paleta oscura: sobre los chips pastel del tema claro se ven correctos pero menos contrastados que el resto de la interfaz (RNF-05 no se compromete: el ícono es decorativo). Mejora candidata para una sesión propia.
+- El layout por orientación (tablero + controles a dos columnas en celular horizontal) queda especificado en `docs/design-system.md` sección 6.2; la primitiva de layout es la implementación que sigue.
+
 ## [0.35.0] — Sol y luna: vigésimo octavo juego del catálogo
 
 ### Agregado

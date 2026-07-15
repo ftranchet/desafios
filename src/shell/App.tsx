@@ -47,10 +47,33 @@ function Shell() {
 
 export function App() {
   const reduceAnimations = useSettingsStore((s) => s.reduceAnimations);
+  const theme = useSettingsStore((s) => s.theme);
 
   useEffect(() => {
     document.documentElement.classList.toggle('reduce-animations', reduceAnimations);
   }, [reduceAnimations]);
+
+  // Tema (ADR-009): estampa data-theme en <html> — las variables CSS de
+  // index.css hacen el resto — y alinea el meta theme-color (barra de estado
+  // del navegador) con el fondo del tema activo, leyendo el token ya resuelto
+  // en vez de duplicar el valor acá. El script inline de index.html aplica lo
+  // mismo antes del primer paint; este efecto lo mantiene al vivo cuando la
+  // preferencia cambia desde Configuración o cambia el tema del sistema.
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const resolved = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
+      document.documentElement.dataset.theme = resolved;
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim();
+      if (bg) {
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', `rgb(${bg})`);
+      }
+    };
+    apply();
+    if (theme !== 'system') return;
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, [theme]);
 
   return (
     <HashRouter>
