@@ -5,3 +5,10 @@ export { PressButton, type PressButtonVariant } from './PressButton';
 export { useAutoFocus } from './useAutoFocus';
 export { CountdownBar } from './CountdownBar';
 export { useSecondsLeft } from './useSecondsLeft';
+export {
+  useGridPathDrag,
+  extendPath,
+  type CellCoord,
+  type UseGridPathDragOptions,
+  type UseGridPathDragResult,
+} from './useGridPathDrag';

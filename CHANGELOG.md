@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.34.0] — Primitiva de arrastre de trazo (`useGridPathDrag`)
+
+### Agregado
+
+- **`src/core/ui/useGridPathDrag.ts`** (ADR-005): la primitiva de arrastre de trazo por grilla propuesta en `docs/game-plans/linkedin-elevate-clones.md` — apoyar el dedo en una celda y arrastrar por celdas adyacentes dibuja un camino, con "deshacer" al arrastrar hacia atrás sobre la penúltima celda (el gesto estándar de Flow Free/Numberlink). Se construye por adelantado, antes de necesitarla en un juego concreto, para que "Un trazo", "Enlaces" y "Sendero de palabras" (los tres últimos del plan de 9 juegos) la reutilicen sin duplicar el gesto — mismo criterio que ya justificó construir el resto del kit de `core/ui`.
+- Lógica separada de interfaz dentro de la propia primitiva: `extendPath` (función pura que decide el próximo trazo — agregar celda, ignorar la no adyacente o ya visitada, acortar al volver a la penúltima) queda testeada aparte de `useGridPathDrag` (el cableado de eventos de puntero), igual criterio que separa `logic.ts` de `ui.tsx` en los juegos. Sin consumidor todavía: no se declara ningún juego nuevo en esta entrada.
+- Un único contenedor recibe los tres handlers (`onPointerDown`/`onPointerMove`/`onPointerUp`) y el hit-test de celda (`cellAt`) queda a cargo de quien la usa, mismo patrón de conversión de coordenadas con `getBoundingClientRect()` que ya documenta la sección 10.7.6 del PRD para el resto del kit.
+
 ## [0.33.0] — Coronas: vigésimo séptimo juego del catálogo
 
 ### Agregado
