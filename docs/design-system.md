@@ -164,11 +164,12 @@ adaptación explícita, no como accidente.
 
 ### 6.1 Breakpoints (los de Tailwind, con intención asignada)
 
-| Breakpoint | Ancho    | Intención                                            |
-| ---------- | -------- | ----------------------------------------------------- |
-| (base)     | < 640px  | Celular vertical: 2 columnas de catálogo, una columna de contenido |
-| `sm:`      | ≥ 640px  | Celular horizontal / phablet: 3 columnas de catálogo  |
-| `lg:`      | ≥ 1024px | Tablet horizontal / PC: 4 columnas de catálogo        |
+| Breakpoint | Disparador | Intención                                            |
+| ---------- | ---------- | ----------------------------------------------------- |
+| (base)     | < 640px    | Celular vertical: 2 columnas de catálogo, una columna de contenido |
+| `sm:`      | ≥ 640px    | Celular horizontal / phablet: 3 columnas de catálogo  |
+| `lg:`      | ≥ 1024px   | Tablet horizontal / PC: 4 columnas de catálogo        |
+| `short:`   | apaisado **y** alto ≤ 480px | Celular horizontal en partida: tablero y controles lado a lado (`GameLayout`). El disparador es la altura — una tablet apaisada no lo necesita y no lo activa |
 
 ### 6.2 Reglas
 
@@ -182,12 +183,16 @@ adaptación explícita, no como accidente.
 - **Grillas de juego**: el tamaño de celda nunca baja de 44px (RNF-04). Si la
   dificultad agranda la grilla, se agregan filas o se acepta la excepción
   documentada (Sudoku/Nonograma) — nunca se achica la celda en silencio.
-- **Orientación (especificado; implementación pendiente, ver ADR-009)**: en
-  celular horizontal, un juego de tablero + controles debería reacomodarse a
-  dos columnas (tablero a la izquierda, controles/HUD a la derecha) vía una
-  primitiva de layout en `core/ui`, en vez de desperdiciar el ancho con el
-  layout vertical estirado. Hasta que exista esa primitiva, el layout vertical
-  centrado es el fallback aceptado.
+- **Orientación (`GameLayout`, core/ui)**: en celular horizontal (`short:`),
+  un juego de tablero + controles se reacomoda a dos columnas — tablero a la
+  izquierda, HUD y controles a la derecha — así la partida entra completa sin
+  scrollear. La primitiva tiene tres slots (`hud`/`board`/`panel`); el juego
+  acota el alto de su tablero con `short:` (ver Snake/Cascada) y esconde los
+  textos de ayuda largos (`short:hidden`). Aplicada donde scrollear rompe la
+  partida (tiempo real y keypads: Snake, Cascada, Aritmética, Secuencias);
+  para juegos de tablero puro (Sudoku, Nonograma…) el layout vertical
+  centrado con scroll sigue siendo el fallback aceptado — son juegos de
+  pensar, no de reflejos.
 
 ### 6.3 Checklist responsive para pantalla/juego nuevo
 
@@ -195,7 +200,9 @@ adaptación explícita, no como accidente.
 - [ ] No desborda horizontal en ningún breakpoint.
 - [ ] Controles ≥ 44px en todas las dificultades.
 - [ ] `dvh`, no `vh`.
-- [ ] Probado también en horizontal: usable aunque no esté optimizado.
+- [ ] Probado también en horizontal (740×360): si el juego tiene controles
+      propios, usa `GameLayout` y entra sin scrollear; si es tablero puro,
+      al menos es usable con scroll.
 
 ---
 
@@ -207,14 +214,21 @@ La implementación canónica de los controles vive en `src/core/ui/` (ADR-005).
 ### Tarjeta de catálogo (`GameCard`)
 `rounded-xl border border-surface-alt bg-surface p-4 shadow-card` +
 `hover:border-accent-primary/60 active:scale-[0.98]`. Adentro: chip de ícono
-(12×12, `rounded-lg bg-<categoría>/15`), título (`text-base font-bold`),
-descripción (`text-sm text-text-secondary`), pie con categoría coloreada y
-récord en `xs`.
+sólido del color de la categoría con el glifo del juego en silueta
+(`.icon-mask` + `bg-bg`, el rol "sobre acento" — theme-aware sin tocar los
+`icon.svg`), título (`text-base font-bold`), descripción
+(`text-sm text-text-secondary`), pie con categoría coloreada y récord en `xs`.
 
 ### Chip de filtro
 Píldora `rounded-lg`: inactiva `bg-surface text-text-secondary`; activa =
 fondo sólido del color de su categoría + `text-bg` (`activeBg` de
 `categoryColors.ts`).
+
+### Layout de partida (`GameLayout`, ADR-005/009)
+Tres slots: `hud` (marcador/estado), `board` (el elemento principal), `panel`
+(controles, acciones, ayudas). Vertical: se apilan en ese orden. Apaisado
+corto (`short:`): tablero a la izquierda, HUD + panel a la derecha. Usarlo en
+todo juego nuevo con controles propios; el tablero acota su alto con `short:`.
 
 ### Botones (`PressButton`, ADR-005)
 Variantes: `control` (D-pad, acciones de tablero), `key` (tecla de keypad),

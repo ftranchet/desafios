@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, type KeyboardEvent, type PointerEvent } fr
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
 import { themeColor, themeColorWithAlpha } from '../../core/theme';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -282,89 +282,98 @@ export function CascadaGame({ config, onFinish }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70dvh] flex-col items-center gap-3 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      className="flex min-h-[70dvh] flex-col items-center gap-3 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary short:min-h-0 short:p-2"
       role="application"
       aria-label="Tablero de Cascada: arrastrá la pieza con el dedo, tocá para rotar, envión hacia abajo para caída rápida; también botones y flechas"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="flex w-full max-w-xs items-center justify-between">
-        <p className="font-display text-lg font-extrabold text-text-primary">
-          Puntaje: {score}
-          {config.mode === 'progressive' && (
-            <span className="ml-3 text-sm font-semibold text-text-secondary">
-              Grado {stage}/{PROGRESSIVE_STAGES}
-            </span>
-          )}
-        </p>
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-text-secondary">Próxima</span>
-          <NextPiecePreview type={nextType} colors={colorsRef.current} />
-        </div>
-      </div>
-      {/* Alto acotado al viewport: en pantallas bajas el tablero se achica en
-          vez de empujar los controles fuera de la vista; el buffer interno
-          queda fijo y el navegador lo escala manteniendo la proporción. */}
-      <canvas
-        ref={canvasRef}
-        style={{
-          height: `min(${CANVAS_HEIGHT}px, 52vh)`,
-          aspectRatio: `${BOARD_WIDTH} / ${BOARD_HEIGHT}`,
-        }}
-        className="touch-none rounded-lg border border-surface-alt"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+      <GameLayout
+        hud={
+          <div className="flex w-full items-center justify-between">
+            <p className="font-display text-lg font-extrabold text-text-primary">
+              Puntaje: {score}
+              {config.mode === 'progressive' && (
+                <span className="ml-3 text-sm font-semibold text-text-secondary">
+                  Grado {stage}/{PROGRESSIVE_STAGES}
+                </span>
+              )}
+            </p>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xs text-text-secondary">Próxima</span>
+              <NextPiecePreview type={nextType} colors={colorsRef.current} />
+            </div>
+          </div>
+        }
+        board={
+          /* Alto acotado al viewport (440px = CANVAS_HEIGHT; el JIT necesita
+             el literal): en pantallas bajas el tablero se achica en vez de
+             empujar los controles fuera de la vista, y en apaisado corto
+             (short:) se acota por la altura para convivir con los controles
+             al costado. El buffer interno queda fijo y el navegador lo escala
+             manteniendo la proporción. */
+          <canvas
+            ref={canvasRef}
+            className="aspect-[10/20] h-[min(440px,52dvh)] touch-none rounded-lg border border-surface-alt short:h-[min(440px,calc(100dvh-7.5rem))]"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          />
+        }
+        panel={
+          <>
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Mover pieza">
+                <PressButton
+                  ariaLabel="Mover a la izquierda"
+                  repeatOnHold
+                  onPress={() => applyAction((s) => tryMove(s, -1, 0))}
+                >
+                  ◀
+                </PressButton>
+                <PressButton
+                  ariaLabel="Bajar"
+                  repeatOnHold
+                  onPress={() => applyAction((s) => tryMove(s, 0, 1))}
+                >
+                  ▼
+                </PressButton>
+                <PressButton
+                  ariaLabel="Mover a la derecha"
+                  repeatOnHold
+                  onPress={() => applyAction((s) => tryMove(s, 1, 0))}
+                >
+                  ▶
+                </PressButton>
+              </div>
+              <div className="flex gap-2" role="group" aria-label="Acciones de la pieza">
+                <PressButton ariaLabel="Rotar" onPress={() => applyAction(tryRotate)}>
+                  ↻
+                </PressButton>
+                <PressButton ariaLabel="Caída rápida" onPress={() => applyAction(hardDrop)}>
+                  ⤓
+                </PressButton>
+              </div>
+            </div>
+            {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
+            {config.mode === 'zen' && (
+              <PressButton
+                variant="primary"
+                ariaLabel="Terminar la partida"
+                onPress={finishGame}
+                className="px-8"
+              >
+                Terminar
+              </PressButton>
+            )}
+            <p className="max-w-xs text-center text-sm text-text-secondary short:hidden">
+              Arrastrá la pieza con el dedo, tocá para rotar y hacé un envión hacia abajo para la
+              caída rápida. También podés usar los botones o las flechas.
+            </p>
+          </>
+        }
       />
-      <div className="flex w-full max-w-xs items-center justify-between gap-4">
-        <div className="grid grid-cols-3 gap-2" role="group" aria-label="Mover pieza">
-          <PressButton
-            ariaLabel="Mover a la izquierda"
-            repeatOnHold
-            onPress={() => applyAction((s) => tryMove(s, -1, 0))}
-          >
-            ◀
-          </PressButton>
-          <PressButton
-            ariaLabel="Bajar"
-            repeatOnHold
-            onPress={() => applyAction((s) => tryMove(s, 0, 1))}
-          >
-            ▼
-          </PressButton>
-          <PressButton
-            ariaLabel="Mover a la derecha"
-            repeatOnHold
-            onPress={() => applyAction((s) => tryMove(s, 1, 0))}
-          >
-            ▶
-          </PressButton>
-        </div>
-        <div className="flex gap-2" role="group" aria-label="Acciones de la pieza">
-          <PressButton ariaLabel="Rotar" onPress={() => applyAction(tryRotate)}>
-            ↻
-          </PressButton>
-          <PressButton ariaLabel="Caída rápida" onPress={() => applyAction(hardDrop)}>
-            ⤓
-          </PressButton>
-        </div>
-      </div>
-      {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
-      {config.mode === 'zen' && (
-        <PressButton
-          variant="primary"
-          ariaLabel="Terminar la partida"
-          onPress={finishGame}
-          className="px-8"
-        >
-          Terminar
-        </PressButton>
-      )}
-      <p className="max-w-xs text-center text-sm text-text-secondary">
-        Arrastrá la pieza con el dedo, tocá para rotar y hacé un envión hacia abajo para la caída
-        rápida. También podés usar los botones o las flechas.
-      </p>
     </div>
   );
 }

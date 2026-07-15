@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
 import { themeColor } from '../../core/theme';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   consumeDirection,
@@ -201,80 +201,91 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70dvh] flex-col items-center gap-4 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+      className="flex min-h-[70dvh] flex-col items-center gap-4 rounded-lg p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary short:min-h-0 short:p-2"
       role="application"
       aria-label="Tablero de Snake: mantené el dedo para que la víbora te siga, o usá los botones o las flechas"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <p className="font-display text-lg font-extrabold text-text-primary">
-        Puntaje: {hud.score}
-        {config.mode === 'progressive' && (
-          <span className="ml-3 text-sm font-semibold text-text-secondary">
-            Grado {hud.stage}/{PROGRESSIVE_STAGES}
-          </span>
-        )}
-      </p>
-      {/* Ancho fluido con tope: en celulares angostos (360px) el tablero no
-          desborda; el buffer interno queda fijo y el navegador lo escala. */}
-      <canvas
-        ref={canvasRef}
-        style={{ width: '100%', maxWidth: CANVAS_SIZE, aspectRatio: '1 / 1' }}
-        className="touch-none rounded-lg border border-surface-alt"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+      <GameLayout
+        hud={
+          <p className="font-display text-lg font-extrabold text-text-primary">
+            Puntaje: {hud.score}
+            {config.mode === 'progressive' && (
+              <span className="ml-3 text-sm font-semibold text-text-secondary">
+                Grado {hud.stage}/{PROGRESSIVE_STAGES}
+              </span>
+            )}
+          </p>
+        }
+        board={
+          /* Ancho fluido con tope (320px = CANVAS_SIZE; el JIT de Tailwind
+             necesita el literal): en celulares angostos no desborda, y en
+             apaisado corto (short:) se acota por la ALTURA del viewport para
+             convivir con los controles al costado sin scrollear. */
+          <canvas
+            ref={canvasRef}
+            className="aspect-square w-[min(320px,calc(100vw-2rem))] touch-none rounded-lg border border-surface-alt short:w-[min(320px,calc(100dvh-8.5rem))]"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          />
+        }
+        panel={
+          <>
+            <div
+              className="grid grid-cols-3 grid-rows-3 gap-2"
+              role="group"
+              aria-label="Controles direccionales"
+            >
+              <PressButton
+                ariaLabel="Mover arriba"
+                onPress={() => requestDirection('up')}
+                className="col-start-2 row-start-1"
+              >
+                ▲
+              </PressButton>
+              <PressButton
+                ariaLabel="Mover a la izquierda"
+                onPress={() => requestDirection('left')}
+                className="col-start-1 row-start-2"
+              >
+                ◀
+              </PressButton>
+              <PressButton
+                ariaLabel="Mover a la derecha"
+                onPress={() => requestDirection('right')}
+                className="col-start-3 row-start-2"
+              >
+                ▶
+              </PressButton>
+              <PressButton
+                ariaLabel="Mover abajo"
+                onPress={() => requestDirection('down')}
+                className="col-start-2 row-start-3"
+              >
+                ▼
+              </PressButton>
+            </div>
+            {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
+            {config.mode === 'zen' && (
+              <PressButton
+                variant="primary"
+                ariaLabel="Terminar la partida"
+                onPress={finishGame}
+                className="px-8"
+              >
+                Terminar
+              </PressButton>
+            )}
+            <p className="max-w-xs text-center text-sm text-text-secondary short:hidden">
+              Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los botones
+              o las flechas del teclado.
+            </p>
+          </>
+        }
       />
-      <div
-        className="grid grid-cols-3 grid-rows-3 gap-2"
-        role="group"
-        aria-label="Controles direccionales"
-      >
-        <PressButton
-          ariaLabel="Mover arriba"
-          onPress={() => requestDirection('up')}
-          className="col-start-2 row-start-1"
-        >
-          ▲
-        </PressButton>
-        <PressButton
-          ariaLabel="Mover a la izquierda"
-          onPress={() => requestDirection('left')}
-          className="col-start-1 row-start-2"
-        >
-          ◀
-        </PressButton>
-        <PressButton
-          ariaLabel="Mover a la derecha"
-          onPress={() => requestDirection('right')}
-          className="col-start-3 row-start-2"
-        >
-          ▶
-        </PressButton>
-        <PressButton
-          ariaLabel="Mover abajo"
-          onPress={() => requestDirection('down')}
-          className="col-start-2 row-start-3"
-        >
-          ▼
-        </PressButton>
-      </div>
-      {/* Tranquilo: sin game over, así que el final lo pone el jugador. */}
-      {config.mode === 'zen' && (
-        <PressButton
-          variant="primary"
-          ariaLabel="Terminar la partida"
-          onPress={finishGame}
-          className="px-8"
-        >
-          Terminar
-        </PressButton>
-      )}
-      <p className="max-w-xs text-center text-sm text-text-secondary">
-        Mantené el dedo sobre el tablero y la víbora te sigue. También podés usar los botones o las
-        flechas del teclado.
-      </p>
     </div>
   );
 }

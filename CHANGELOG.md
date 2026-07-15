@@ -2,6 +2,28 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.37.0] — Pulido visual y jugabilidad: chips de ícono, layout apaisado y verificación de entrada
+
+Resuelve los dos pendientes documentados en ADR-009 y cierra una pasada de
+auditoría multi-viewport (celular vertical/horizontal, tablet, PC) con
+verificación de teclado, mouse y táctil.
+
+### Agregado
+
+- **Layout por orientación (`GameLayout`, `core/ui`)**: en celular horizontal, tablero y controles quedaban apilados en una columna más alta que la pantalla — había que scrollear en plena partida. La primitiva nueva de tres slots (`hud`/`board`/`panel`) los reacomoda lado a lado (tablero a la izquierda, HUD y controles a la derecha) bajo la variante nueva `short:` (apaisado con alto ≤ 480px — el disparador es la altura: una tablet apaisada no lo activa). Aplicada donde scrollear rompe la partida: Snake, Cascada, Aritmética contra reloj y Secuencias numéricas entran ahora completos en 740×360, verificado en navegador. Los juegos de tablero puro (Sudoku, Nonograma…) mantienen el layout vertical con scroll — son juegos de pensar, el scroll no rompe nada — como documenta design-system.md §6.2.
+- Los tableros de canvas acotan su alto en apaisado (`short:`) para convivir con los controles al costado, y los textos de ayuda largos se esconden (`short:hidden`) — la ayuda completa sigue visible en vertical.
+
+### Cambiado
+
+- **Chips de ícono estilo Elevate en el catálogo**: el chip pasa de tinte pastel (`bg-<color>/15`) con el `<img>` del ícono encima — que en tema claro se veía lavado, el pendiente documentado en ADR-009 — a fondo sólido del color de la categoría con el glifo del juego en silueta (`mask-image` + `bg-bg`, el rol "sobre acento" del sistema). El resultado es theme-aware sin tocar ninguno de los 28 `icon.svg`: silueta clara sobre color saturado oscuro en tema claro, silueta oscura sobre color vivo en oscuro. Detalle técnico documentado en el código: el `url()` de la máscara va entre comillas dobles porque Vite inyecta los SVG como data-URIs con comillas simples adentro — sin envolverlo, el CSS es inválido y la máscara se descarta en silencio.
+- `categoryColors.ts` se simplifica: quedan `text` y `activeBg` (los campos `chipBg` y `border` ya no tienen uso).
+
+### Verificado (sin cambios)
+
+- **Teclado (RNF-11)**: partida completa por teclado en los 4 juegos retocados — responder con dígitos + Enter en Aritmética/Secuencias, flechas en Snake, rotar/mover/caída en Cascada — y navegación por Tab con foco visible en el catálogo, todo sin ningún clic previo (auto-foco intacto tras el cambio de layout).
+- **Táctil**: los e2e de humo (partida de Snake por gestos, keypad de Aritmética, favoritos, diálogos) pasan contra el build nuevo en viewport táctil.
+- Sin overflow horizontal en 360px, 740×360, 820×1180 ni 1280×800, en ambos temas.
+
 ## [0.36.0] — Sistema de diseño: capa semántica de tokens y tema claro/oscuro
 
 Ver ADR-009 y el nuevo `docs/design-system.md` (fuente única de referencia

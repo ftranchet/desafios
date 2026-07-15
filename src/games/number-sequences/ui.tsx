@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
-import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
+import { CountdownBar, GameLayout, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import { buildResult, generateSession, type AnswerRecord, type SequenceQuestion } from './logic';
 
 const FEEDBACK_DURATION_MS = 700;
@@ -140,102 +140,111 @@ export function NumberSequencesGame({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70dvh] flex-col items-center gap-5 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] flex-col items-center gap-5 p-6 focus:outline-none short:min-h-0 short:p-2"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-xs">
-        <div className="mb-2 flex justify-between text-sm text-text-secondary">
-          <span>
-            Pregunta {questionIndex + 1} / {session.length}
-            {config.mode === 'progressive' &&
-              question &&
-              ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
-          </span>
-          {timed && (
-            <span aria-label={`${secondsLeft} segundos restantes`}>
-              {isQuestion ? `${secondsLeft} s` : ''}
-            </span>
-          )}
-        </div>
-        {timed && (
-          <CountdownBar
-            durationMs={(question?.seconds ?? 0) * 1000}
-            running={isQuestion}
-            resetKey={questionIndex}
-          />
-        )}
-      </div>
-
       {/* La secuencia, el resultado y el keypad ocupan siempre el mismo lugar:
           entre pregunta y feedback no salta el layout ni aparece y desaparece
-          el teclado del sistema (no se usa ningún <input>). */}
-      {question && (
-        <>
-          <p className="max-w-xs text-center font-display text-lg font-extrabold text-text-primary">
-            {question.terms.join(', ')}, {isQuestion ? '?' : question.answer}
-          </p>
-
-          <p
-            aria-live="polite"
-            className={`min-h-[1.25rem] font-display text-sm font-semibold ${
-              lastCorrect ? 'text-accent-success' : 'text-accent-error'
-            }`}
-          >
-            {!isQuestion && (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
-          </p>
-
-          <div
-            aria-label="Tu respuesta"
-            className={`flex min-h-touch w-full max-w-xs items-center justify-center rounded-lg border bg-surface px-4 font-display text-xl font-bold text-text-primary ${
-              isQuestion ? 'border-accent-primary/60' : 'border-surface-alt'
-            }`}
-          >
-            {inputValue}
+          el teclado del sistema (no se usa ningún <input>). En apaisado corto
+          el keypad pasa al costado de la secuencia (GameLayout). */}
+      <GameLayout
+        hud={
+          <div className="w-full">
+            <div className="mb-2 flex justify-between text-sm text-text-secondary">
+              <span>
+                Pregunta {questionIndex + 1} / {session.length}
+                {config.mode === 'progressive' &&
+                  question &&
+                  ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
+              </span>
+              {timed && (
+                <span aria-label={`${secondsLeft} segundos restantes`}>
+                  {isQuestion ? `${secondsLeft} s` : ''}
+                </span>
+              )}
+            </div>
+            {timed && (
+              <CountdownBar
+                durationMs={(question?.seconds ?? 0) * 1000}
+                running={isQuestion}
+                resetKey={questionIndex}
+              />
+            )}
           </div>
+        }
+        board={
+          question && (
+            <div className="flex w-full max-w-xs flex-col items-center gap-4">
+              <p className="max-w-xs text-center font-display text-lg font-extrabold text-text-primary">
+                {question.terms.join(', ')}, {isQuestion ? '?' : question.answer}
+              </p>
 
-          <div className="grid w-full max-w-xs grid-cols-3 gap-2">
-            {DIGIT_ROWS.map((digit) => (
-              <PressButton
-                key={digit}
-                variant="key"
-                disabled={!isQuestion}
-                onPress={() => appendDigit(digit)}
+              <p
+                aria-live="polite"
+                className={`min-h-[1.25rem] font-display text-sm font-semibold ${
+                  lastCorrect ? 'text-accent-success' : 'text-accent-error'
+                }`}
               >
-                {digit}
+                {!isQuestion && (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
+              </p>
+
+              <div
+                aria-label="Tu respuesta"
+                className={`flex min-h-touch w-full items-center justify-center rounded-lg border bg-surface px-4 font-display text-xl font-bold text-text-primary ${
+                  isQuestion ? 'border-accent-primary/60' : 'border-surface-alt'
+                }`}
+              >
+                {inputValue}
+              </div>
+            </div>
+          )
+        }
+        panel={
+          question && (
+            <div className="grid w-full grid-cols-3 gap-2">
+              {DIGIT_ROWS.map((digit) => (
+                <PressButton
+                  key={digit}
+                  variant="key"
+                  disabled={!isQuestion}
+                  onPress={() => appendDigit(digit)}
+                >
+                  {digit}
+                </PressButton>
+              ))}
+              <PressButton
+                variant="key"
+                ariaLabel="Cambiar signo"
+                disabled={!isQuestion}
+                onPress={toggleSign}
+              >
+                ±
               </PressButton>
-            ))}
-            <PressButton
-              variant="key"
-              ariaLabel="Cambiar signo"
-              disabled={!isQuestion}
-              onPress={toggleSign}
-            >
-              ±
-            </PressButton>
-            <PressButton variant="key" disabled={!isQuestion} onPress={() => appendDigit('0')}>
-              0
-            </PressButton>
-            <PressButton
-              variant="key"
-              ariaLabel="Borrar último dígito"
-              disabled={!isQuestion}
-              onPress={deleteDigit}
-            >
-              ⌫
-            </PressButton>
-            <PressButton
-              variant="primary"
-              ariaLabel="Responder"
-              disabled={!isQuestion || inputValue === '' || inputValue === '-'}
-              onPress={submit}
-              className="col-span-3"
-            >
-              ✓
-            </PressButton>
-          </div>
-        </>
-      )}
+              <PressButton variant="key" disabled={!isQuestion} onPress={() => appendDigit('0')}>
+                0
+              </PressButton>
+              <PressButton
+                variant="key"
+                ariaLabel="Borrar último dígito"
+                disabled={!isQuestion}
+                onPress={deleteDigit}
+              >
+                ⌫
+              </PressButton>
+              <PressButton
+                variant="primary"
+                ariaLabel="Responder"
+                disabled={!isQuestion || inputValue === '' || inputValue === '-'}
+                onPress={submit}
+                className="col-span-3"
+              >
+                ✓
+              </PressButton>
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

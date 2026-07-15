@@ -99,7 +99,60 @@
   }
 }
 
+@layer components {
+  /* GameLayout (core/ui, ADR-009 / design-system.md §6.2): en vertical apila
+     HUD → tablero → controles; en apaisado corto (celular horizontal) pasa el
+     tablero a la izquierda y HUD + controles a la derecha, así la partida
+     entra completa sin scrollear. Solo estructura — ningún color acá. */
+  .game-layout {
+    display: grid;
+    grid-template-areas: 'hud' 'board' 'panel';
+    justify-items: center;
+    align-content: start;
+    gap: 1rem;
+    width: 100%;
+  }
+  .game-layout-hud {
+    grid-area: hud;
+  }
+  .game-layout-board {
+    grid-area: board;
+  }
+  .game-layout-panel {
+    grid-area: panel;
+  }
+  @media (orientation: landscape) and (max-height: 480px) {
+    .game-layout {
+      grid-template-areas: 'board hud' 'board panel';
+      grid-template-columns: auto minmax(14rem, 20rem);
+      column-gap: 2rem;
+      row-gap: 0.75rem;
+      align-content: center;
+      align-items: center;
+    }
+    .game-layout-hud {
+      align-self: end;
+    }
+    .game-layout-panel {
+      align-self: start;
+    }
+  }
+}
+
 @layer utilities {
+  /* Glifo en silueta (ADR-009, pendiente de íconos resuelto): el SVG del juego
+     se usa como máscara y el color lo pone la clase de fondo del elemento
+     (bg-bg sobre el chip sólido de categoría). Así el ícono toma el color
+     correcto en ambos temas sin tocar los 28 icon.svg. */
+  .icon-mask {
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
   .reduce-animations,
   .reduce-animations *,
   .reduce-animations *::before,

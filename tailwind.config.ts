@@ -58,6 +58,13 @@ export default {
       '2xl': ['2.75rem', { lineHeight: '1.15' }],
     },
     extend: {
+      screens: {
+        // Apaisado corto (ADR-009, design-system.md §6.2): celular horizontal.
+        // El disparador real es la ALTURA — un tablero + controles apilados no
+        // entran en ~400px de alto — no el ancho; una tablet apaisada (alta)
+        // no lo necesita y no lo activa.
+        short: { raw: '(orientation: landscape) and (max-height: 480px)' },
+      },
       spacing: {
         touch: '2.75rem', // 44px — objetivo táctil mínimo (RNF-04)
       },
