@@ -5,7 +5,7 @@ import { storage } from '../../core/storage';
 import { CATEGORY_LABELS, strings } from '../../i18n/es';
 import { CATEGORY_ACCENT } from '../categoryColors';
 import { GameCard } from '../components/GameCard';
-import { IconSettings, IconStats } from '../components/icons';
+import { IconFlame, IconSettings, IconStats } from '../components/icons';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 function bestScoreFor(gameId: string): number | null {
@@ -31,6 +31,10 @@ export function CatalogScreen() {
   const [category, setCategory] = useState<string>('all');
   const favorites = useSettingsStore((s) => s.favorites);
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
+  // Racha de días con al menos una partida: visible desde el hogar, no solo
+  // enterrada en Estadísticas — volver cada día tiene una recompensa a la
+  // vista. Tocarla lleva al detalle.
+  const streak = useMemo(() => storage.getStreak(), []);
 
   const categories = useMemo(() => {
     const present = new Set(GAMES.map((g) => g.metadata.category));
@@ -65,7 +69,17 @@ export function CatalogScreen() {
         <h1 className="font-display text-xl font-extrabold text-text-primary">
           {strings.catalog.title}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {streak > 0 && (
+            <Link
+              to="/stats"
+              aria-label={strings.stats.streak(streak)}
+              className="flex h-11 items-center gap-1 rounded-lg border border-surface-alt bg-surface px-3 text-sm font-bold text-game-3 shadow-card transition hover:border-accent-primary/60 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+            >
+              <IconFlame className="h-4 w-4" />
+              {streak}
+            </Link>
+          )}
           <Link to="/stats" aria-label={strings.nav.stats} className={HEADER_ICON_CLASSES}>
             <IconStats />
           </Link>

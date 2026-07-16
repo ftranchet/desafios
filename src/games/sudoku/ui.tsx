@@ -1,6 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import { buildResult, createInitialState, isGivenCell, setCell, type GameState } from './logic';
 
 // Interfaz de Sudoku. Nota deliberada sobre RNF-04: una grilla de 9 columnas
@@ -63,89 +63,97 @@ export function SudokuGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-[24rem] text-center text-sm text-text-secondary">
-        Errores: {state.mistakes}
-      </div>
-
-      <div
-        className="grid w-full max-w-[24rem] grid-cols-9"
-        role="group"
-        aria-label="Grilla de Sudoku"
-      >
-        {state.board.map((value, index) => {
-          const row = Math.floor(index / 9);
-          const col = index % 9;
-          const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
-          const given = isGivenCell(state, index);
-          const isSelected = selected === index;
-          const isRelated =
-            !isSelected &&
-            selected !== null &&
-            (row === selectedRow || col === selectedCol || box === selectedBox);
-          const wrong = value !== null && value !== state.solution[index];
-
-          const borderClasses = [
-            'border border-surface-alt',
-            col % 3 === 2 && col !== 8 ? 'border-r-2 border-r-text-secondary/50' : '',
-            row % 3 === 2 && row !== 8 ? 'border-b-2 border-b-text-secondary/50' : '',
-          ].join(' ');
-          const bgClass = isSelected
-            ? 'bg-accent-primary/25'
-            : isRelated
-              ? 'bg-surface-alt/60'
-              : 'bg-surface';
-          const textClass = given
-            ? 'font-extrabold text-text-primary'
-            : wrong
-              ? 'font-semibold text-accent-error'
-              : 'font-semibold text-accent-primary';
-
-          return (
-            <PressButton
-              key={index}
-              variant="bare"
-              onPress={() => setSelected(index)}
-              ariaLabel={`Fila ${row + 1}, columna ${col + 1}${given ? `, dado ${value}` : value ? `, ingresado ${value}` : ', vacío'}`}
-              className={`flex aspect-square items-center justify-center font-display text-base transition-colors ${borderClasses} ${bgClass} ${textClass}`}
-            >
-              {value ?? ''}
-            </PressButton>
-          );
-        })}
-      </div>
-
-      {state.done ? (
-        <div className="flex w-full max-w-[24rem] flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center">
-          <p className="font-display text-lg font-extrabold text-accent-success">
-            ¡Sudoku resuelto!
-          </p>
-          <p className="text-sm text-text-secondary">Errores: {state.mistakes}</p>
-          <PressButton variant="primary" onPress={() => finishGame(state)} className="px-8">
-            Ver resultado
-          </PressButton>
-        </div>
-      ) : (
-        <div className="grid w-full max-w-[24rem] grid-cols-5 gap-1.5">
-          {DIGITS.map((digit) => (
-            <PressButton
-              key={digit}
-              variant="key"
-              disabled={selected === null}
-              onPress={() => fillSelected(digit)}
-            >
-              {digit}
-            </PressButton>
-          ))}
-          <PressButton
-            variant="key"
-            ariaLabel="Borrar celda"
-            disabled={selected === null}
-            onPress={() => fillSelected(null)}
+      <GameLayout
+        hud={
+          <div className="w-full text-center text-sm text-text-secondary">
+            Errores: {state.mistakes}
+          </div>
+        }
+        board={
+          /* En apaisado corto la grilla se acota por la ALTURA del viewport
+             para convivir con el keypad al costado sin scrollear. */
+          <div
+            className="grid w-full max-w-[24rem] short:w-[calc(100dvh-6rem)] grid-cols-9"
+            role="group"
+            aria-label="Grilla de Sudoku"
           >
-            ⌫
-          </PressButton>
-        </div>
-      )}
+            {state.board.map((value, index) => {
+              const row = Math.floor(index / 9);
+              const col = index % 9;
+              const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+              const given = isGivenCell(state, index);
+              const isSelected = selected === index;
+              const isRelated =
+                !isSelected &&
+                selected !== null &&
+                (row === selectedRow || col === selectedCol || box === selectedBox);
+              const wrong = value !== null && value !== state.solution[index];
+
+              const borderClasses = [
+                'border border-surface-alt',
+                col % 3 === 2 && col !== 8 ? 'border-r-2 border-r-text-secondary/50' : '',
+                row % 3 === 2 && row !== 8 ? 'border-b-2 border-b-text-secondary/50' : '',
+              ].join(' ');
+              const bgClass = isSelected
+                ? 'bg-accent-primary/25'
+                : isRelated
+                  ? 'bg-surface-alt/60'
+                  : 'bg-surface';
+              const textClass = given
+                ? 'font-extrabold text-text-primary'
+                : wrong
+                  ? 'font-semibold text-accent-error'
+                  : 'font-semibold text-accent-primary';
+
+              return (
+                <PressButton
+                  key={index}
+                  variant="bare"
+                  onPress={() => setSelected(index)}
+                  ariaLabel={`Fila ${row + 1}, columna ${col + 1}${given ? `, dado ${value}` : value ? `, ingresado ${value}` : ', vacío'}`}
+                  className={`flex aspect-square items-center justify-center font-display text-base transition-colors ${borderClasses} ${bgClass} ${textClass}`}
+                >
+                  {value ?? ''}
+                </PressButton>
+              );
+            })}
+          </div>
+        }
+        panel={
+          state.done ? (
+            <div className="flex w-full max-w-[24rem] flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center">
+              <p className="font-display text-lg font-extrabold text-accent-success">
+                ¡Sudoku resuelto!
+              </p>
+              <p className="text-sm text-text-secondary">Errores: {state.mistakes}</p>
+              <PressButton variant="primary" onPress={() => finishGame(state)} className="px-8">
+                Ver resultado
+              </PressButton>
+            </div>
+          ) : (
+            <div className="grid w-full max-w-[24rem] grid-cols-5 gap-1.5">
+              {DIGITS.map((digit) => (
+                <PressButton
+                  key={digit}
+                  variant="key"
+                  disabled={selected === null}
+                  onPress={() => fillSelected(digit)}
+                >
+                  {digit}
+                </PressButton>
+              ))}
+              <PressButton
+                variant="key"
+                ariaLabel="Borrar celda"
+                disabled={selected === null}
+                onPress={() => fillSelected(null)}
+              >
+                ⌫
+              </PressButton>
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

@@ -2,6 +2,19 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.39.0] — Experiencia de usuario: apaisado completo, resultado con contexto y racha visible
+
+### Agregado
+
+- **Los 28 juegos del catálogo entran ahora sin scroll en celular horizontal (740×360), medido juego por juego en navegador.** La medición encontró 10 que scrolleaban en plena partida — los peores: Palabra del día (+259px), Cifras (+152), Tabla de Schulte (+136), Código secreto (+135), Sudoku (+110) — y todos pasaron a `GameLayout` (tablero a la izquierda, HUD y controles a la derecha): Palabra del día, Cifras, Tabla de Schulte, Código secreto, Sudoku, Minisudoku, Empuja cajas, ¿Coincide?, Tríos y Nombra el color. Las grillas que necesitan acotarse por altura en apaisado lo hacen con la variante `short:`; el estándar queda fijado en design-system.md §6.2 y su checklist.
+- **Resultado con contexto**: la pantalla de resultado suma el tiempo de partida (m:ss) y, al superar un récord real, contra qué marca ("Superaste tu marca anterior de X").
+- **Racha visible en el catálogo**: si hay racha de días activa, aparece como chip con llama junto a los botones del encabezado — tocarla lleva a Estadísticas. Antes solo vivía enterrada en esa pantalla.
+
+### Cambiado
+
+- El header de partida compacta su padding en apaisado (`short:py-0`): su altura nueva (0.38.0) había reintroducido ~11px de scroll en juegos que entraban justos.
+- Código secreto ya no repite el párrafo de reglas dentro de la partida (la portada lo cubre con "¿Cómo se juega?" desde 0.38.0) y su keypad pasa al fondo, con el historial de intentos entre la jugada actual y el teclado.
+
 ## [0.38.0] — Rediseño de navegación y flujo de entrada al juego
 
 A partir de feedback directo del product owner: sin barra inferior, portada

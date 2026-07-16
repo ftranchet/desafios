@@ -49,9 +49,11 @@ export const strings = {
   result: {
     title: 'Resultado',
     newRecord: '¡Récord nuevo!',
+    recordBeaten: (previous: number) => `Superaste tu marca anterior de ${previous}`,
     previousRecord: (score: number) => `Récord anterior: ${score}`,
     noPreviousRecord: 'Primera partida en este modo',
     zenNote: 'Modo tranquilo: sin récords, puro juego.',
+    duration: (formatted: string) => `Tiempo de partida: ${formatted}`,
     retry: 'Reintentar',
     backToCatalog: 'Volver al catálogo',
   },

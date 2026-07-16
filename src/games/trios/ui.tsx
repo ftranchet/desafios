@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
-import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
+import { CountdownBar, GameLayout, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import {
   buildResult,
   generateSession,
@@ -37,11 +37,31 @@ function cardAriaLabel(card: Card, index: number): string {
   return `Carta ${index + 1}: ${card.count} ${pluralize(SHAPE_LABELS[card.shape]!, card.count)} color ${COLOR_META[card.color]!.label}, ${pluralize(FILL_LABELS[card.fill]!, card.count)}`;
 }
 
-function ShapeIcon({ shape, fill, colorClass }: { shape: AttrValue; fill: AttrValue; colorClass: string }) {
+function ShapeIcon({
+  shape,
+  fill,
+  colorClass,
+}: {
+  shape: AttrValue;
+  fill: AttrValue;
+  colorClass: string;
+}) {
   const style = { fillOpacity: FILL_OPACITY[fill] };
-  if (shape === 0) return <circle cx="12" cy="12" r="8" strokeWidth={2} style={style} className={colorClass} />;
+  if (shape === 0)
+    return <circle cx="12" cy="12" r="8" strokeWidth={2} style={style} className={colorClass} />;
   if (shape === 1) {
-    return <rect x="4" y="4" width="16" height="16" rx="3" strokeWidth={2} style={style} className={colorClass} />;
+    return (
+      <rect
+        x="4"
+        y="4"
+        width="16"
+        height="16"
+        rx="3"
+        strokeWidth={2}
+        style={style}
+        className={colorClass}
+      />
+    );
   }
   return <polygon points="12,3 21,20 3,20" strokeWidth={2} style={style} className={colorClass} />;
 }
@@ -118,7 +138,11 @@ export function TriosGame({ config, onFinish, audio }: GameProps) {
       timeoutRef.current = window.setTimeout(() => {
         if (resolvedRef.current) return;
         resolvedRef.current = true;
-        answersRef.current[index] = { correct: false, responseMs: null, mistakes: mistakesRef.current };
+        answersRef.current[index] = {
+          correct: false,
+          responseMs: null,
+          mistakes: mistakesRef.current,
+        };
         audio?.play('error');
         advance(index, questions);
       }, q.seconds * 1000);
@@ -147,7 +171,11 @@ export function TriosGame({ config, onFinish, audio }: GameProps) {
       timeoutRef.current = null;
       resolvedRef.current = true;
       const responseMs = Math.round(performance.now() - questionStartRef.current);
-      answersRef.current[questionIndex] = { correct: true, responseMs, mistakes: mistakesRef.current };
+      answersRef.current[questionIndex] = {
+        correct: true,
+        responseMs,
+        mistakes: mistakesRef.current,
+      };
       audio?.play('success');
       setLastCorrect(true);
       setPhase('feedback');
@@ -173,66 +201,74 @@ export function TriosGame({ config, onFinish, audio }: GameProps) {
       className="flex min-h-[70dvh] flex-col items-center gap-4 p-6 focus:outline-none"
       tabIndex={0}
     >
-      <div className="w-full max-w-sm">
-        <div className="mb-2 flex justify-between text-sm text-text-secondary">
-          <span>
-            Tablero {questionIndex + 1} / {session.length}
-            {config.mode === 'progressive' &&
-              question &&
-              ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
-          </span>
-          {timed && (
-            <span aria-label={`${secondsLeft} segundos restantes`}>
-              {isQuestion ? `${secondsLeft} s` : ''}
-            </span>
-          )}
-        </div>
-        {timed && (
-          <CountdownBar
-            durationMs={(question?.seconds ?? 0) * 1000}
-            running={isQuestion}
-            resetKey={questionIndex}
-          />
-        )}
-      </div>
-
-      <p
-        aria-live="polite"
-        className={`min-h-[1.25rem] font-display text-sm font-semibold ${
-          lastCorrect === false ? 'text-accent-error' : 'text-accent-success'
-        }`}
-      >
-        {phase === 'feedback' && (lastCorrect ? '¡Trío correcto!' : 'No es un trío válido')}
-      </p>
-
-      {question && (
-        <div
-          className="grid w-full max-w-sm grid-cols-3 gap-2"
-          role="group"
-          aria-label="Tablero de cartas"
-        >
-          {question.board.map((card, index) => (
-            <PressButton
-              key={index}
-              variant="bare"
-              disabled={phase !== 'question'}
-              onPress={() => handleCardTap(index)}
-              ariaLabel={cardAriaLabel(card, index)}
-              className={`flex min-h-touch items-center justify-center gap-1 rounded-lg border-2 p-2 transition-colors ${
-                selected.includes(index)
-                  ? 'border-accent-primary bg-accent-primary/10'
-                  : 'border-surface-alt bg-surface'
+      <GameLayout
+        hud={
+          <div className="w-full">
+            <div className="mb-2 flex justify-between text-sm text-text-secondary">
+              <span>
+                Tablero {questionIndex + 1} / {session.length}
+                {config.mode === 'progressive' &&
+                  question &&
+                  ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
+              </span>
+              {timed && (
+                <span aria-label={`${secondsLeft} segundos restantes`}>
+                  {isQuestion ? `${secondsLeft} s` : ''}
+                </span>
+              )}
+            </div>
+            {timed && (
+              <CountdownBar
+                durationMs={(question?.seconds ?? 0) * 1000}
+                running={isQuestion}
+                resetKey={questionIndex}
+              />
+            )}
+            <p
+              aria-live="polite"
+              className={`min-h-[1.25rem] font-display text-sm font-semibold ${
+                lastCorrect === false ? 'text-accent-error' : 'text-accent-success'
               }`}
             >
-              {Array.from({ length: card.count }, (_, i) => (
-                <svg key={i} viewBox="0 0 24 24" className="h-5 w-5">
-                  <ShapeIcon shape={card.shape} fill={card.fill} colorClass={COLOR_META[card.color]!.swatchClass} />
-                </svg>
+              {phase === 'feedback' && (lastCorrect ? '¡Trío correcto!' : 'No es un trío válido')}
+            </p>
+          </div>
+        }
+        board={
+          question && (
+            <div
+              className="grid w-full max-w-sm grid-cols-3 gap-2"
+              role="group"
+              aria-label="Tablero de cartas"
+            >
+              {question.board.map((card, index) => (
+                <PressButton
+                  key={index}
+                  variant="bare"
+                  disabled={phase !== 'question'}
+                  onPress={() => handleCardTap(index)}
+                  ariaLabel={cardAriaLabel(card, index)}
+                  className={`flex min-h-touch items-center justify-center gap-1 rounded-lg border-2 p-2 transition-colors ${
+                    selected.includes(index)
+                      ? 'border-accent-primary bg-accent-primary/10'
+                      : 'border-surface-alt bg-surface'
+                  }`}
+                >
+                  {Array.from({ length: card.count }, (_, i) => (
+                    <svg key={i} viewBox="0 0 24 24" className="h-5 w-5">
+                      <ShapeIcon
+                        shape={card.shape}
+                        fill={card.fill}
+                        colorClass={COLOR_META[card.color]!.swatchClass}
+                      />
+                    </svg>
+                  ))}
+                </PressButton>
               ))}
-            </PressButton>
-          ))}
-        </div>
-      )}
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

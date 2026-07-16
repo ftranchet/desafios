@@ -9,6 +9,14 @@ interface ResultPanelProps {
   onBackToCatalog(): void;
 }
 
+/** ms → "m:ss" (o "0:ss"); las partidas nunca llegan a la hora. */
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 export function ResultPanel({
   result,
   previousBest,
@@ -36,9 +44,18 @@ export function ResultPanel({
       {result.mode === 'zen' ? (
         <p className="text-sm text-text-secondary">{strings.result.zenNote}</p>
       ) : isNewRecord ? (
-        <p className="font-display text-sm font-semibold text-accent-success">
-          {strings.result.newRecord}
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="font-display text-sm font-semibold text-accent-success">
+            {strings.result.newRecord}
+          </p>
+          {/* Superar una marca real merece decir cuál era; la primera partida
+              no tiene marca que mostrar. */}
+          {previousBest !== null && previousBest > 0 && (
+            <p className="text-sm text-text-secondary">
+              {strings.result.recordBeaten(previousBest)}
+            </p>
+          )}
+        </div>
       ) : (
         <p className="text-sm text-text-secondary">
           {previousBest === null
@@ -46,6 +63,10 @@ export function ResultPanel({
             : strings.result.previousRecord(previousBest)}
         </p>
       )}
+
+      <p className="text-xs text-text-secondary">
+        {strings.result.duration(formatDuration(result.durationMs))}
+      </p>
       <div className="mt-4 flex w-full max-w-xs flex-col gap-2">
         <button
           type="button"

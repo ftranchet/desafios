@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
-import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
+import { CountdownBar, GameLayout, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import { buildResult, generateSession, type AnswerRecord, type Trial } from './logic';
 
 const SYMBOLS = ['●', '■', '▲', '◆', '★', '✚'];
@@ -78,7 +78,8 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
     if (!t) return;
 
     const correct = submitted !== null && submitted === t.isMatch;
-    const responseMs = submitted !== null ? Math.round(performance.now() - trialStartRef.current) : null;
+    const responseMs =
+      submitted !== null ? Math.round(performance.now() - trialStartRef.current) : null;
     answersRef.current[index] = { correct, responseMs };
     audio?.play(correct ? 'success' : 'error');
     setLastCorrect(correct);
@@ -118,71 +119,79 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-xs">
-        <div className="mb-2 flex justify-between text-sm text-text-secondary">
-          <span>
-            Símbolo {trialIndex + 1} / {session.length}
-            {config.mode === 'progressive' &&
-              trial &&
-              ` · Grado ${trial.stage}/${PROGRESSIVE_STAGES}`}
-          </span>
-          {timed && (
-            <span aria-label={`${secondsLeft} segundos restantes`}>
-              {isQuestion ? `${secondsLeft} s` : ''}
-            </span>
-          )}
-        </div>
-        {timed && (
-          <CountdownBar
-            durationMs={(trial?.seconds ?? 0) * 1000}
-            running={isQuestion}
-            resetKey={trialIndex}
-          />
-        )}
-      </div>
-
-      {trial && (
-        <>
-          <p className="text-center text-sm text-text-secondary">
-            ¿Coincide con el símbolo de hace {trial.n} {trial.n === 1 ? 'lugar' : 'lugares'}?
-          </p>
-
-          <div
-            className="flex h-24 w-24 items-center justify-center rounded-lg border border-surface-alt bg-surface"
-            aria-label={`Símbolo actual: ${SYMBOLS[trial.symbol]}`}
-          >
-            <span className="font-display text-5xl text-text-primary">{SYMBOLS[trial.symbol]}</span>
+      <GameLayout
+        hud={
+          <div className="w-full">
+            <div className="mb-2 flex justify-between text-sm text-text-secondary">
+              <span>
+                Símbolo {trialIndex + 1} / {session.length}
+                {config.mode === 'progressive' &&
+                  trial &&
+                  ` · Grado ${trial.stage}/${PROGRESSIVE_STAGES}`}
+              </span>
+              {timed && (
+                <span aria-label={`${secondsLeft} segundos restantes`}>
+                  {isQuestion ? `${secondsLeft} s` : ''}
+                </span>
+              )}
+            </div>
+            {timed && (
+              <CountdownBar
+                durationMs={(trial?.seconds ?? 0) * 1000}
+                running={isQuestion}
+                resetKey={trialIndex}
+              />
+            )}
           </div>
-
-          <p
-            aria-live="polite"
-            className={`min-h-[1.25rem] font-display text-sm font-semibold ${
-              lastCorrect ? 'text-accent-success' : 'text-accent-error'
-            }`}
-          >
-            {!isQuestion && (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
-          </p>
-
-          <div className="grid w-full max-w-xs grid-cols-2 gap-3">
-            <PressButton
-              variant="control"
-              disabled={!isQuestion}
-              onPress={() => answer(true)}
-              ariaLabel="Coincide con el símbolo de antes"
-            >
-              Coincide
-            </PressButton>
-            <PressButton
-              variant="control"
-              disabled={!isQuestion}
-              onPress={() => answer(false)}
-              ariaLabel="No coincide"
-            >
-              No coincide
-            </PressButton>
-          </div>
-        </>
-      )}
+        }
+        board={
+          trial && (
+            <div className="flex w-full max-w-xs flex-col items-center gap-4">
+              <p className="text-center text-sm text-text-secondary">
+                ¿Coincide con el símbolo de hace {trial.n} {trial.n === 1 ? 'lugar' : 'lugares'}?
+              </p>
+              <div
+                className="flex h-24 w-24 items-center justify-center rounded-lg border border-surface-alt bg-surface"
+                aria-label={`Símbolo actual: ${SYMBOLS[trial.symbol]}`}
+              >
+                <span className="font-display text-5xl text-text-primary">
+                  {SYMBOLS[trial.symbol]}
+                </span>
+              </div>
+              <p
+                aria-live="polite"
+                className={`min-h-[1.25rem] font-display text-sm font-semibold ${
+                  lastCorrect ? 'text-accent-success' : 'text-accent-error'
+                }`}
+              >
+                {!isQuestion && (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
+              </p>
+            </div>
+          )
+        }
+        panel={
+          trial && (
+            <div className="grid w-full grid-cols-2 gap-3">
+              <PressButton
+                variant="control"
+                disabled={!isQuestion}
+                onPress={() => answer(true)}
+                ariaLabel="Coincide con el símbolo de antes"
+              >
+                Coincide
+              </PressButton>
+              <PressButton
+                variant="control"
+                disabled={!isQuestion}
+                onPress={() => answer(false)}
+                ariaLabel="No coincide"
+              >
+                No coincide
+              </PressButton>
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

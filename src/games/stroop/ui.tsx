@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
-import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
+import { CountdownBar, GameLayout, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import {
   buildResult,
   COLOR_NAMES,
@@ -19,10 +19,26 @@ import {
 const FEEDBACK_DURATION_MS = 700;
 
 const COLOR_META: Record<ColorName, { label: string; textClass: string; swatchClass: string }> = {
-  amarillo: { label: 'Amarillo', textClass: 'text-game-1', swatchClass: 'border-game-1 bg-game-1/20' },
-  violeta: { label: 'Violeta', textClass: 'text-game-2', swatchClass: 'border-game-2 bg-game-2/20' },
-  naranja: { label: 'Naranja', textClass: 'text-game-3', swatchClass: 'border-game-3 bg-game-3/20' },
-  celeste: { label: 'Celeste', textClass: 'text-game-4', swatchClass: 'border-game-4 bg-game-4/20' },
+  amarillo: {
+    label: 'Amarillo',
+    textClass: 'text-game-1',
+    swatchClass: 'border-game-1 bg-game-1/20',
+  },
+  violeta: {
+    label: 'Violeta',
+    textClass: 'text-game-2',
+    swatchClass: 'border-game-2 bg-game-2/20',
+  },
+  naranja: {
+    label: 'Naranja',
+    textClass: 'text-game-3',
+    swatchClass: 'border-game-3 bg-game-3/20',
+  },
+  celeste: {
+    label: 'Celeste',
+    textClass: 'text-game-4',
+    swatchClass: 'border-game-4 bg-game-4/20',
+  },
 };
 
 const KEY_TO_COLOR: Record<string, ColorName> = {
@@ -142,63 +158,75 @@ export function StroopGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-xs">
-        <div className="mb-2 flex justify-between text-sm text-text-secondary">
-          <span>
-            Pregunta {questionIndex + 1} / {session.length}
-            {config.mode === 'progressive' &&
-              question &&
-              ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
-          </span>
-          {timed && (
-            <span aria-label={`${secondsLeft} segundos restantes`}>
-              {isQuestion ? `${secondsLeft} s` : ''}
-            </span>
-          )}
-        </div>
-        {timed && (
-          <CountdownBar
-            durationMs={(question?.seconds ?? 0) * 1000}
-            running={isQuestion}
-            resetKey={questionIndex}
-          />
-        )}
-      </div>
-
-      {question && (
-        <>
-          <div className="flex min-h-[4rem] w-full max-w-xs items-center justify-center rounded-lg border border-surface-alt bg-surface">
-            <p className={`font-display text-3xl font-extrabold ${COLOR_META[question.ink].textClass}`}>
-              {COLOR_META[question.word].label.toUpperCase()}
-            </p>
+      <GameLayout
+        hud={
+          <div className="w-full">
+            <div className="mb-2 flex justify-between text-sm text-text-secondary">
+              <span>
+                Pregunta {questionIndex + 1} / {session.length}
+                {config.mode === 'progressive' &&
+                  question &&
+                  ` · Grado ${question.stage}/${PROGRESSIVE_STAGES}`}
+              </span>
+              {timed && (
+                <span aria-label={`${secondsLeft} segundos restantes`}>
+                  {isQuestion ? `${secondsLeft} s` : ''}
+                </span>
+              )}
+            </div>
+            {timed && (
+              <CountdownBar
+                durationMs={(question?.seconds ?? 0) * 1000}
+                running={isQuestion}
+                resetKey={questionIndex}
+              />
+            )}
           </div>
+        }
+        board={
+          question && (
+            <div className="flex w-full max-w-xs flex-col items-center gap-4">
+              <div className="flex min-h-[4rem] w-full items-center justify-center rounded-lg border border-surface-alt bg-surface">
+                <p
+                  className={`font-display text-3xl font-extrabold ${COLOR_META[question.ink].textClass}`}
+                >
+                  {COLOR_META[question.word].label.toUpperCase()}
+                </p>
+              </div>
 
-          <p
-            aria-live="polite"
-            className={`min-h-[1.25rem] font-display text-sm font-semibold ${
-              lastCorrect ? 'text-accent-success' : 'text-accent-error'
-            }`}
-          >
-            {!isQuestion &&
-              (lastCorrect ? '¡Correcto!' : `Incorrecto (era ${COLOR_META[question.ink].label})`)}
-          </p>
-
-          <div className="grid w-full max-w-xs grid-cols-2 gap-2" role="group" aria-label="Colores">
-            {COLOR_NAMES.map((color) => (
-              <PressButton
-                key={color}
-                variant="bare"
-                disabled={!isQuestion}
-                onPress={() => answer(color)}
-                ariaLabel={`Tinta ${COLOR_META[color].label}`}
-                className={`min-h-touch rounded-lg border-2 font-display text-base font-bold text-text-primary transition-colors disabled:opacity-40 ${COLOR_META[color].swatchClass}`}
+              <p
+                aria-live="polite"
+                className={`min-h-[1.25rem] font-display text-sm font-semibold ${
+                  lastCorrect ? 'text-accent-success' : 'text-accent-error'
+                }`}
               >
-                {COLOR_META[color].label}
-              </PressButton>
-            ))}
-          </div>
-        </>
-      )}
+                {!isQuestion &&
+                  (lastCorrect
+                    ? '¡Correcto!'
+                    : `Incorrecto (era ${COLOR_META[question.ink].label})`)}
+              </p>
+            </div>
+          )
+        }
+        panel={
+          question && (
+            <div className="grid w-full grid-cols-2 gap-2" role="group" aria-label="Colores">
+              {COLOR_NAMES.map((color) => (
+                <PressButton
+                  key={color}
+                  variant="bare"
+                  disabled={!isQuestion}
+                  onPress={() => answer(color)}
+                  ariaLabel={`Tinta ${COLOR_META[color].label}`}
+                  className={`min-h-touch rounded-lg border-2 font-display text-base font-bold text-text-primary transition-colors disabled:opacity-40 ${COLOR_META[color].swatchClass}`}
+                >
+                  {COLOR_META[color].label}
+                </PressButton>
+              ))}
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

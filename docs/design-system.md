@@ -188,11 +188,10 @@ adaptación explícita, no como accidente.
   izquierda, HUD y controles a la derecha — así la partida entra completa sin
   scrollear. La primitiva tiene tres slots (`hud`/`board`/`panel`); el juego
   acota el alto de su tablero con `short:` (ver Snake/Cascada) y esconde los
-  textos de ayuda largos (`short:hidden`). Aplicada donde scrollear rompe la
-  partida (tiempo real y keypads: Snake, Cascada, Aritmética, Secuencias);
-  para juegos de tablero puro (Sudoku, Nonograma…) el layout vertical
-  centrado con scroll sigue siendo el fallback aceptado — son juegos de
-  pensar, no de reflejos.
+  textos de ayuda largos (`short:hidden`). **Estado: los 28 juegos del
+  catálogo entran sin scroll en 740×360** — los de controles/keypad usan
+  `GameLayout`, los de tablero puro ya entraban en una columna. Todo juego
+  nuevo debe sostener ese estándar (checklist de abajo).
 
 ### 6.3 Checklist responsive para pantalla/juego nuevo
 
@@ -200,9 +199,9 @@ adaptación explícita, no como accidente.
 - [ ] No desborda horizontal en ningún breakpoint.
 - [ ] Controles ≥ 44px en todas las dificultades.
 - [ ] `dvh`, no `vh`.
-- [ ] Probado también en horizontal (740×360): si el juego tiene controles
-      propios, usa `GameLayout` y entra sin scrollear; si es tablero puro,
-      al menos es usable con scroll.
+- [ ] Probado también en horizontal (740×360): entra sin scroll vertical —
+      si el juego tiene controles propios, con `GameLayout`; si es tablero
+      puro, acotando el tablero por altura.
 
 ---
 

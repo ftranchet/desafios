@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import {
   advanceRound,
   buildResult,
@@ -147,112 +147,124 @@ export function WordOfTheDayGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-xs text-center text-sm text-text-secondary">
-        {showRoundCount && `Palabra ${state.roundIndex + 1}/${state.rounds.length} · `}
-        {config.mode === 'progressive' && `Grado ${round.stage}/${PROGRESSIVE_STAGES} · `}
-        Intento {Math.min(state.attempts.length + 1, round.maxGuesses)}/{round.maxGuesses}
-      </div>
-
-      {/* El mensaje de error ocupa siempre el mismo lugar (PRD 10.7.12). */}
-      <p aria-live="polite" className="min-h-[1.25rem] text-sm font-semibold text-accent-error">
-        {errorMessage}
-      </p>
-
-      <div className="flex flex-col gap-1.5">
-        {Array.from({ length: round.maxGuesses }, (_, rowIndex) => {
-          const attempt = state.attempts[rowIndex];
-          const isCurrentRow = rowIndex === state.attempts.length && !state.roundOver;
-          return (
-            <div key={rowIndex} className="flex justify-center gap-1.5">
-              {Array.from({ length: wordLength }, (_, colIndex) => {
-                const letter = attempt
-                  ? attempt.guess[colIndex]
-                  : isCurrentRow
-                    ? guess[colIndex]
-                    : undefined;
-                const feedback = attempt?.feedback[colIndex];
-                const active = isCurrentRow && !!letter;
-                return (
-                  <div
-                    key={colIndex}
-                    className={`relative flex h-11 w-11 items-center justify-center rounded-md border font-display text-lg font-bold ${
-                      attempt
-                        ? tileClass(feedback)
-                        : active
-                          ? 'border-accent-primary/60 bg-surface text-text-primary'
-                          : errorMessage && isCurrentRow
-                            ? 'border-accent-error bg-surface text-text-primary'
-                            : 'border-surface-alt bg-surface text-text-primary'
-                    }`}
-                  >
-                    {letter ?? ''}
-                    {attempt && tileSymbol(feedback) && (
-                      <span className="absolute bottom-0.5 right-0.5 text-[0.5rem] leading-none opacity-80">
-                        {tileSymbol(feedback)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+      <GameLayout
+        hud={
+          <>
+            <div className="w-full text-center text-sm text-text-secondary">
+              {showRoundCount && `Palabra ${state.roundIndex + 1}/${state.rounds.length} · `}
+              {config.mode === 'progressive' && `Grado ${round.stage}/${PROGRESSIVE_STAGES} · `}
+              Intento {Math.min(state.attempts.length + 1, round.maxGuesses)}/{round.maxGuesses}
             </div>
-          );
-        })}
-      </div>
-
-      {state.roundOver ? (
-        <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center">
-          <p
-            className={`font-display text-lg font-extrabold ${
-              state.roundWon ? 'text-accent-success' : 'text-accent-error'
-            }`}
-          >
-            {state.roundWon ? '¡La adivinaste!' : 'Se acabaron los intentos'}
-          </p>
-          {!state.roundWon && (
-            <p className="text-sm text-text-secondary">La palabra era {round.word}.</p>
-          )}
-          <PressButton variant="primary" onPress={continueSession} className="px-8">
-            {state.gameOver ? 'Ver resultado' : 'Siguiente palabra'}
-          </PressButton>
-        </div>
-      ) : (
-        <div className="flex w-full max-w-xs flex-col gap-1.5">
-          {KEYBOARD_ROWS.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex justify-center gap-1">
-              {rowIndex === 2 && (
-                <PressButton
-                  variant="bare"
-                  ariaLabel="Confirmar palabra"
-                  onPress={submit}
-                  className="min-h-touch flex-[1.6] rounded-md bg-surface font-display text-xs font-bold text-text-primary"
-                >
-                  Enter
-                </PressButton>
+            {/* El mensaje de error ocupa siempre el mismo lugar (PRD 10.7.12). */}
+            <p
+              aria-live="polite"
+              className="min-h-[1.25rem] text-sm font-semibold text-accent-error"
+            >
+              {errorMessage}
+            </p>
+          </>
+        }
+        board={
+          /* En apaisado corto las filas de 44px no entran: celdas más chicas
+             (la grilla es de lectura; el toque vive en el teclado). */
+          <div className="flex flex-col gap-1.5 short:gap-1">
+            {Array.from({ length: round.maxGuesses }, (_, rowIndex) => {
+              const attempt = state.attempts[rowIndex];
+              const isCurrentRow = rowIndex === state.attempts.length && !state.roundOver;
+              return (
+                <div key={rowIndex} className="flex justify-center gap-1.5">
+                  {Array.from({ length: wordLength }, (_, colIndex) => {
+                    const letter = attempt
+                      ? attempt.guess[colIndex]
+                      : isCurrentRow
+                        ? guess[colIndex]
+                        : undefined;
+                    const feedback = attempt?.feedback[colIndex];
+                    const active = isCurrentRow && !!letter;
+                    return (
+                      <div
+                        key={colIndex}
+                        className={`relative flex h-11 w-11 items-center justify-center rounded-md border font-display text-lg font-bold short:h-8 short:w-8 short:text-sm ${
+                          attempt
+                            ? tileClass(feedback)
+                            : active
+                              ? 'border-accent-primary/60 bg-surface text-text-primary'
+                              : errorMessage && isCurrentRow
+                                ? 'border-accent-error bg-surface text-text-primary'
+                                : 'border-surface-alt bg-surface text-text-primary'
+                        }`}
+                      >
+                        {letter ?? ''}
+                        {attempt && tileSymbol(feedback) && (
+                          <span className="absolute bottom-0.5 right-0.5 text-[0.5rem] leading-none opacity-80">
+                            {tileSymbol(feedback)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        }
+        panel={
+          state.roundOver ? (
+            <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center">
+              <p
+                className={`font-display text-lg font-extrabold ${
+                  state.roundWon ? 'text-accent-success' : 'text-accent-error'
+                }`}
+              >
+                {state.roundWon ? '¡La adivinaste!' : 'Se acabaron los intentos'}
+              </p>
+              {!state.roundWon && (
+                <p className="text-sm text-text-secondary">La palabra era {round.word}.</p>
               )}
-              {row.split('').map((letter) => (
-                <PressButton
-                  key={letter}
-                  variant="bare"
-                  onPress={() => appendLetter(letter)}
-                  className={`min-h-touch flex-1 rounded-md font-display text-sm font-bold transition-colors ${keyClass(letter, keyStates)}`}
-                >
-                  {letter}
-                </PressButton>
+              <PressButton variant="primary" onPress={continueSession} className="px-8">
+                {state.gameOver ? 'Ver resultado' : 'Siguiente palabra'}
+              </PressButton>
+            </div>
+          ) : (
+            <div className="flex w-full max-w-xs flex-col gap-1.5">
+              {KEYBOARD_ROWS.map((row, rowIndex) => (
+                <div key={rowIndex} className="flex justify-center gap-1">
+                  {rowIndex === 2 && (
+                    <PressButton
+                      variant="bare"
+                      ariaLabel="Confirmar palabra"
+                      onPress={submit}
+                      className="min-h-touch flex-[1.6] rounded-md bg-surface font-display text-xs font-bold text-text-primary"
+                    >
+                      Enter
+                    </PressButton>
+                  )}
+                  {row.split('').map((letter) => (
+                    <PressButton
+                      key={letter}
+                      variant="bare"
+                      onPress={() => appendLetter(letter)}
+                      className={`min-h-touch flex-1 rounded-md font-display text-sm font-bold transition-colors ${keyClass(letter, keyStates)}`}
+                    >
+                      {letter}
+                    </PressButton>
+                  ))}
+                  {rowIndex === 2 && (
+                    <PressButton
+                      variant="bare"
+                      ariaLabel="Borrar última letra"
+                      onPress={deleteLetter}
+                      className="min-h-touch flex-[1.6] rounded-md bg-surface font-display text-sm font-bold text-text-primary"
+                    >
+                      ⌫
+                    </PressButton>
+                  )}
+                </div>
               ))}
-              {rowIndex === 2 && (
-                <PressButton
-                  variant="bare"
-                  ariaLabel="Borrar última letra"
-                  onPress={deleteLetter}
-                  className="min-h-touch flex-[1.6] rounded-md bg-surface font-display text-sm font-bold text-text-primary"
-                >
-                  ⌫
-                </PressButton>
-              )}
             </div>
-          ))}
-        </div>
-      )}
+          )
+        }
+      />
     </div>
   );
 }

@@ -32,6 +32,18 @@ export function IconSettings({ className = 'h-5 w-5' }: IconProps) {
   );
 }
 
+/** Llama de racha de días. */
+export function IconFlame({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M12 3c.6 3-1.2 4.6-2.6 6C7.9 10.5 7 12 7 14a5 5 0 0 0 10 0c0-1.6-.7-2.9-1.6-4.1-.5 1-1 1.6-1.9 2.1.3-2.8-.3-6.4-1.5-9Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 /** Flecha de volver. */
 export function IconBack({ className = 'h-5 w-5' }: IconProps) {
   return (

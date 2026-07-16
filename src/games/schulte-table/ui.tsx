@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
 import { PROGRESSIVE_STAGES } from '../../core/modes';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import {
   buildResult,
   buildRounds,
@@ -157,63 +157,69 @@ export function SchulteTableGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-xs text-center text-sm text-text-secondary">
-        {showRoundCount && `Grilla ${roundIndex + 1}/${rounds.length} · `}
-        {config.mode === 'progressive' && `Grado ${round.stage}/${PROGRESSIVE_STAGES} · `}
-        {showTimer ? formatSeconds(elapsedMs) : 'Sin cronómetro'}
-      </div>
-
-      {!roundOver && (
-        <p className="text-center text-sm text-text-secondary">
-          Tocá el {progress.expected} para seguir. Con teclado: tipeá el número y Enter
-          {keyBuffer && <span className="text-text-primary"> ({keyBuffer})</span>}.
-        </p>
-      )}
-
-      {roundOver ? (
-        <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center">
-          <p className="font-display text-lg font-extrabold text-accent-success">
-            ¡Grilla completa!
-          </p>
-          {showTimer && lastRecord && (
-            <p className="text-sm text-text-secondary">
-              Tiempo: {formatSeconds(lastRecord.elapsedMs)} · Errores: {lastRecord.mistakes}
-            </p>
-          )}
-          <PressButton variant="primary" onPress={continueSession} className="px-8">
-            {isLastRound ? 'Ver resultado' : 'Siguiente grilla'}
-          </PressButton>
-        </div>
-      ) : (
-        <div
-          className="grid w-full max-w-xs gap-1.5"
-          style={{ gridTemplateColumns: `repeat(${round.gridSize}, minmax(0, 1fr))` }}
-          role="group"
-          aria-label="Grilla de números"
-        >
-          {round.grid.map((number, cellIndex) => {
-            const isFound = number < progress.expected;
-            const isShaking = shakeAt === number;
-            const stateClass = isFound
-              ? 'border-surface-alt bg-surface text-text-secondary opacity-40'
-              : isShaking
-                ? 'border-accent-error bg-accent-error/20 text-text-primary'
-                : 'border-surface-alt bg-surface text-text-primary active:bg-surface-alt';
-            return (
-              <PressButton
-                key={cellIndex}
-                variant="bare"
-                disabled={isFound}
-                onPress={() => handleTap(number)}
-                ariaLabel={`Número ${number}`}
-                className={`flex aspect-square items-center justify-center rounded-md border font-display text-sm font-bold transition-colors duration-150 ${stateClass}`}
-              >
-                {number}
+      <GameLayout
+        hud={
+          <>
+            <div className="w-full text-center text-sm text-text-secondary">
+              {showRoundCount && `Grilla ${roundIndex + 1}/${rounds.length} · `}
+              {config.mode === 'progressive' && `Grado ${round.stage}/${PROGRESSIVE_STAGES} · `}
+              {showTimer ? formatSeconds(elapsedMs) : 'Sin cronómetro'}
+            </div>
+            {!roundOver && (
+              <p className="text-center text-sm text-text-secondary">
+                Tocá el {progress.expected} para seguir. Con teclado: tipeá el número y Enter
+                {keyBuffer && <span className="text-text-primary"> ({keyBuffer})</span>}.
+              </p>
+            )}
+          </>
+        }
+        board={
+          roundOver ? (
+            <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center">
+              <p className="font-display text-lg font-extrabold text-accent-success">
+                ¡Grilla completa!
+              </p>
+              {showTimer && lastRecord && (
+                <p className="text-sm text-text-secondary">
+                  Tiempo: {formatSeconds(lastRecord.elapsedMs)} · Errores: {lastRecord.mistakes}
+                </p>
+              )}
+              <PressButton variant="primary" onPress={continueSession} className="px-8">
+                {isLastRound ? 'Ver resultado' : 'Siguiente grilla'}
               </PressButton>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          ) : (
+            <div
+              className="grid w-full max-w-xs gap-1.5 short:w-[min(20rem,calc(100dvh-6.5rem))]"
+              style={{ gridTemplateColumns: `repeat(${round.gridSize}, minmax(0, 1fr))` }}
+              role="group"
+              aria-label="Grilla de números"
+            >
+              {round.grid.map((number, cellIndex) => {
+                const isFound = number < progress.expected;
+                const isShaking = shakeAt === number;
+                const stateClass = isFound
+                  ? 'border-surface-alt bg-surface text-text-secondary opacity-40'
+                  : isShaking
+                    ? 'border-accent-error bg-accent-error/20 text-text-primary'
+                    : 'border-surface-alt bg-surface text-text-primary active:bg-surface-alt';
+                return (
+                  <PressButton
+                    key={cellIndex}
+                    variant="bare"
+                    disabled={isFound}
+                    onPress={() => handleTap(number)}
+                    ariaLabel={`Número ${number}`}
+                    className={`flex aspect-square items-center justify-center rounded-md border font-display text-sm font-bold transition-colors duration-150 ${stateClass}`}
+                  >
+                    {number}
+                  </PressButton>
+                );
+              })}
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

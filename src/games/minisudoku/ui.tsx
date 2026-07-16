@@ -1,6 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import {
   BOX_COLS,
   BOX_ROWS,
@@ -70,94 +70,102 @@ export function MinisudokuGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-[22rem] text-center text-sm text-text-secondary">
-        Errores: {state.mistakes}
-      </div>
-
-      <div
-        className="grid w-full max-w-[22rem] grid-cols-6"
-        role="group"
-        aria-label="Grilla de Minisudoku"
-      >
-        {state.board.map((value, index) => {
-          const row = Math.floor(index / SIZE);
-          const col = index % SIZE;
-          const box = Math.floor(row / BOX_ROWS) * BOX_COLS + Math.floor(col / BOX_COLS);
-          const given = isGivenCell(state, index);
-          const isSelected = selected === index;
-          const isRelated =
-            !isSelected &&
-            selected !== null &&
-            (row === selectedRow || col === selectedCol || box === selectedBox);
-          const wrong = value !== null && value !== state.solution[index];
-
-          const borderClasses = [
-            'border border-surface-alt',
-            col % BOX_COLS === BOX_COLS - 1 && col !== SIZE - 1
-              ? 'border-r-2 border-r-text-secondary/50'
-              : '',
-            row % BOX_ROWS === BOX_ROWS - 1 && row !== SIZE - 1
-              ? 'border-b-2 border-b-text-secondary/50'
-              : '',
-          ].join(' ');
-          const bgClass = isSelected
-            ? 'bg-accent-primary/25'
-            : isRelated
-              ? 'bg-surface-alt/60'
-              : 'bg-surface';
-          const textClass = given
-            ? 'font-extrabold text-text-primary'
-            : wrong
-              ? 'font-semibold text-accent-error'
-              : 'font-semibold text-accent-primary';
-
-          return (
-            <PressButton
-              key={index}
-              variant="bare"
-              onPress={() => setSelected(index)}
-              ariaLabel={`Fila ${row + 1}, columna ${col + 1}${given ? `, dado ${value}` : value ? `, ingresado ${value}` : ', vacío'}`}
-              className={`flex aspect-square items-center justify-center font-display text-lg transition-colors ${borderClasses} ${bgClass} ${textClass}`}
-            >
-              {value ?? ''}
-            </PressButton>
-          );
-        })}
-      </div>
-
-      {state.done ? (
-        <div className="flex w-full max-w-[22rem] flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center shadow-card">
-          <p className="font-display text-lg font-extrabold text-accent-success">
-            ¡Minisudoku resuelto!
-          </p>
-          <p className="text-sm text-text-secondary">Errores: {state.mistakes}</p>
-          <PressButton variant="primary" onPress={() => finishGame(state)} className="px-8">
-            Ver resultado
-          </PressButton>
-        </div>
-      ) : (
-        <div className="grid w-full max-w-[22rem] grid-cols-4 gap-1.5">
-          {DIGITS.map((digit) => (
-            <PressButton
-              key={digit}
-              variant="key"
-              disabled={selected === null}
-              onPress={() => fillSelected(digit)}
-            >
-              {digit}
-            </PressButton>
-          ))}
-          <PressButton
-            variant="key"
-            ariaLabel="Borrar celda"
-            disabled={selected === null}
-            onPress={() => fillSelected(null)}
-            className="col-span-2"
+      <GameLayout
+        hud={
+          <div className="w-full text-center text-sm text-text-secondary">
+            Errores: {state.mistakes}
+          </div>
+        }
+        board={
+          /* En apaisado corto la grilla se acota por la ALTURA del viewport
+             para convivir con el keypad al costado sin scrollear. */
+          <div
+            className="grid w-full max-w-[22rem] short:w-[calc(100dvh-6rem)] grid-cols-6"
+            role="group"
+            aria-label="Grilla de Minisudoku"
           >
-            ⌫
-          </PressButton>
-        </div>
-      )}
+            {state.board.map((value, index) => {
+              const row = Math.floor(index / SIZE);
+              const col = index % SIZE;
+              const box = Math.floor(row / BOX_ROWS) * BOX_COLS + Math.floor(col / BOX_COLS);
+              const given = isGivenCell(state, index);
+              const isSelected = selected === index;
+              const isRelated =
+                !isSelected &&
+                selected !== null &&
+                (row === selectedRow || col === selectedCol || box === selectedBox);
+              const wrong = value !== null && value !== state.solution[index];
+
+              const borderClasses = [
+                'border border-surface-alt',
+                col % BOX_COLS === BOX_COLS - 1 && col !== SIZE - 1
+                  ? 'border-r-2 border-r-text-secondary/50'
+                  : '',
+                row % BOX_ROWS === BOX_ROWS - 1 && row !== SIZE - 1
+                  ? 'border-b-2 border-b-text-secondary/50'
+                  : '',
+              ].join(' ');
+              const bgClass = isSelected
+                ? 'bg-accent-primary/25'
+                : isRelated
+                  ? 'bg-surface-alt/60'
+                  : 'bg-surface';
+              const textClass = given
+                ? 'font-extrabold text-text-primary'
+                : wrong
+                  ? 'font-semibold text-accent-error'
+                  : 'font-semibold text-accent-primary';
+
+              return (
+                <PressButton
+                  key={index}
+                  variant="bare"
+                  onPress={() => setSelected(index)}
+                  ariaLabel={`Fila ${row + 1}, columna ${col + 1}${given ? `, dado ${value}` : value ? `, ingresado ${value}` : ', vacío'}`}
+                  className={`flex aspect-square items-center justify-center font-display text-lg transition-colors ${borderClasses} ${bgClass} ${textClass}`}
+                >
+                  {value ?? ''}
+                </PressButton>
+              );
+            })}
+          </div>
+        }
+        panel={
+          state.done ? (
+            <div className="flex w-full max-w-[22rem] flex-col items-center gap-3 rounded-lg border border-surface-alt bg-surface p-4 text-center shadow-card">
+              <p className="font-display text-lg font-extrabold text-accent-success">
+                ¡Minisudoku resuelto!
+              </p>
+              <p className="text-sm text-text-secondary">Errores: {state.mistakes}</p>
+              <PressButton variant="primary" onPress={() => finishGame(state)} className="px-8">
+                Ver resultado
+              </PressButton>
+            </div>
+          ) : (
+            <div className="grid w-full max-w-[22rem] grid-cols-4 gap-1.5">
+              {DIGITS.map((digit) => (
+                <PressButton
+                  key={digit}
+                  variant="key"
+                  disabled={selected === null}
+                  onPress={() => fillSelected(digit)}
+                >
+                  {digit}
+                </PressButton>
+              ))}
+              <PressButton
+                variant="key"
+                ariaLabel="Borrar celda"
+                disabled={selected === null}
+                onPress={() => fillSelected(null)}
+                className="col-span-2"
+              >
+                ⌫
+              </PressButton>
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

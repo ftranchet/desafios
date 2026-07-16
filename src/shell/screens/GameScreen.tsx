@@ -141,7 +141,7 @@ export function GameScreen() {
           Volver con etiqueta, ADR-010); durante la partida se reemplaza por
           "Salir" con confirmación, y el nombre gana el chip del juego — en la
           portada no hace falta título en el header, la portada ya lo lleva. */}
-      <header className="sticky top-0 z-20 flex min-h-touch items-center justify-between border-b border-surface-alt bg-surface/75 px-4 py-1.5 backdrop-blur">
+      <header className="sticky top-0 z-20 flex min-h-touch items-center justify-between border-b border-surface-alt bg-surface/75 px-4 py-1.5 backdrop-blur short:py-0">
         <div className="flex items-center gap-3">
           {phase !== 'playing' && <BackButton />}
           {phase === 'playing' && (

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
+import { CountdownBar, GameLayout, PressButton, useAutoFocus, useSecondsLeft } from '../../core/ui';
 import {
   buildResult,
   closestToTarget,
@@ -181,61 +181,69 @@ export function CifrasGame({ config, onFinish, audio }: GameProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="w-full max-w-sm">
-        <div className="mb-2 flex justify-between text-sm text-text-secondary">
-          <span>Objetivo</span>
-          {timed && <span>{formatSeconds(secondsLeft)}</span>}
-        </div>
-        {timed && (
-          <CountdownBar durationMs={params.timeLimitMs} running={!finished} resetKey={0} />
-        )}
-      </div>
-
-      <p className="font-display text-xl font-extrabold text-accent-primary">{target}</p>
-
-      <div className="grid w-full max-w-sm grid-cols-3 gap-2">
-        {tiles.map((tile) => (
-          <PressButton
-            key={tile.id}
-            variant="bare"
-            onPress={() => toggleTile(tile.id)}
-            className={`min-h-touch rounded-lg border font-display text-lg font-bold transition-colors ${
-              selected.includes(tile.id)
-                ? 'border-accent-primary bg-accent-primary text-bg'
-                : 'border-surface-alt bg-surface text-text-primary'
-            }`}
-          >
-            {tile.value}
-          </PressButton>
-        ))}
-      </div>
-
-      <div className="flex gap-2">
-        {OPERATORS.map(({ op, symbol }) => (
-          <PressButton
-            key={op}
-            variant="control"
-            disabled={!isOpValid(op)}
-            onPress={() => handleCombine(op)}
-          >
-            {symbol}
-          </PressButton>
-        ))}
-      </div>
-
-      <div className="mt-auto flex w-full max-w-sm flex-col gap-2">
-        <PressButton variant="primary" onPress={submitAnswer}>
-          Enviar respuesta
-        </PressButton>
-        <div className="grid grid-cols-2 gap-2">
-          <PressButton variant="key" disabled={history.length === 0} onPress={handleUndo}>
-            Deshacer
-          </PressButton>
-          <PressButton variant="key" disabled={history.length === 0} onPress={handleReset}>
-            Reiniciar
-          </PressButton>
-        </div>
-      </div>
+      <GameLayout
+        hud={
+          <>
+            <div className="w-full">
+              <div className="mb-2 flex justify-between text-sm text-text-secondary">
+                <span>Objetivo</span>
+                {timed && <span>{formatSeconds(secondsLeft)}</span>}
+              </div>
+              {timed && (
+                <CountdownBar durationMs={params.timeLimitMs} running={!finished} resetKey={0} />
+              )}
+            </div>
+            <p className="font-display text-xl font-extrabold text-accent-primary">{target}</p>
+          </>
+        }
+        board={
+          <div className="grid w-full max-w-sm grid-cols-3 gap-2">
+            {tiles.map((tile) => (
+              <PressButton
+                key={tile.id}
+                variant="bare"
+                onPress={() => toggleTile(tile.id)}
+                className={`min-h-touch rounded-lg border font-display text-lg font-bold transition-colors ${
+                  selected.includes(tile.id)
+                    ? 'border-accent-primary bg-accent-primary text-bg'
+                    : 'border-surface-alt bg-surface text-text-primary'
+                }`}
+              >
+                {tile.value}
+              </PressButton>
+            ))}
+          </div>
+        }
+        panel={
+          <>
+            <div className="flex gap-2">
+              {OPERATORS.map(({ op, symbol }) => (
+                <PressButton
+                  key={op}
+                  variant="control"
+                  disabled={!isOpValid(op)}
+                  onPress={() => handleCombine(op)}
+                >
+                  {symbol}
+                </PressButton>
+              ))}
+            </div>
+            <div className="flex w-full flex-col gap-2">
+              <PressButton variant="primary" onPress={submitAnswer}>
+                Enviar respuesta
+              </PressButton>
+              <div className="grid grid-cols-2 gap-2">
+                <PressButton variant="key" disabled={history.length === 0} onPress={handleUndo}>
+                  Deshacer
+                </PressButton>
+                <PressButton variant="key" disabled={history.length === 0} onPress={handleReset}>
+                  Reiniciar
+                </PressButton>
+              </div>
+            </div>
+          </>
+        }
+      />
     </div>
   );
 }
