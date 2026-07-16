@@ -12,6 +12,8 @@ export const minesweeper: GameModule = {
     name: 'Buscaminas',
     category: 'logic',
     description: 'Descubrí todas las celdas sin minas, guiándote por los números vecinos.',
+    howToPlay:
+      'Destapá todas las celdas que no tienen mina: cada número te dice cuántas minas hay alrededor. Activá el modo bandera para marcar las minas sospechadas sin destaparlas. El primer toque siempre es seguro.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

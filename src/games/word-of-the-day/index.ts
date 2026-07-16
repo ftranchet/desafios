@@ -10,6 +10,8 @@ export const wordOfTheDay: GameModule = {
     name: 'Palabra del día',
     category: 'words',
     description: 'Adiviná la palabra secreta: cada intento te dice qué letras acertaste.',
+    howToPlay:
+      'Adiviná la palabra secreta antes de quedarte sin intentos. Después de cada intento, cada letra te indica si está en el lugar correcto, si existe en otra posición o si no aparece en la palabra.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

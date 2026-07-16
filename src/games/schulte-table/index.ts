@@ -10,6 +10,8 @@ export const schulteTable: GameModule = {
     name: 'Tabla de Schulte',
     category: 'speed',
     description: 'Tocá los números de la grilla en orden ascendente, lo más rápido posible.',
+    howToPlay:
+      'Los números están desparramados por la grilla: tocalos en orden ascendente lo más rápido que puedas. Cada acierto suena un tono más agudo; menos tiempo es más puntaje.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

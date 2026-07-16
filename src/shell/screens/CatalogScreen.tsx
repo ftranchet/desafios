@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GAMES, getGameById } from '../../core/registry';
+import { GAMES } from '../../core/registry';
 import { storage } from '../../core/storage';
 import { CATEGORY_LABELS, strings } from '../../i18n/es';
 import { CATEGORY_ACCENT } from '../categoryColors';
 import { GameCard } from '../components/GameCard';
+import { IconSettings, IconStats } from '../components/icons';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 function bestScoreFor(gameId: string): number | null {
@@ -20,9 +21,14 @@ function bestScoreFor(gameId: string): number | null {
 // cómodo (el tope de ancho general vive en App.tsx).
 const CARD_GRID_CLASSES = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4';
 
+// Acceso a Estadísticas y Configuración: botones-ícono en el encabezado del
+// catálogo (patrón Elevate) — reemplazan a la barra de navegación inferior,
+// que ocupaba una franja entera de pantalla en celular para tres destinos.
+const HEADER_ICON_CLASSES =
+  'flex h-11 w-11 items-center justify-center rounded-lg border border-surface-alt bg-surface text-text-secondary shadow-card transition hover:border-accent-primary/60 hover:text-text-primary active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary';
+
 export function CatalogScreen() {
   const [category, setCategory] = useState<string>('all');
-  const lastPlayed = useSettingsStore((s) => s.lastPlayed);
   const favorites = useSettingsStore((s) => s.favorites);
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
 
@@ -53,22 +59,21 @@ export function CatalogScreen() {
     return scores;
   }, []);
 
-  const lastPlayedGame = lastPlayed ? getGameById(lastPlayed.gameId) : undefined;
-
   return (
     <div className="flex animate-fade-in flex-col gap-4 p-4">
-      <h1 className="font-display text-xl font-extrabold text-text-primary">
-        {strings.catalog.title}
-      </h1>
-
-      {lastPlayedGame && (
-        <Link
-          to={`/game/${lastPlayedGame.metadata.id}`}
-          className="flex min-h-touch items-center justify-center rounded-lg border border-accent-primary bg-surface px-4 text-sm text-accent-primary shadow-card transition active:scale-[0.98]"
-        >
-          {strings.catalog.continueLast}: {lastPlayedGame.metadata.name}
-        </Link>
-      )}
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-xl font-extrabold text-text-primary">
+          {strings.catalog.title}
+        </h1>
+        <div className="flex gap-2">
+          <Link to="/stats" aria-label={strings.nav.stats} className={HEADER_ICON_CLASSES}>
+            <IconStats />
+          </Link>
+          <Link to="/config" aria-label={strings.nav.config} className={HEADER_ICON_CLASSES}>
+            <IconSettings />
+          </Link>
+        </div>
+      </header>
 
       {favoriteGames.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -89,7 +94,11 @@ export function CatalogScreen() {
         </section>
       )}
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label={strings.catalog.filterByCategory}>
+      <div
+        className="flex flex-wrap gap-2"
+        role="group"
+        aria-label={strings.catalog.filterByCategory}
+      >
         <button
           type="button"
           aria-pressed={category === 'all'}

@@ -26,6 +26,9 @@ describe('registro de juegos: contrato de metadatos', () => {
     expect(meta.id).toMatch(KEBAB_CASE);
     expect(meta.name.trim().length).toBeGreaterThan(0);
     expect(meta.description.trim().length).toBeGreaterThan(0);
+    // howToPlay (ADR-010): opcional en el tipo, obligatorio en el catálogo —
+    // la portada del juego lo muestra antes de la primera partida.
+    expect(meta.howToPlay?.trim().length ?? 0).toBeGreaterThan(0);
     expect(VALID_CATEGORIES).toContain(meta.category);
     expect(meta.version.trim().length).toBeGreaterThan(0);
     expect(meta.icon.trim().length).toBeGreaterThan(0);

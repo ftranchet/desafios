@@ -224,6 +224,18 @@ Píldora `rounded-lg`: inactiva `bg-surface text-text-secondary`; activa =
 fondo sólido del color de su categoría + `text-bg` (`activeBg` de
 `categoryColors.ts`).
 
+### Navegación (sin barra inferior)
+El catálogo es el hogar: su encabezado lleva el título y dos botones-ícono
+(Estadísticas, Configuración — `icons.tsx`, glifos en `currentColor`, 44px).
+Las pantallas secundarias usan `ScreenHeader` (botón `BackButton` "‹ Volver"
+etiquetado + título). No hay barra de navegación inferior en ninguna pantalla.
+
+### Portada de juego (`ModePicker`, ADR-010)
+`GameIconChip` grande + nombre + descripción, tarjeta "¿Cómo se juega?"
+(`metadata.howToPlay`), selector de dificultad, modos especiales y "Jugar".
+El header de la ruta lleva solo el `BackButton`; durante la partida cambia a
+chip chico + nombre + "Salir", con fondo `bg-surface/75 backdrop-blur` sticky.
+
 ### Layout de partida (`GameLayout`, ADR-005/009)
 Tres slots: `hud` (marcador/estado), `board` (el elemento principal), `panel`
 (controles, acciones, ayudas). Vertical: se apilan en ese orden. Apaisado

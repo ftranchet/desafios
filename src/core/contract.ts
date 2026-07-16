@@ -21,6 +21,10 @@ export interface GameMetadata {
   name: string; // Nombre visible, en español
   category: Category;
   description: string; // Una línea, en español
+  // Cómo se juega (ADR-010): 2-4 oraciones — objetivo + interacción — para la
+  // portada del juego. Opcional en el tipo (retrocompatible), pero el test de
+  // contrato del registro lo exige en todo juego del catálogo.
+  howToPlay?: string;
   version: string;
   modes: GameMode[]; // easy/medium/hard obligatorios; zen/progressive opcionales (ADR-007)
   estimatedSeconds: number; // Duración típica de una partida

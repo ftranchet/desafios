@@ -12,7 +12,6 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 export const strings = {
   nav: {
-    catalog: 'Catálogo',
     stats: 'Estadísticas',
     config: 'Configuración',
   },
@@ -23,7 +22,6 @@ export const strings = {
     empty: 'Todavía no hay juegos en esta categoría.',
     bestScore: (score: number) => `Récord: ${score}`,
     noScore: 'Sin partidas todavía',
-    continueLast: 'Seguir jugando',
     favoritesTitle: 'Favoritos',
     favoriteAdd: 'Agregar a favoritos',
     favoriteRemove: 'Quitar de favoritos',
@@ -32,10 +30,10 @@ export const strings = {
   // viven en src/core/modes.ts: son vocabulario del contrato (ADR-007) y los
   // juegos los declaran vía buildModes, no desde acá.
   modePicker: {
-    title: 'Elegí cómo jugar',
     difficulty: 'Dificultad',
     special: 'Modos',
     play: 'Jugar',
+    howToPlay: '¿Cómo se juega?',
   },
   game: {
     quit: 'Salir',
@@ -75,6 +73,10 @@ export const strings = {
     themeLight: 'Claro',
     themeDark: 'Oscuro',
     themeSystem: 'Sistema',
+    defaultDifficulty: 'Dificultad por defecto',
+    defaultDifficultyHint:
+      'Se preselecciona al entrar a cualquier juego. "Última" recuerda el último modo que jugaste en cada juego.',
+    defaultDifficultyLast: 'Última',
     exportData: 'Exportar datos',
     exportDataHint: 'Descargá tus partidas y récords en un archivo JSON.',
     clearData: 'Borrar todos los datos',

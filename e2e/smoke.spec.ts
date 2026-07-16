@@ -18,7 +18,9 @@ test('el catálogo muestra todos los juegos y la navegación', async ({ page }) 
   // de éxito de PRD 5.5 (que solo exige no tocar src/shell/ ni src/core/).
   const cards = page.locator('a[href*="#/game/"]');
   await expect(cards).toHaveCount(28);
-  await expect(page.getByRole('navigation')).toBeVisible();
+  // Navegación: botones-ícono del encabezado (sin barra inferior).
+  await expect(page.getByRole('link', { name: 'Estadísticas' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Configuración' })).toBeVisible();
 });
 
 test('partida completa de Snake: resultado y persistencia versionada', async ({ page }) => {
@@ -80,12 +82,45 @@ test('Tranquilo en Aritmética: sin reloj y con nota de modo sin récords', asyn
   await expect(page.locator('span[aria-label*="segundos restantes"]')).toHaveCount(0);
 });
 
-test('en la ruta de juego no hay navegación inferior y Volver funciona', async ({ page }) => {
+test('la portada del juego permite volver, y Estadísticas/Configuración también', async ({
+  page,
+}) => {
   await page.goto('./#/game/simon');
-  await expect(page.getByRole('navigation')).toHaveCount(0);
   await page.getByRole('button', { name: 'Volver' }).tap();
   await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
-  await expect(page.getByRole('navigation')).toBeVisible();
+
+  // Estadísticas y Configuración: se entra por los íconos del encabezado y
+  // se sale con su propio Volver.
+  await page.getByRole('link', { name: 'Estadísticas' }).tap();
+  await expect(page.getByRole('heading', { name: 'Estadísticas' })).toBeVisible();
+  await page.getByRole('button', { name: 'Volver' }).tap();
+  await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Configuración' }).tap();
+  await expect(page.getByRole('heading', { name: 'Configuración' })).toBeVisible();
+  await page.getByRole('button', { name: 'Volver' }).tap();
+  await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
+});
+
+test('la portada del juego explica cómo se juega', async ({ page }) => {
+  await page.goto('./#/game/sudoku');
+  await expect(page.getByRole('heading', { name: 'Sudoku' })).toBeVisible();
+  await expect(page.getByText('¿Cómo se juega?')).toBeVisible();
+  await expect(page.getByText(/Completá la grilla 9×9/)).toBeVisible();
+});
+
+test('la dificultad por defecto de Configuración se aplica en todos los juegos', async ({
+  page,
+}) => {
+  await page.goto('./#/config');
+  await page.getByRole('button', { name: 'Difícil', exact: true }).tap();
+
+  // Cualquier juego arranca con esa dificultad preseleccionada.
+  await page.goto('./#/game/simon');
+  await expect(page.getByRole('button', { name: 'Difícil', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 });
 
 test('salir de una partida pide confirmación y Escape la cancela', async ({ page }) => {

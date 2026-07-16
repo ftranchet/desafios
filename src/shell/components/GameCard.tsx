@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { GameMetadata } from '../../core/contract';
 import { CATEGORY_LABELS, strings } from '../../i18n/es';
 import { CATEGORY_ACCENT } from '../categoryColors';
+import { GameIconChip } from './GameIconChip';
 
 interface GameCardProps {
   metadata: GameMetadata;
@@ -21,24 +22,8 @@ export function GameCard({ metadata, bestScore, isFavorite, onToggleFavorite }: 
         to={`/game/${metadata.id}`}
         className="flex flex-col gap-2 rounded-xl border border-surface-alt bg-surface p-4 pr-11 shadow-card transition hover:border-accent-primary/60 active:scale-[0.98] focus:outline-none focus-visible:border-accent-primary"
       >
-        {/* Chip estilo Elevate (ADR-009): fondo sólido del color de categoría y
-            el glifo del juego en silueta (mask-image) teñido con bg — el rol
-            "sobre acento" del sistema — así funciona en ambos temas sin tocar
-            los icon.svg. El ícono es decorativo (RNF-05): la categoría está en
-            texto más abajo. */}
-        <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${accent.activeBg}`}>
-          {/* url() con comillas dobles a propósito: Vite inyecta el SVG como
-              data-URI con comillas simples adentro — sin envolverlo, el valor
-              CSS es inválido y la máscara se descarta en silencio. */}
-          <span
-            aria-hidden="true"
-            className="icon-mask h-7 w-7 bg-bg"
-            style={{
-              maskImage: `url("${metadata.icon}")`,
-              WebkitMaskImage: `url("${metadata.icon}")`,
-            }}
-          />
-        </div>
+        {/* El ícono es decorativo (RNF-05): la categoría está en texto más abajo. */}
+        <GameIconChip metadata={metadata} />
         <h2 className="font-display text-base font-bold text-text-primary">{metadata.name}</h2>
         <p className="text-sm text-text-secondary">{metadata.description}</p>
         <div className="mt-auto flex flex-col gap-1 pt-2 text-xs">

@@ -3,6 +3,7 @@ import { MODE_LABELS } from '../../core/modes';
 import { GAMES, getGameById } from '../../core/registry';
 import { storage } from '../../core/storage';
 import { strings } from '../../i18n/es';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
@@ -38,9 +39,7 @@ export function StatsScreen() {
 
   return (
     <div className="flex animate-fade-in flex-col gap-6 p-4">
-      <h1 className="font-display text-xl font-extrabold text-text-primary">
-        {strings.stats.title}
-      </h1>
+      <ScreenHeader title={strings.stats.title} />
 
       <p className="text-sm text-text-primary">
         {streak === 0 ? strings.stats.streakEmpty : strings.stats.streak(streak)}

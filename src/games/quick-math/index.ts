@@ -10,6 +10,8 @@ export const quickMath: GameModule = {
     name: 'Aritmética contra reloj',
     category: 'math',
     description: 'Resolvé operaciones antes de que se acabe el tiempo.',
+    howToPlay:
+      'Resolvé la operación y escribí el resultado con el teclado numérico antes de que se agote la barra de tiempo; confirmá con ✓. En escritorio podés tipear los dígitos y confirmar con Enter.',
     version: '2.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

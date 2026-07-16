@@ -6,8 +6,10 @@ import { playSound, playTone, warmUpAudio } from '../../core/sound';
 import { storage } from '../../core/storage';
 import { vibrate } from '../../core/vibration';
 import { strings } from '../../i18n/es';
+import { BackButton } from '../components/BackButton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameErrorBoundary } from '../components/GameErrorBoundary';
+import { GameIconChip } from '../components/GameIconChip';
 import { ModePicker } from '../components/ModePicker';
 import { ResultPanel } from '../components/ResultPanel';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -25,15 +27,21 @@ export function GameScreen() {
   const setLastPlayed = useSettingsStore((s) => s.setLastPlayed);
   const soundEnabled = useSettingsStore((s) => s.sound);
   const vibrationEnabled = useSettingsStore((s) => s.vibration);
+  const defaultDifficulty = useSettingsStore((s) => s.defaultDifficulty);
 
-  // El último modo jugado se preselecciona (RF-03) solo si el juego lo sigue
-  // declarando — un juego puede retirar un modo entre versiones.
+  // Preselección del modo (RF-03): si en Configuración se fijó una dificultad
+  // por defecto, manda para todo el catálogo (las tres dificultades son
+  // obligatorias en todo juego, ADR-007). Con 'last', el último modo jugado
+  // en ESTE juego — solo si el juego lo sigue declarando, porque un juego
+  // puede retirar un modo entre versiones.
   const initialMode =
-    lastPlayed &&
-    lastPlayed.gameId === gameId &&
-    game?.metadata.modes.some((m) => m.id === lastPlayed.mode)
-      ? lastPlayed.mode
-      : DEFAULT_MODE;
+    defaultDifficulty !== 'last'
+      ? defaultDifficulty
+      : lastPlayed &&
+          lastPlayed.gameId === gameId &&
+          game?.metadata.modes.some((m) => m.id === lastPlayed.mode)
+        ? lastPlayed.mode
+        : DEFAULT_MODE;
 
   const [phase, setPhase] = useState<ScreenPhase>('select-mode');
   const [mode, setMode] = useState<ModeId>(initialMode);
@@ -128,23 +136,27 @@ export function GameScreen() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex min-h-touch items-center justify-between border-b border-surface-alt px-4">
-        <div className="flex items-center gap-1">
-          {/* Sin navegación inferior en esta ruta, la vuelta al catálogo vive acá;
-              durante la partida se reemplaza por "Salir" con confirmación. */}
-          {phase !== 'playing' && (
-            <button
-              type="button"
-              aria-label={strings.common.back}
-              className="-ml-2 flex min-h-touch min-w-touch items-center justify-center rounded-lg text-lg text-text-secondary"
-              onClick={() => navigate('/')}
-            >
-              ←
-            </button>
+      {/* Encabezado con blur: sticky para que la salida quede siempre a mano
+          aunque el contenido scrollee. La vuelta al catálogo vive acá (botón
+          Volver con etiqueta, ADR-010); durante la partida se reemplaza por
+          "Salir" con confirmación, y el nombre gana el chip del juego — en la
+          portada no hace falta título en el header, la portada ya lo lleva. */}
+      <header className="sticky top-0 z-20 flex min-h-touch items-center justify-between border-b border-surface-alt bg-surface/75 px-4 py-1.5 backdrop-blur">
+        <div className="flex items-center gap-3">
+          {phase !== 'playing' && <BackButton />}
+          {phase === 'playing' && (
+            <>
+              <GameIconChip metadata={game.metadata} size="sm" />
+              <h1 className="font-display text-base font-bold text-text-primary">
+                {game.metadata.name}
+              </h1>
+            </>
           )}
-          <h1 className="font-display text-base font-bold text-text-primary">
-            {game.metadata.name}
-          </h1>
+          {phase === 'result' && (
+            <h1 className="font-display text-base font-bold text-text-primary">
+              {game.metadata.name}
+            </h1>
+          )}
         </div>
         {phase === 'playing' && (
           <button
@@ -166,7 +178,7 @@ export function GameScreen() {
       <div className="flex flex-1 flex-col items-center justify-center">
         {phase === 'select-mode' && (
           <ModePicker
-            modes={game.metadata.modes}
+            metadata={game.metadata}
             selectedMode={mode}
             onSelect={setMode}
             onPlay={handlePlay}

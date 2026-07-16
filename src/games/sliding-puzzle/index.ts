@@ -10,6 +10,8 @@ export const slidingPuzzle: GameModule = {
     name: 'Rompecabezas deslizante',
     category: 'spatial',
     description: 'Deslizá las fichas hacia el hueco hasta ordenarlas.',
+    howToPlay:
+      'Ordená las fichas deslizándolas hacia el hueco: tocá cualquier ficha vecina al espacio vacío para moverla. Cuando queden en orden, ganaste; menos movimientos es más puntaje.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

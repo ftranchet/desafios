@@ -25,7 +25,9 @@ export function ResultPanel({
           ya sonaba y vibraba (ADR-006/GameScreen), ahora también se ve. */}
       <p
         className={`font-display text-2xl font-extrabold tracking-tight ${
-          isNewRecord && result.mode !== 'zen' ? 'animate-pop text-accent-success' : 'text-accent-primary'
+          isNewRecord && result.mode !== 'zen'
+            ? 'animate-pop text-accent-success'
+            : 'text-accent-primary'
         }`}
       >
         {result.score}

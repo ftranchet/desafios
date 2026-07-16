@@ -12,6 +12,8 @@ export const coronas: GameModule = {
     name: 'Coronas',
     category: 'logic',
     description: 'Una corona por fila, columna y región de color, sin que se toquen entre sí.',
+    howToPlay:
+      'Colocá exactamente una corona por fila, columna y región de color, sin que dos coronas se toquen ni siquiera en diagonal. Cada toque cicla la celda: vacía, marca de descarte (×), corona. Una sola solución posible.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

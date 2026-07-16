@@ -177,6 +177,9 @@ export const ${camel}: GameModule = {
     category: 'logic',
     // TODO: una línea en español que describa la mecánica real.
     description: 'Esqueleto generado: contá los toques exactos y enviá.',
+    // TODO: 2-4 oraciones — objetivo + interacción — para la portada (ADR-010).
+    howToPlay:
+      'Esqueleto generado: tocá el botón exactamente la cantidad de veces que pide el objetivo y enviá. Con teclado: Espacio suma, Enter envía.',
     version: '0.1.0',
     // Tranquilo/Progresivo se declaran acá cuando el juego los implemente.
     modes: buildModes({

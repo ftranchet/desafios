@@ -10,6 +10,8 @@ export const anagrams: GameModule = {
     name: 'Anagramas',
     category: 'words',
     description: 'Reordená las fichas de letras hasta formar la palabra oculta.',
+    howToPlay:
+      'Las letras de la palabra están desordenadas: tocá las fichas en orden para armarla en los casilleros. Si te trabás, tocá un casillero para devolver esa letra a la bandeja y probá otro camino.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

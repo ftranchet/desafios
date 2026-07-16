@@ -1,19 +1,23 @@
-import type { GameMode, ModeId } from '../../core/contract';
+import type { GameMetadata, ModeId } from '../../core/contract';
 import { DIFFICULTY_MODE_IDS } from '../../core/modes';
 import { strings } from '../../i18n/es';
+import { GameIconChip } from './GameIconChip';
 
-// Selector de dificultad y modos (ADR-007): una fila de 3 dificultades y,
-// debajo, los modos especiales que el juego declare (tarjetas con descripción).
-// El shell no sabe qué significa cada modo: renderiza lo declarado.
+// Portada del juego (ADR-010): ícono, nombre, descripción y "¿Cómo se juega?"
+// arriba; abajo el selector de dificultad y modos (ADR-007) — una fila de 3
+// dificultades y los modos especiales que el juego declare (tarjetas con
+// descripción). El shell no sabe qué significa cada modo: renderiza lo
+// declarado.
 
 interface ModePickerProps {
-  modes: GameMode[];
+  metadata: GameMetadata;
   selectedMode: ModeId;
   onSelect(mode: ModeId): void;
   onPlay(): void;
 }
 
-export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePickerProps) {
+export function ModePicker({ metadata, selectedMode, onSelect, onPlay }: ModePickerProps) {
+  const modes = metadata.modes;
   const difficulties = modes.filter((m) =>
     (DIFFICULTY_MODE_IDS as readonly string[]).includes(m.id),
   );
@@ -21,13 +25,28 @@ export function ModePicker({ modes, selectedMode, onSelect, onPlay }: ModePicker
 
   return (
     <div className="flex w-full animate-fade-in flex-col items-center gap-6 p-6">
-      <h2 className="font-display text-lg font-bold text-text-primary">
-        {strings.modePicker.title}
-      </h2>
+      <div className="flex w-full max-w-sm flex-col items-center gap-2 text-center">
+        <GameIconChip metadata={metadata} size="lg" />
+        <h2 className="font-display text-lg font-extrabold text-text-primary">{metadata.name}</h2>
+        <p className="text-sm text-text-secondary">{metadata.description}</p>
+      </div>
+
+      {metadata.howToPlay && (
+        <section className="w-full max-w-sm rounded-xl border border-surface-alt bg-surface p-4 shadow-card">
+          <h3 className="mb-1 font-display text-sm font-bold text-text-primary">
+            {strings.modePicker.howToPlay}
+          </h3>
+          <p className="text-sm leading-relaxed text-text-secondary">{metadata.howToPlay}</p>
+        </section>
+      )}
 
       <div className="flex w-full max-w-sm flex-col gap-2">
         <p className="text-sm text-text-secondary">{strings.modePicker.difficulty}</p>
-        <div className="grid grid-cols-3 gap-2" role="group" aria-label={strings.modePicker.difficulty}>
+        <div
+          className="grid grid-cols-3 gap-2"
+          role="group"
+          aria-label={strings.modePicker.difficulty}
+        >
           {difficulties.map((mode) => (
             <button
               key={mode.id}

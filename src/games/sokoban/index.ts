@@ -14,6 +14,8 @@ export const sokoban: GameModule = {
     name: 'Empuja cajas',
     category: 'logic',
     description: 'Empujá las cajas hasta que todas queden sobre su objetivo.',
+    howToPlay:
+      'Empujá cada caja hasta dejarla sobre su objetivo: solo podés empujar (nunca tirar) y de a una por vez. Si te encerrás, reiniciá el nivel con el botón; resolverlo cerca del óptimo de movimientos vale más.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

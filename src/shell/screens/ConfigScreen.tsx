@@ -1,8 +1,14 @@
 import { useState } from 'react';
+import { MODE_LABELS } from '../../core/modes';
 import { storage } from '../../core/storage';
 import { strings } from '../../i18n/es';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { useSettingsStore, type ThemePreference } from '../store/useSettingsStore';
+import { ScreenHeader } from '../components/ScreenHeader';
+import {
+  useSettingsStore,
+  type DefaultDifficulty,
+  type ThemePreference,
+} from '../store/useSettingsStore';
 
 interface ToggleRowProps {
   label: string;
@@ -27,26 +33,28 @@ function ToggleRow({ label, value, onToggle }: ToggleRowProps) {
   );
 }
 
-const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
-  { value: 'light', label: strings.config.themeLight },
-  { value: 'dark', label: strings.config.themeDark },
-  { value: 'system', label: strings.config.themeSystem },
-];
-
-// Selector de tema (ADR-009): fila de 3 opciones exclusivas, mismo patrón
-// accesible que el selector de dificultad (role group + aria-pressed).
-function ThemeRow({
+// Fila de opciones exclusivas (tema, dificultad por defecto): mismo patrón
+// accesible que el selector de dificultad de la portada (group + aria-pressed).
+// El label va arriba y las opciones abajo con wrap: cuatro opciones entran
+// bien hasta en un celular angosto.
+function SegmentedRow<T extends string>({
+  label,
+  hint,
+  options,
   value,
   onSelect,
 }: {
-  value: ThemePreference;
-  onSelect(theme: ThemePreference): void;
+  label: string;
+  hint?: string;
+  options: Array<{ value: T; label: string }>;
+  value: T;
+  onSelect(value: T): void;
 }) {
   return (
-    <div className="flex min-h-touch w-full items-center justify-between gap-3 rounded-lg border border-surface-alt bg-surface px-4 py-2 shadow-card">
-      <span className="text-base text-text-primary">{strings.config.theme}</span>
-      <div className="flex gap-1" role="group" aria-label={strings.config.theme}>
-        {THEME_OPTIONS.map((option) => (
+    <div className="flex w-full flex-col gap-2 rounded-lg border border-surface-alt bg-surface px-4 py-3 shadow-card">
+      <span className="text-base text-text-primary">{label}</span>
+      <div className="flex flex-wrap gap-1" role="group" aria-label={label}>
+        {options.map((option) => (
           <button
             key={option.value}
             type="button"
@@ -62,9 +70,23 @@ function ThemeRow({
           </button>
         ))}
       </div>
+      {hint && <p className="text-xs text-text-secondary">{hint}</p>}
     </div>
   );
 }
+
+const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
+  { value: 'light', label: strings.config.themeLight },
+  { value: 'dark', label: strings.config.themeDark },
+  { value: 'system', label: strings.config.themeSystem },
+];
+
+const DIFFICULTY_OPTIONS: Array<{ value: DefaultDifficulty; label: string }> = [
+  { value: 'last', label: strings.config.defaultDifficultyLast },
+  { value: 'easy', label: MODE_LABELS.easy },
+  { value: 'medium', label: MODE_LABELS.medium },
+  { value: 'hard', label: MODE_LABELS.hard },
+];
 
 const AUTHOR_LINKEDIN_URL = 'https://www.linkedin.com/in/ftranchet/';
 
@@ -88,10 +110,12 @@ export function ConfigScreen() {
   const vibration = useSettingsStore((s) => s.vibration);
   const reduceAnimations = useSettingsStore((s) => s.reduceAnimations);
   const theme = useSettingsStore((s) => s.theme);
+  const defaultDifficulty = useSettingsStore((s) => s.defaultDifficulty);
   const toggleSound = useSettingsStore((s) => s.toggleSound);
   const toggleVibration = useSettingsStore((s) => s.toggleVibration);
   const toggleReduceAnimations = useSettingsStore((s) => s.toggleReduceAnimations);
   const setTheme = useSettingsStore((s) => s.setTheme);
+  const setDefaultDifficulty = useSettingsStore((s) => s.setDefaultDifficulty);
 
   const [clearStep, setClearStep] = useState<'idle' | 'first' | 'final'>('idle');
 
@@ -102,12 +126,22 @@ export function ConfigScreen() {
 
   return (
     <div className="flex animate-fade-in flex-col gap-6 p-4">
-      <h1 className="font-display text-xl font-extrabold text-text-primary">
-        {strings.config.title}
-      </h1>
+      <ScreenHeader title={strings.config.title} />
 
       <div className="flex flex-col gap-2">
-        <ThemeRow value={theme} onSelect={setTheme} />
+        <SegmentedRow
+          label={strings.config.theme}
+          options={THEME_OPTIONS}
+          value={theme}
+          onSelect={setTheme}
+        />
+        <SegmentedRow
+          label={strings.config.defaultDifficulty}
+          hint={strings.config.defaultDifficultyHint}
+          options={DIFFICULTY_OPTIONS}
+          value={defaultDifficulty}
+          onSelect={setDefaultDifficulty}
+        />
         <ToggleRow label={strings.config.sound} value={sound} onToggle={toggleSound} />
         <ToggleRow label={strings.config.vibration} value={vibration} onToggle={toggleVibration} />
         <ToggleRow

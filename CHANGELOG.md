@@ -2,6 +2,25 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.38.0] — Rediseño de navegación y flujo de entrada al juego
+
+A partir de feedback directo del product owner: sin barra inferior, portada
+de juego que explica cómo se juega, volver siempre etiquetado y dificultad
+por defecto global. Ver ADR-010 (segunda ampliación del contrato).
+
+### Agregado
+
+- **Portada de juego (ADR-010)**: la pantalla de selección de modo pasa a ser una portada real — ícono grande del juego, nombre, descripción y una tarjeta "¿Cómo se juega?" nueva, seguidos del selector de dificultad/modos y "Jugar". El texto sale del campo nuevo `GameMetadata.howToPlay` (opcional en el tipo, retrocompatible; obligatorio en la práctica: el test de contrato del registro lo exige y el generador `new-game` lo incluye en su plantilla). Los 28 juegos suman su texto en esta versión, escrito a partir de la mecánica real de cada uno.
+- **Dificultad por defecto en Configuración** (`dm:settings` v5): Última (el comportamiento histórico de recordar el último modo por juego), Fácil, Medio o Difícil — y se preselecciona al entrar a cualquier juego del catálogo (RF-03 actualizado). Cubierto por e2e.
+- `GameIconChip` (chip de ícono reutilizable: tarjeta, portada y header de partida, en tres tamaños), `BackButton` ("‹ Volver" con etiqueta visible — la flecha sola era poco clara), `ScreenHeader` (encabezado de pantalla secundaria) e `icons.tsx` (glifos de interfaz en `currentColor`).
+
+### Cambiado
+
+- **Chau barra de navegación inferior**: Estadísticas y Configuración ahora se entran por dos botones-ícono en el encabezado del catálogo (patrón Elevate) y se salen con su propio "Volver". En celular esto libera una franja entera de pantalla en todas las vistas.
+- **Desaparece la franja "Seguir jugando"** del catálogo: su valor real (retomar donde estabas) sigue vivo en la preselección del último modo al entrar al juego; la franja ocupaba espacio en la pantalla principal para duplicar un toque que ya es directo desde la tarjeta.
+- **Header de partida**: chip del juego + nombre + "Salir" durante la partida, fondo translúcido con blur (`bg-surface/75 backdrop-blur`) y sticky — la salida queda siempre a mano aunque el tablero scrollee. En la portada y el resultado, el header lleva el "Volver" etiquetado.
+- E2E: los flujos de navegación se reescriben para el patrón nuevo y se agregan dos specs (portada con "¿Cómo se juega?", dificultad por defecto aplicada) — 13 en total.
+
 ## [0.37.0] — Pulido visual y jugabilidad: chips de ícono, layout apaisado y verificación de entrada
 
 Resuelve los dos pendientes documentados en ADR-009 y cierra una pasada de

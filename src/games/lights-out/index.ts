@@ -12,6 +12,8 @@ export const lightsOut: GameModule = {
     name: 'Apagá todo',
     category: 'logic',
     description: 'Tocá las celdas para apagar toda la grilla: cada toque prende o apaga vecinas.',
+    howToPlay:
+      'Apagá toda la grilla: cada toque invierte esa celda y sus vecinas. A veces prender unas cuantas es el único camino para apagar todo — planificá. Menos toques, más puntaje.',
     version: '1.0.0',
     modes: buildModes({
       easy: MODE_PARAMS.easy,

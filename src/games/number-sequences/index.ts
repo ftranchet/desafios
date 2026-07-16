@@ -16,6 +16,8 @@ export const numberSequences: GameModule = {
     name: 'Secuencias numéricas',
     category: 'math',
     description: 'Detectá el patrón e indicá el siguiente término.',
+    howToPlay:
+      'Cada secuencia sigue un patrón oculto: descubrilo e ingresá el término que sigue con el teclado numérico (la tecla ± permite negativos). Confirmá con ✓ — o con Enter en escritorio — antes de que se acabe el tiempo.',
     version: '2.0.0',
     modes: buildModes({
       easy: toMeta(MODE_PARAMS.easy),
