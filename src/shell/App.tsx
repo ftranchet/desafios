@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { HashRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { createHashRouter, Outlet, RouterProvider, useLocation } from 'react-router-dom';
 import { CatalogScreen } from './screens/CatalogScreen';
 import { ConfigScreen } from './screens/ConfigScreen';
 import { GameScreen } from './screens/GameScreen';
@@ -13,14 +13,12 @@ function Shell() {
   // En celular eso libera una franja entera de pantalla, y en la ruta de
   // juego nunca hubo navegación (el flujo de partida es a pantalla completa,
   // con salida explícita: Volver / Salir con confirmación).
-  const location = useLocation();
-
   return (
     <div
       // Degradé radial muy sutil entre surface y bg (ADR-008): rompe la
       // sensación de fondo plano sin agregar un color nuevo ni comprometer el
       // minimalismo — son los dos mismos tokens de siempre, combinados.
-      className="flex min-h-dvh flex-col bg-[radial-gradient(ellipse_at_top,theme(colors.surface),theme(colors.bg)_70%)] text-text-primary"
+      className="safe-area-shell flex min-h-dvh flex-col bg-[radial-gradient(ellipse_at_top,theme(colors.surface),theme(colors.bg)_70%)] text-text-primary"
     >
       {/* Ancho de contenido acotado y centrado (PC/tablet): en un celular esto
           no hace nada (ya es más angosto que el tope), pero evita que catálogo,
@@ -28,20 +26,34 @@ function Shell() {
           grandes. Los juegos ya traen su propio ancho interno (max-w-xs, etc.);
           este tope solo les da un marco centrado en vez de pegarse al borde. */}
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
-        <Routes>
-          <Route path="/" element={<CatalogScreen />} />
-          {/* key por ruta: cambiar de juego vía URL/historial remonta la
-              pantalla desde cero, en vez de heredar la fase de la partida
-              anterior (la ruta es la misma y React no desmontaría nada). */}
-          <Route path="/game/:gameId" element={<GameScreen key={location.pathname} />} />
-          <Route path="/stats" element={<StatsScreen />} />
-          <Route path="/config" element={<ConfigScreen />} />
-          <Route path="*" element={<NotFoundScreen />} />
-        </Routes>
+        <Outlet />
       </main>
     </div>
   );
 }
+
+function GameRoute() {
+  const location = useLocation();
+  // Cambiar de juego vía URL/historial remonta la pantalla desde cero, en vez
+  // de heredar la fase de la partida anterior (la ruta base es la misma).
+  return <GameScreen key={location.pathname} />;
+}
+
+// El data router permite que GameScreen bloquee navegación interna durante una
+// partida. La variante hash preserva las URLs instalables de GitHub Pages/PWA.
+const router = createHashRouter([
+  {
+    path: '/',
+    element: <Shell />,
+    children: [
+      { index: true, element: <CatalogScreen /> },
+      { path: 'game/:gameId', element: <GameRoute /> },
+      { path: 'stats', element: <StatsScreen /> },
+      { path: 'config', element: <ConfigScreen /> },
+      { path: '*', element: <NotFoundScreen /> },
+    ],
+  },
+]);
 
 export function App() {
   const reduceAnimations = useSettingsStore((s) => s.reduceAnimations);
@@ -73,9 +85,5 @@ export function App() {
     return () => media.removeEventListener('change', apply);
   }, [theme]);
 
-  return (
-    <HashRouter>
-      <Shell />
-    </HashRouter>
-  );
+  return <RouterProvider router={router} />;
 }

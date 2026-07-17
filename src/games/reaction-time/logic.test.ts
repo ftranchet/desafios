@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  REACTION_WINDOW_MS,
   buildResult,
   computeScore,
   createRoundPlans,
@@ -38,36 +39,100 @@ describe('createRoundPlans', () => {
 describe('resolveRoundTap', () => {
   it('marca acierto cuando se toca después del cambio en una ronda objetivo', () => {
     const outcome = resolveRoundTap({ delayMs: 500, isDecoy: false }, 650);
-    expect(outcome).toEqual({ isDecoy: false, correct: true, reactionMs: 150 });
+    expect(outcome).toEqual({
+      isDecoy: false,
+      correct: true,
+      reactionMs: 150,
+      timing: 'on-time',
+    });
   });
 
   it('marca falso arranque cuando se toca antes del cambio', () => {
     const outcome = resolveRoundTap({ delayMs: 500, isDecoy: false }, 300);
-    expect(outcome).toEqual({ isDecoy: false, correct: false, reactionMs: null });
+    expect(outcome).toEqual({
+      isDecoy: false,
+      correct: false,
+      reactionMs: null,
+      timing: 'early',
+    });
   });
 
   it('marca error cuando no hay toque en una ronda objetivo (timeout)', () => {
     const outcome = resolveRoundTap({ delayMs: 500, isDecoy: false }, null);
-    expect(outcome).toEqual({ isDecoy: false, correct: false, reactionMs: null });
+    expect(outcome).toEqual({
+      isDecoy: false,
+      correct: false,
+      reactionMs: null,
+      timing: 'late',
+    });
   });
 
   it('marca acierto cuando se evita un señuelo (sin toque)', () => {
     const outcome = resolveRoundTap({ delayMs: 500, isDecoy: true }, null);
-    expect(outcome).toEqual({ isDecoy: true, correct: true, reactionMs: null });
+    expect(outcome).toEqual({
+      isDecoy: true,
+      correct: true,
+      reactionMs: null,
+      timing: null,
+    });
   });
 
   it('marca error cuando se toca un señuelo', () => {
     const outcome = resolveRoundTap({ delayMs: 500, isDecoy: true }, 600);
-    expect(outcome).toEqual({ isDecoy: true, correct: false, reactionMs: 100 });
+    expect(outcome).toEqual({
+      isDecoy: true,
+      correct: false,
+      reactionMs: 100,
+      timing: 'on-time',
+    });
+  });
+
+  it('rechaza un toque objetivo posterior a la ventana aunque el timeout se demore', () => {
+    const outcome = resolveRoundTap(
+      { delayMs: 500, isDecoy: false },
+      500 + REACTION_WINDOW_MS + 1,
+    );
+    expect(outcome).toEqual({
+      isDecoy: false,
+      correct: false,
+      reactionMs: null,
+      timing: 'late',
+    });
+  });
+
+  it('acepta el borde exacto de la ventana de reacción', () => {
+    const outcome = resolveRoundTap(
+      { delayMs: 500, isDecoy: false },
+      500 + REACTION_WINDOW_MS,
+    );
+    expect(outcome).toEqual({
+      isDecoy: false,
+      correct: true,
+      reactionMs: REACTION_WINDOW_MS,
+      timing: 'on-time',
+    });
+  });
+
+  it('considera evitado un señuelo si el toque llega después de la ventana', () => {
+    const outcome = resolveRoundTap(
+      { delayMs: 500, isDecoy: true },
+      500 + REACTION_WINDOW_MS + 1,
+    );
+    expect(outcome).toEqual({
+      isDecoy: true,
+      correct: true,
+      reactionMs: null,
+      timing: null,
+    });
   });
 });
 
 describe('computeScore', () => {
   it('calcula puntaje y métricas con tiempos de reacción conocidos', () => {
     const outcomes: RoundOutcome[] = [
-      { isDecoy: false, correct: true, reactionMs: 200 },
-      { isDecoy: false, correct: true, reactionMs: 400 },
-      { isDecoy: true, correct: true, reactionMs: null },
+      { isDecoy: false, correct: true, reactionMs: 200, timing: 'on-time' },
+      { isDecoy: false, correct: true, reactionMs: 400, timing: 'on-time' },
+      { isDecoy: true, correct: true, reactionMs: null, timing: null },
     ];
     const { score, metrics } = computeScore(outcomes);
     // hitPoints: (1000-200) + (1000-400) = 1400; + decoy avoided 150 = 1550
@@ -84,8 +149,8 @@ describe('computeScore', () => {
 
   it('nunca da puntaje negativo', () => {
     const outcomes: RoundOutcome[] = [
-      { isDecoy: false, correct: false, reactionMs: null },
-      { isDecoy: true, correct: false, reactionMs: 50 },
+      { isDecoy: false, correct: false, reactionMs: null, timing: 'late' },
+      { isDecoy: true, correct: false, reactionMs: 50, timing: 'on-time' },
     ];
     const { score } = computeScore(outcomes);
     expect(score).toBe(0);
@@ -101,7 +166,9 @@ describe('computeScore', () => {
 
 describe('buildResult', () => {
   it('arma un GameResult válido', () => {
-    const outcomes: RoundOutcome[] = [{ isDecoy: false, correct: true, reactionMs: 250 }];
+    const outcomes: RoundOutcome[] = [
+      { isDecoy: false, correct: true, reactionMs: 250, timing: 'on-time' },
+    ];
     const result = buildResult({ mode: 'easy', seed: 1 }, outcomes, 5000, true);
     expect(result.gameId).toBe('reaction-time');
     expect(result.mode).toBe('easy');

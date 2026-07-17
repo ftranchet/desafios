@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useGridPathDrag, type CellCoord } from './useGridPathDrag';
 
 // Cableado de eventos de puntero del hook (ADR-005): un único contenedor
-// recibe los tres handlers y `cellAt` hace el hit-test por coordenadas — el
+// recibe los handlers del gesto y `cellAt` hace el hit-test por coordenadas — el
 // mismo patrón que ya usa el resto del kit para convertir clientX/clientY
 // (PRD 10.7.6), así que el test simula un contenedor de 1×3 sin depender de
 // layout real de jsdom.
@@ -23,6 +23,8 @@ function Grid({ onPathEnd }: { onPathEnd?(path: readonly CellCoord[]): void }) {
       onPointerDown={drag.onPointerDown}
       onPointerMove={drag.onPointerMove}
       onPointerUp={drag.onPointerUp}
+      onPointerCancel={drag.onPointerCancel}
+      onLostPointerCapture={drag.onLostPointerCapture}
     >
       <span data-testid="path">{JSON.stringify(drag.path)}</span>
       <span data-testid="dragging">{String(drag.isDragging)}</span>
@@ -44,7 +46,13 @@ describe('useGridPathDrag', () => {
     render(<Grid onPathEnd={onPathEnd} />);
     const grid = screen.getByTestId('grid');
 
-    fireEvent.pointerDown(grid, { pointerId: 1, clientX: 0, clientY: 0 });
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
     expect(pathOf()).toEqual([{ row: 0, col: 0 }]);
     expect(isDragging()).toBe(true);
 
@@ -70,7 +78,13 @@ describe('useGridPathDrag', () => {
     render(<Grid />);
     const grid = screen.getByTestId('grid');
 
-    fireEvent.pointerDown(grid, { pointerId: 1, clientX: 0, clientY: 0 });
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
     fireEvent.pointerMove(grid, { pointerId: 1, clientX: 1, clientY: 0 });
     expect(pathOf()).toEqual([
       { row: 0, col: 0 },
@@ -85,7 +99,13 @@ describe('useGridPathDrag', () => {
     render(<Grid />);
     const grid = screen.getByTestId('grid');
 
-    fireEvent.pointerDown(grid, { pointerId: 1, clientX: 0, clientY: 0 });
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
     fireEvent.pointerMove(grid, { pointerId: 1, clientX: 99, clientY: 0 });
     expect(pathOf()).toEqual([{ row: 0, col: 0 }]);
 
@@ -100,7 +120,13 @@ describe('useGridPathDrag', () => {
     render(<Grid />);
     const grid = screen.getByTestId('grid');
 
-    fireEvent.pointerDown(grid, { pointerId: 1, clientX: 99, clientY: 0 });
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 99,
+      clientY: 0,
+    });
     expect(pathOf()).toEqual([]);
     expect(isDragging()).toBe(false);
   });
@@ -112,5 +138,64 @@ describe('useGridPathDrag', () => {
     fireEvent.pointerMove(grid, { pointerId: 1, clientX: 1, clientY: 0 });
     expect(pathOf()).toEqual([]);
     expect(isDragging()).toBe(false);
+  });
+
+  it('ignora eventos de otro puntero mientras el trazo está activo', () => {
+    const onPathEnd = vi.fn();
+    render(<Grid onPathEnd={onPathEnd} />);
+    const grid = screen.getByTestId('grid');
+
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
+    fireEvent.pointerMove(grid, { pointerId: 2, clientX: 1, clientY: 0 });
+    fireEvent.pointerUp(grid, { pointerId: 2 });
+
+    expect(pathOf()).toEqual([{ row: 0, col: 0 }]);
+    expect(isDragging()).toBe(true);
+    expect(onPathEnd).not.toHaveBeenCalled();
+  });
+
+  it('descarta un trazo incompleto cuando el navegador cancela el puntero', () => {
+    const onPathEnd = vi.fn();
+    render(<Grid onPathEnd={onPathEnd} />);
+    const grid = screen.getByTestId('grid');
+
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
+    fireEvent.pointerMove(grid, { pointerId: 1, clientX: 1, clientY: 0 });
+    fireEvent.pointerCancel(grid, { pointerId: 1 });
+
+    expect(pathOf()).toEqual([]);
+    expect(isDragging()).toBe(false);
+    expect(onPathEnd).not.toHaveBeenCalled();
+  });
+
+  it('descarta el trazo si se pierde la captura del puntero', () => {
+    const onPathEnd = vi.fn();
+    render(<Grid onPathEnd={onPathEnd} />);
+    const grid = screen.getByTestId('grid');
+
+    fireEvent.pointerDown(grid, {
+      pointerId: 1,
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
+    fireEvent.lostPointerCapture(grid, { pointerId: 1 });
+
+    expect(pathOf()).toEqual([]);
+    expect(isDragging()).toBe(false);
+    expect(onPathEnd).not.toHaveBeenCalled();
   });
 });

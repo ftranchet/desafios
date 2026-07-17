@@ -8,7 +8,9 @@ import { GAMES, getGameById } from './registry';
 // su línea en registry.ts — si rompe el contrato, rompe acá, no en producción.
 
 const VALID_CATEGORIES: Category[] = ['memory', 'logic', 'math', 'speed', 'spatial', 'words'];
-const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const KEBAB_CASE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+const SCAFFOLD_PLACEHOLDER = /(?:TODO|esqueleto generado)/i;
 
 describe('registro de juegos: contrato de metadatos', () => {
   it('hay al menos un juego registrado', () => {
@@ -20,19 +22,26 @@ describe('registro de juegos: contrato de metadatos', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('los nombres visibles son únicos', () => {
+    const names = GAMES.map((game) => game.metadata.name.trim().toLocaleLowerCase('es-AR'));
+    expect(new Set(names).size).toBe(names.length);
+  });
+
   it.each(GAMES.map((g) => [g.metadata.id, g] as const))('%s cumple el contrato', (_id, game) => {
     const meta = game.metadata;
 
     expect(meta.id).toMatch(KEBAB_CASE);
     expect(meta.name.trim().length).toBeGreaterThan(0);
     expect(meta.description.trim().length).toBeGreaterThan(0);
-    // howToPlay (ADR-010): opcional en el tipo, obligatorio en el catálogo —
-    // la portada del juego lo muestra antes de la primera partida.
-    expect(meta.howToPlay?.trim().length ?? 0).toBeGreaterThan(0);
+    expect(meta.howToPlay.trim().length).toBeGreaterThan(0);
+    expect(`${meta.description} ${meta.howToPlay}`).not.toMatch(SCAFFOLD_PLACEHOLDER);
     expect(VALID_CATEGORIES).toContain(meta.category);
-    expect(meta.version.trim().length).toBeGreaterThan(0);
+    expect(meta.version).toMatch(SEMVER);
     expect(meta.icon.trim().length).toBeGreaterThan(0);
+    expect(Number.isFinite(meta.estimatedSeconds)).toBe(true);
     expect(meta.estimatedSeconds).toBeGreaterThan(0);
+    expect(Object.isFrozen(meta)).toBe(true);
+    expect(Object.isFrozen(meta.modes)).toBe(true);
 
     // Estructura de modos (ADR-007): las tres dificultades primero y en orden
     // canónico; después, solo modos especiales conocidos, sin repetir; los
@@ -45,15 +54,22 @@ describe('registro de juegos: contrato de metadatos', () => {
     }
     for (const mode of meta.modes) {
       expect(mode.label).toBe(MODE_LABELS[mode.id]);
-      expect(mode.params).toBeTypeOf('object');
       if ((SPECIAL_MODE_IDS as readonly string[]).includes(mode.id)) {
         expect(mode.description?.trim().length).toBeGreaterThan(0);
       }
     }
 
-    // El componente existe (función o clase React).
-    expect(game.Component).toBeDefined();
+    expect(game.load).toBeTypeOf('function');
   });
+
+  it.each(GAMES.map((game) => [game.metadata.id, game] as const))(
+    '%s carga su módulo de forma diferida',
+    async (_id, definition) => {
+      const game = await definition.load();
+      expect(game.metadata).toBe(definition.metadata);
+      expect(game.Component).toBeDefined();
+    },
+  );
 
   it('getGameById encuentra cada juego y devuelve undefined para ids inexistentes', () => {
     for (const game of GAMES) {

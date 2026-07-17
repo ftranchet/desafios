@@ -9,10 +9,40 @@ import type { GameSoundEffect } from './contract';
 export type SoundEffect = GameSoundEffect;
 
 let audioContext: AudioContext | null = null;
+let audioUnavailable = false;
 
-function getAudioContext(): AudioContext {
-  audioContext ??= new AudioContext();
-  return audioContext;
+type AudioContextConstructor = new () => AudioContext;
+
+function getAudioContext(): AudioContext | null {
+  if (audioContext) return audioContext;
+  if (audioUnavailable || typeof window === 'undefined') return null;
+
+  const audioWindow = window as typeof window & {
+    webkitAudioContext?: AudioContextConstructor;
+  };
+  const AudioContextClass = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+  if (!AudioContextClass) {
+    audioUnavailable = true;
+    return null;
+  }
+
+  try {
+    audioContext = new AudioContextClass();
+    return audioContext;
+  } catch (error) {
+    audioUnavailable = true;
+    console.warn('Web Audio no está disponible; se continúa sin sonido:', error);
+    return null;
+  }
+}
+
+function resumeBestEffort(ctx: AudioContext): void {
+  if (ctx.state !== 'suspended') return;
+  try {
+    void ctx.resume().catch(() => undefined);
+  } catch {
+    // El sonido es opcional: nunca interrumpe una acción del juego.
+  }
 }
 
 // Desbloquea el audio dentro de un gesto directo del usuario (ej: el tap de
@@ -21,7 +51,7 @@ function getAudioContext(): AudioContext {
 // hay gesto — por eso hay que "despertar" el contexto acá primero (RF-08).
 export function warmUpAudio(): void {
   const ctx = getAudioContext();
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (ctx) resumeBestEffort(ctx);
 }
 
 interface Tone {
@@ -49,47 +79,65 @@ const EFFECTS: Record<SoundEffect, Tone[]> = {
 // Un tono puntual con la misma envolvente que los efectos: lo usan los juegos
 // vía GameProps.audio.tone (ADR-006) — p. ej. la voz de cada pad de Simon.
 export function playTone(frequency: number, durationMs: number): void {
+  if (
+    !Number.isFinite(frequency) ||
+    frequency <= 0 ||
+    !Number.isFinite(durationMs) ||
+    durationMs <= 0
+  ) {
+    return;
+  }
   const ctx = getAudioContext();
-  if (ctx.state === 'suspended') void ctx.resume();
-  const now = ctx.currentTime;
+  if (!ctx) return;
+  try {
+    resumeBestEffort(ctx);
+    const now = ctx.currentTime;
 
-  const oscillator = ctx.createOscillator();
-  const gain = ctx.createGain();
-  oscillator.type = 'triangle';
-  oscillator.frequency.value = frequency;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = 'triangle';
+    oscillator.frequency.value = frequency;
 
-  const duration = durationMs / 1000;
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.2, now + Math.min(0.02, duration / 4));
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    const duration = durationMs / 1000;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.2, now + Math.min(0.02, duration / 4));
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-  oscillator.connect(gain).connect(ctx.destination);
-  oscillator.start(now);
-  oscillator.stop(now + duration + 0.02);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start(now);
+    oscillator.stop(now + duration + 0.02);
+  } catch (error) {
+    console.warn('No se pudo reproducir el tono:', error);
+  }
 }
 
 export function playSound(effect: SoundEffect): void {
   const ctx = getAudioContext();
+  if (!ctx) return;
   // En móvil el contexto puede arrancar suspendido hasta un gesto del usuario;
   // reanudarlo asegura que el primer efecto suene.
-  if (ctx.state === 'suspended') void ctx.resume();
-  const now = ctx.currentTime;
+  try {
+    resumeBestEffort(ctx);
+    const now = ctx.currentTime;
 
-  for (const tone of EFFECTS[effect]) {
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.type = tone.type;
-    oscillator.frequency.value = tone.frequency;
+    for (const tone of EFFECTS[effect]) {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = tone.type;
+      oscillator.frequency.value = tone.frequency;
 
-    const start = now + tone.startOffset / 1000;
-    const duration = tone.durationMs / 1000;
+      const start = now + tone.startOffset / 1000;
+      const duration = tone.durationMs / 1000;
 
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.2, start + Math.min(0.02, duration / 4));
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.2, start + Math.min(0.02, duration / 4));
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
-    oscillator.connect(gain).connect(ctx.destination);
-    oscillator.start(start);
-    oscillator.stop(start + duration + 0.02);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.02);
+    }
+  } catch (error) {
+    console.warn('No se pudo reproducir el efecto de sonido:', error);
   }
 }

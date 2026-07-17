@@ -178,8 +178,9 @@ adaptación explícita, no como accidente.
   grillas táctiles) y quedan centrados dentro del marco.
 - **Altura**: `min-h-dvh`/`dvh` siempre — nunca `vh` (salta con la barra de
   direcciones del navegador móvil).
-- **Área segura iOS**: la navegación inferior respeta
-  `env(safe-area-inset-bottom)`.
+- **Área segura iOS/PWA**: el contenedor raíz aplica los cuatro
+  `env(safe-area-inset-*)`, incluido horizontal al rotar; header, contenido y
+  controles no quedan bajo notch, isla dinámica ni indicador de inicio.
 - **Grillas de juego**: el tamaño de celda nunca baja de 44px (RNF-04). Si la
   dificultad agranda la grilla, se agregan filas o se acepta la excepción
   documentada (Sudoku/Nonograma) — nunca se achica la celda en silencio.

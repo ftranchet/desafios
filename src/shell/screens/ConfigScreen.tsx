@@ -5,6 +5,7 @@ import { strings } from '../../i18n/es';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ScreenHeader } from '../components/ScreenHeader';
 import {
+  getSettingsSnapshot,
   useSettingsStore,
   type DefaultDifficulty,
   type ThemePreference,
@@ -91,7 +92,12 @@ const DIFFICULTY_OPTIONS: Array<{ value: DefaultDifficulty; label: string }> = [
 const AUTHOR_LINKEDIN_URL = 'https://www.linkedin.com/in/ftranchet/';
 
 function exportData() {
-  const json = storage.exportAll();
+  const resultsExport = JSON.parse(storage.exportAll()) as Record<string, unknown>;
+  const json = JSON.stringify(
+    { ...resultsExport, settings: getSettingsSnapshot() },
+    null,
+    2,
+  );
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -116,11 +122,13 @@ export function ConfigScreen() {
   const toggleReduceAnimations = useSettingsStore((s) => s.toggleReduceAnimations);
   const setTheme = useSettingsStore((s) => s.setTheme);
   const setDefaultDifficulty = useSettingsStore((s) => s.setDefaultDifficulty);
+  const resetSettings = useSettingsStore((s) => s.resetSettings);
 
   const [clearStep, setClearStep] = useState<'idle' | 'first' | 'final'>('idle');
 
   function handleClearConfirmed() {
     storage.clearAll();
+    resetSettings();
     setClearStep('idle');
   }
 
@@ -172,6 +180,7 @@ export function ConfigScreen() {
 
       {clearStep === 'first' && (
         <ConfirmDialog
+          key="first"
           title={strings.config.clearConfirmTitle}
           body={strings.config.clearConfirmBody}
           acceptLabel={strings.config.clearConfirmAccept}
@@ -183,6 +192,7 @@ export function ConfigScreen() {
 
       {clearStep === 'final' && (
         <ConfirmDialog
+          key="final"
           title={strings.config.clearConfirmFinalTitle}
           body={strings.config.clearConfirmFinalBody}
           acceptLabel={strings.config.clearConfirmAccept}

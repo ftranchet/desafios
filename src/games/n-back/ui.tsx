@@ -5,7 +5,9 @@ import { CountdownBar, PressButton, useAutoFocus, useSecondsLeft } from '../../c
 import { buildResult, generateSession, type AnswerRecord, type Trial } from './logic';
 
 const SYMBOLS = ['●', '■', '▲', '◆', '★', '✚'];
+const SYMBOL_NAMES = ['círculo', 'cuadrado', 'triángulo', 'rombo', 'estrella', 'cruz'];
 const FEEDBACK_DURATION_MS = 500;
+const WARMUP_DURATION_MS = 1200;
 
 type Phase = 'question' | 'feedback';
 
@@ -25,10 +27,11 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
   const [trialIndex, setTrialIndex] = useState(0);
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
 
-  const isQuestion = phase === 'question';
   const trial = session[trialIndex];
+  const isWarmup = trial?.requiresResponse === false;
+  const isQuestion = phase === 'question' && !isWarmup;
   // Tranquilo: seconds = 0 → sin reloj, sin barra, sin cuenta regresiva.
-  const timed = (trial?.seconds ?? 0) > 0;
+  const timed = trial?.requiresResponse === true && trial.seconds > 0;
   const secondsLeft = useSecondsLeft(trial?.seconds ?? 0, isQuestion && timed, trialIndex);
 
   function clearTimers() {
@@ -60,12 +63,32 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
     if (!t) return;
     resolvedRef.current = false;
     trialStartRef.current = performance.now();
+    setLastCorrect(null);
 
-    if (t.seconds > 0) {
+    if (!t.requiresResponse) {
+      // Las primeras N muestras construyen el contexto: todavía no existe un
+      // símbolo N lugares atrás y pedir “No coincide” sería una respuesta
+      // trivial. Se muestran y avanzan solas, también en Tranquilo.
+      answersRef.current[index] = { correct: true, responseMs: null };
+      timeoutRef.current = window.setTimeout(() => advanceTrial(index, trials), WARMUP_DURATION_MS);
+    } else if (t.seconds > 0) {
       timeoutRef.current = window.setTimeout(() => {
         resolveAnswer(index, null, trials);
       }, t.seconds * 1000);
     }
+  }
+
+  function advanceTrial(index: number, trials: Trial[]) {
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+    const nextIndex = index + 1;
+    if (nextIndex >= trials.length) {
+      finishGame(trials, true);
+      return;
+    }
+    setTrialIndex(nextIndex);
+    setPhase('question');
+    startTrial(nextIndex, trials);
   }
 
   function resolveAnswer(index: number, submitted: boolean | null, trials: Trial[]) {
@@ -85,19 +108,12 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
     setPhase('feedback');
 
     feedbackTimeoutRef.current = window.setTimeout(() => {
-      const nextIndex = index + 1;
-      if (nextIndex >= trials.length) {
-        finishGame(trials, true);
-      } else {
-        setTrialIndex(nextIndex);
-        setPhase('question');
-        startTrial(nextIndex, trials);
-      }
+      advanceTrial(index, trials);
     }, FEEDBACK_DURATION_MS);
   }
 
   function answer(isMatch: boolean) {
-    if (phase !== 'question') return;
+    if (phase !== 'question' || !trial?.requiresResponse) return;
     resolveAnswer(trialIndex, isMatch, session);
   }
 
@@ -143,15 +159,34 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
 
       {trial && (
         <>
-          <p className="text-center text-sm text-text-secondary">
-            ¿Coincide con el símbolo de hace {trial.n} {trial.n === 1 ? 'lugar' : 'lugares'}?
-          </p>
+          {isWarmup ? (
+            <p className="text-center text-sm font-semibold text-accent-primary">
+              Memorizá este símbolo. La comparación empieza después de {trial.n}{' '}
+              {trial.n === 1 ? 'muestra' : 'muestras'}.
+            </p>
+          ) : (
+            <p className="text-center text-sm text-text-secondary">
+              ¿Coincide con el símbolo de hace {trial.n} {trial.n === 1 ? 'lugar' : 'lugares'}?
+            </p>
+          )}
 
           <div
             className="flex h-24 w-24 items-center justify-center rounded-lg border border-surface-alt bg-surface"
-            aria-label={`Símbolo actual: ${SYMBOLS[trial.symbol]}`}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
           >
-            <span className="font-display text-5xl text-text-primary">{SYMBOLS[trial.symbol]}</span>
+            <span className="sr-only">
+              Muestra {trialIndex + 1}. {isWarmup ? 'Memorizá. ' : ''}Símbolo actual:{' '}
+              {SYMBOL_NAMES[trial.symbol]}.{' '}
+              {!isWarmup &&
+                `Indicá si coincide con el símbolo de hace ${trial.n} ${
+                  trial.n === 1 ? 'lugar' : 'lugares'
+                }.`}
+            </span>
+            <span aria-hidden="true" className="font-display text-5xl text-text-primary">
+              {SYMBOLS[trial.symbol]}
+            </span>
           </div>
 
           <p
@@ -160,27 +195,31 @@ export function NBackGame({ config, onFinish, audio }: GameProps) {
               lastCorrect ? 'text-accent-success' : 'text-accent-error'
             }`}
           >
-            {!isQuestion && (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
+            {phase === 'feedback' &&
+              lastCorrect !== null &&
+              (lastCorrect ? '¡Correcto!' : 'Incorrecto')}
           </p>
 
-          <div className="grid w-full max-w-xs grid-cols-2 gap-3">
-            <PressButton
-              variant="control"
-              disabled={!isQuestion}
-              onPress={() => answer(true)}
-              ariaLabel="Coincide con el símbolo de antes"
-            >
-              Coincide
-            </PressButton>
-            <PressButton
-              variant="control"
-              disabled={!isQuestion}
-              onPress={() => answer(false)}
-              ariaLabel="No coincide"
-            >
-              No coincide
-            </PressButton>
-          </div>
+          {!isWarmup && (
+            <div className="grid w-full max-w-xs grid-cols-2 gap-3">
+              <PressButton
+                variant="control"
+                disabled={!isQuestion}
+                onPress={() => answer(true)}
+                ariaLabel="Coincide con el símbolo de antes"
+              >
+                Coincide
+              </PressButton>
+              <PressButton
+                variant="control"
+                disabled={!isQuestion}
+                onPress={() => answer(false)}
+                ariaLabel="No coincide"
+              >
+                No coincide
+              </PressButton>
+            </div>
+          )}
         </>
       )}
     </div>

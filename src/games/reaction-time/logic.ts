@@ -2,15 +2,14 @@ import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { chance, createRng, randomInt } from '../../core/random';
 
 // Lógica pura del juego "Tiempo de reacción" — sin React ni DOM (PRD sección 4.2.3).
-// Tocar en cuanto la pantalla cambie a un color objetivo; si aparece un color
-// señuelo, no hay que tocar. Mide milisegundos de reacción.
+// Tocar en cuanto aparece la señal objetivo; si aparece una señal señuelo, no
+// hay que tocar. Mide milisegundos de reacción.
 
 export interface LevelParams {
   rounds: number;
   minDelayMs: number;
   maxDelayMs: number;
   decoyChance: number;
-  [key: string]: number; // index signature para encajar con GameMode['params']
 }
 
 // easy/medium/hard equivalen a los niveles 1/3/5 del esquema anterior (ADR-007).
@@ -48,7 +47,10 @@ export interface RoundOutcome {
   isDecoy: boolean;
   correct: boolean;
   reactionMs: number | null;
+  timing: 'early' | 'on-time' | 'late' | null;
 }
+
+export const REACTION_WINDOW_MS = 1200;
 
 /**
  * Resuelve una ronda de forma pura.
@@ -58,16 +60,33 @@ export interface RoundOutcome {
 export function resolveRoundTap(plan: RoundPlan, tapAtMs: number | null): RoundOutcome {
   if (tapAtMs === null) {
     // Sin toque: correcto si era señuelo (había que ignorarlo), incorrecto si no.
-    return { isDecoy: plan.isDecoy, correct: plan.isDecoy, reactionMs: null };
+    return {
+      isDecoy: plan.isDecoy,
+      correct: plan.isDecoy,
+      reactionMs: null,
+      timing: plan.isDecoy ? null : 'late',
+    };
   }
 
   if (tapAtMs < plan.delayMs) {
     // Falso arranque: tocó antes de que el color cambiara.
-    return { isDecoy: plan.isDecoy, correct: false, reactionMs: null };
+    return { isDecoy: plan.isDecoy, correct: false, reactionMs: null, timing: 'early' };
+  }
+
+  if (tapAtMs > plan.delayMs + REACTION_WINDOW_MS) {
+    // El event loop puede entregar el toque después del límite antes que el
+    // callback del timeout. El resultado debe ser el mismo que si el timeout
+    // hubiese corrido a tiempo: fallo del objetivo o señuelo bien evitado.
+    return {
+      isDecoy: plan.isDecoy,
+      correct: plan.isDecoy,
+      reactionMs: null,
+      timing: plan.isDecoy ? null : 'late',
+    };
   }
 
   const reactionMs = tapAtMs - plan.delayMs;
-  return { isDecoy: plan.isDecoy, correct: !plan.isDecoy, reactionMs };
+  return { isDecoy: plan.isDecoy, correct: !plan.isDecoy, reactionMs, timing: 'on-time' };
 }
 
 const POINTS_PER_HIT_BASE = 1000;

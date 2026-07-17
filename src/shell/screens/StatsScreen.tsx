@@ -56,12 +56,14 @@ export function StatsScreen() {
             {records.map((entry, i) => (
               <li
                 key={i}
-                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary shadow-card"
+                className="flex min-h-touch items-center justify-between gap-3 rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary shadow-card"
               >
-                <span>
+                <span className="min-w-0 break-words">
                   {entry.gameName} · {entry.modeLabel}
                 </span>
-                <span className="text-accent-primary">{entry.best?.score}</span>
+                <span className="shrink-0 font-semibold text-accent-primary">
+                  {entry.best?.score}
+                </span>
               </li>
             ))}
           </ul>
@@ -79,13 +81,15 @@ export function StatsScreen() {
             {history.map((result, i) => (
               <li
                 key={i}
-                className="flex justify-between rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary shadow-card"
+                className="flex min-h-touch items-center justify-between gap-3 rounded-lg border border-surface-alt bg-surface px-3 py-2 text-sm text-text-primary shadow-card"
               >
-                <span>
+                <span className="min-w-0 break-words">
                   {formatDate(result.timestamp)} · {gameName(result.gameId)} ·{' '}
                   {MODE_LABELS[result.mode]}
                 </span>
-                <span className={result.completed ? 'text-accent-primary' : 'text-text-secondary'}>
+                <span
+                  className={`shrink-0 text-right font-semibold ${result.completed ? 'text-accent-primary' : 'text-text-secondary'}`}
+                >
                   {result.completed ? result.score : strings.stats.abandoned}
                 </span>
               </li>

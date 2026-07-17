@@ -15,8 +15,8 @@ import {
 } from './logic';
 
 // Colores del sistema — el canvas necesita valores de color reales, no puede
-// consumir clases de Tailwind. Se resuelven del tema activo al montar
-// (ADR-009), en vez de copiar los hex de tailwind.config.ts a mano.
+// consumir clases de Tailwind. Se resuelven del tema activo (ADR-009), en vez
+// de copiar los hex de tailwind.config.ts a mano.
 interface BoardColors {
   surface: string;
   snake: string;
@@ -81,9 +81,11 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   const targetRef = useRef<Position | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const sessionStartRef = useRef(0);
-  // Paleta del tema activo, resuelta una vez al montar: el tema no puede
-  // cambiar en medio de una partida (se elige en Configuración).
-  const colorsRef = useRef<BoardColors>(readBoardColors());
+  // Paleta del tema activo. `system` puede cambiar mientras la partida sigue
+  // abierta, por eso se actualiza al mutar data-theme en <html>. useState usa
+  // inicializador perezoso: getComputedStyle no se repite en cada tick/render.
+  const [initialColors] = useState<BoardColors>(readBoardColors);
+  const colorsRef = useRef<BoardColors>(initialColors);
 
   const [hud, setHud] = useState({ score: 0, stage: 1 });
 
@@ -126,6 +128,7 @@ export function SnakeGame({ config, onFinish }: GameProps) {
   }
 
   useEffect(() => {
+    colorsRef.current = readBoardColors();
     const dpr = window.devicePixelRatio || 1;
     const canvas = canvasRef.current;
     if (canvas) {
@@ -145,9 +148,21 @@ export function SnakeGame({ config, onFinish }: GameProps) {
     const ctx = canvas?.getContext('2d');
     if (ctx) drawState(ctx, initial, colorsRef.current);
 
+    const themeObserver = new MutationObserver(() => {
+      colorsRef.current = readBoardColors();
+      const current = stateRef.current;
+      const currentCtx = canvasRef.current?.getContext('2d');
+      if (current && currentCtx) drawState(currentCtx, current, colorsRef.current);
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
     scheduleTick(initial.intervalMs);
 
     return () => {
+      themeObserver.disconnect();
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

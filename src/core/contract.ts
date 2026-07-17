@@ -13,7 +13,6 @@ export interface GameMode {
   id: ModeId;
   label: string; // "Fácil", "Tranquilo"... — siempre desde core/modes.ts (buildModes)
   description?: string; // Una línea, solo para los modos especiales
-  params: Record<string, number | string | boolean>;
 }
 
 export interface GameMetadata {
@@ -22,11 +21,11 @@ export interface GameMetadata {
   category: Category;
   description: string; // Una línea, en español
   // Cómo se juega (ADR-010): 2-4 oraciones — objetivo + interacción — para la
-  // portada del juego. Opcional en el tipo (retrocompatible), pero el test de
-  // contrato del registro lo exige en todo juego del catálogo.
-  howToPlay?: string;
+  // portada del juego. Es parte obligatoria del contrato: un módulo incompleto
+  // falla al compilar, no recién en el test del registro.
+  howToPlay: string;
   version: string;
-  modes: GameMode[]; // easy/medium/hard obligatorios; zen/progressive opcionales (ADR-007)
+  modes: readonly GameMode[]; // easy/medium/hard obligatorios; zen/progressive opcionales (ADR-007)
   estimatedSeconds: number; // Duración típica de una partida
   icon: string; // Ruta al ícono vectorial del juego
 }
@@ -67,4 +66,12 @@ export interface GameProps {
 export interface GameModule {
   metadata: GameMetadata;
   Component: ComponentType<GameProps>;
+}
+
+// Entrada liviana del catálogo. Los metadatos se cargan con el shell, pero el
+// código interactivo del juego solo se importa cuando la persona abre su ruta.
+// Así un juego pesado o con una falla de evaluación no bloquea toda la app.
+export interface GameDefinition {
+  metadata: GameMetadata;
+  load(): Promise<GameModule>;
 }

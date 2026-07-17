@@ -115,13 +115,8 @@ conflicto, mandan las ADRs más nuevas y el documento se corrige.
   verificaciones AA (el criterio queda documentado en `docs/design-system.md`).
 - El manifest de la PWA (splash) toma los colores del tema claro por defecto;
   es estático, no sigue la preferencia — limitación conocida y aceptada.
-- **Pendiente conocido — íconos de juego:** los 28 `icon.svg` llevan hex de la
-  paleta oscura (brillantes). Sobre los chips pastel del tema claro se ven
-  correctos pero menos contrastados que el resto de la interfaz; RNF-05 no se
-  ve comprometido (el ícono es decorativo, la información está en el texto).
-  Mejora candidata para una sesión propia: redibujarlos theme-aware (por
-  ejemplo, silueta vía `mask-image` teñida con el color de categoría).
-- **Pendiente conocido — layout por orientación:** las reglas quedan
-  especificadas en `docs/design-system.md`; el componente de layout de juego
-  (tablero + controles reacomodándose en horizontal) es la implementación que
-  sigue en el roadmap del sistema de diseño.
+- **Seguimiento resuelto (v0.37):** los íconos se renderizan como siluetas con
+  `mask-image` y color semántico, por lo que funcionan en ambos temas sin
+  duplicar SVG. `GameLayout` implementa el reacomodamiento de tablero +
+  controles en celular horizontal. Ambos puntos eran pendientes al aceptar
+  esta ADR y se conservan acá como trazabilidad, no como backlog vigente.

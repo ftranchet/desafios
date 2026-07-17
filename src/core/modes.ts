@@ -1,9 +1,9 @@
 import type { GameMode, ModeId } from './contract';
 
 // Vocabulario y estructura de los modos de juego (ADR-007). Este módulo es la
-// única fuente de los labels y del orden de los modos: los juegos declaran sus
-// parámetros con buildModes() y no pueden desviarse de la convención — la capa
-// de robustez que garantiza que un juego nuevo entienda la estructura.
+// única fuente de los labels y del orden de los modos: los juegos declaran qué
+// modos especiales soportan con buildModes() y no pueden desviarse de la
+// convención. Los parámetros de gameplay permanecen privados a cada módulo.
 
 export const MODE_LABELS: Record<ModeId, string> = {
   easy: 'Fácil',
@@ -21,35 +21,27 @@ export const MODE_DESCRIPTIONS: Partial<Record<ModeId, string>> = {
 export const DIFFICULTY_MODE_IDS = ['easy', 'medium', 'hard'] as const;
 export const SPECIAL_MODE_IDS = ['zen', 'progressive'] as const;
 
-type Params = Record<string, number | string | boolean>;
-
-export interface ModeParamsInput {
-  easy: Params;
-  medium: Params;
-  hard: Params;
-  zen?: Params;
-  progressive?: Params;
+export interface SpecialModesInput {
+  zen?: boolean;
+  progressive?: boolean;
 }
 
 /**
- * Construye la lista de modos de un juego con labels, descripciones y orden
- * canónicos. Las tres dificultades son obligatorias por tipo; los modos
- * especiales se declaran solo si el juego los implementa (ADR-007).
+ * Construye la lista de modos con labels, descripciones y orden canónicos.
+ * Las tres dificultades siempre están presentes; los modos especiales se
+ * declaran solo si el juego los implementa (ADR-007).
  */
-export function buildModes(params: ModeParamsInput): GameMode[] {
+export function buildModes(specialModes: SpecialModesInput = {}): GameMode[] {
   const modes: GameMode[] = DIFFICULTY_MODE_IDS.map((id) => ({
     id,
     label: MODE_LABELS[id],
-    params: params[id],
   }));
   for (const id of SPECIAL_MODE_IDS) {
-    const modeParams = params[id];
-    if (modeParams) {
+    if (specialModes[id]) {
       modes.push({
         id,
         label: MODE_LABELS[id],
         description: MODE_DESCRIPTIONS[id],
-        params: modeParams,
       });
     }
   }
@@ -57,7 +49,11 @@ export function buildModes(params: ModeParamsInput): GameMode[] {
 }
 
 export function isModeId(value: unknown): value is ModeId {
-  return typeof value === 'string' && value in MODE_LABELS;
+  // `in` también recorre el prototipo (`toString`, `constructor`,
+  // `__proto__`…), algo especialmente peligroso porque esta función valida
+  // datos que vienen de localStorage. Solo las claves propias del vocabulario
+  // cerrado son modos válidos.
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(MODE_LABELS, value);
 }
 
 // --- Modo progresivo: curva común a todos los juegos (ADR-007) -------------

@@ -1,27 +1,6 @@
 import type { GameModule } from '../../core/contract';
-import { buildModes } from '../../core/modes';
-import icon from './icon.svg';
-import { MODE_PARAMS, PROGRESSIVE_PARAMS } from './logic';
+import { metadata } from './metadata';
 import { NBackGame } from './ui';
 
-export const nBack: GameModule = {
-  metadata: {
-    id: 'n-back',
-    name: '¿Coincide?',
-    category: 'memory',
-    description: 'Decidí si el símbolo actual es igual al de N lugares atrás.',
-    howToPlay:
-      'Los símbolos pasan de a uno: decidí si el actual coincide con el que apareció N lugares atrás, con los botones Coincide / No coincide. N sube con la dificultad — el desafío es sostener la memoria en movimiento.',
-    version: '1.0.0',
-    modes: buildModes({
-      easy: MODE_PARAMS.easy,
-      medium: MODE_PARAMS.medium,
-      hard: MODE_PARAMS.hard,
-      zen: MODE_PARAMS.zen,
-      progressive: PROGRESSIVE_PARAMS,
-    }),
-    estimatedSeconds: 90,
-    icon,
-  },
-  Component: NBackGame,
-};
+export const nBack: GameModule = { metadata, Component: NBackGame };
+export default nBack;

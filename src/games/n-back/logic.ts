@@ -89,6 +89,7 @@ export function generateSequence(rng: Rng, trialCount: number, n: number): numbe
 export interface Trial {
   symbol: number;
   isMatch: boolean; // verdad de fondo: ¿coincide con la posición N atrás?
+  requiresResponse: boolean; // false durante las N muestras iniciales de preparación
   n: number; // cuántos pasos atrás hay que comparar en este ensayo
   stage: number; // grado del progresivo; 1 en el resto
   seconds: number; // tiempo para responder; 0 = sin límite (Tranquilo)
@@ -98,6 +99,7 @@ function buildTrials(sequence: number[], n: number, stage: number, seconds: numb
   return sequence.map((symbol, i) => ({
     symbol,
     isMatch: i >= n && symbol === sequence[i - n],
+    requiresResponse: i >= n,
     n,
     stage,
     seconds,
@@ -127,7 +129,7 @@ export function generateSession(mode: ModeId, seed: number): Trial[] {
 
 export interface AnswerRecord {
   correct: boolean;
-  responseMs: number | null; // null = venció el tiempo sin responder
+  responseMs: number | null; // null = sin tiempo medido (timeout o muestra de preparación)
 }
 
 const BASE_POINTS = 100;
@@ -150,9 +152,8 @@ export function computeScore(
   const responseTimes: number[] = [];
 
   answers.forEach((answer, i) => {
-    if (!answer.correct) return;
     const trial = trials[i];
-    if (!trial) return;
+    if (!trial?.requiresResponse || !answer.correct) return;
     maxStage = Math.max(maxStage, trial.stage);
 
     if (mode === 'zen') {
@@ -171,8 +172,9 @@ export function computeScore(
     score += Math.round(base * stageMultiplier);
   });
 
-  const correct = answers.filter((a) => a.correct).length;
-  const incorrect = answers.length - correct;
+  const scoredAnswers = answers.filter((_, index) => trials[index]?.requiresResponse);
+  const correct = scoredAnswers.filter((answer) => answer.correct).length;
+  const incorrect = scoredAnswers.length - correct;
   const avgResponseMs =
     responseTimes.length === 0
       ? 0

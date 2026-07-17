@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
 
 // Botón de juego (ADR-005, patrones PRD 10.7.1/10.7.2): dispara en
 // `pointerdown` — no en `click` — para respuesta inmediata en juegos en
@@ -53,29 +53,50 @@ export function PressButton({
     delay: null,
     interval: null,
   });
+  const activePointerRef = useRef<number | null>(null);
   // El interval captura el onPress del render en el que arrancó; la ref
   // mantiene el más reciente para que la repetición no actúe sobre estado viejo.
   const onPressRef = useRef(onPress);
   onPressRef.current = onPress;
 
-  function stopRepeat() {
+  const stopRepeat = useCallback(() => {
     if (timersRef.current.delay !== null) window.clearTimeout(timersRef.current.delay);
     if (timersRef.current.interval !== null) window.clearInterval(timersRef.current.interval);
     timersRef.current = { delay: null, interval: null };
-  }
+  }, []);
 
-  useEffect(() => stopRepeat, []);
+  const stopPointer = useCallback(
+    (pointerId?: number) => {
+      if (pointerId !== undefined && activePointerRef.current !== pointerId) return;
+      activePointerRef.current = null;
+      stopRepeat();
+    },
+    [stopRepeat],
+  );
+
+  useEffect(() => () => stopPointer(), [stopPointer]);
+
+  useEffect(() => {
+    if (disabled) stopPointer();
+  }, [disabled, stopPointer]);
 
   function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
     // Guard explícito: no todos los entornos suprimen los eventos de puntero
     // sobre un botón deshabilitado (jsdom no lo hace; navegadores viejos
     // tampoco lo hacían de forma consistente).
-    if (disabled) return;
+    if (
+      disabled ||
+      event.button !== 0 ||
+      event.isPrimary === false ||
+      activePointerRef.current !== null
+    ) {
+      return;
+    }
     // preventDefault: el botón no roba el foco del contenedor del juego, así
     // el teclado físico sigue funcionando en escritorio.
     event.preventDefault();
+    activePointerRef.current = event.pointerId;
     onPress();
-    if (!repeatOnHold) return;
     try {
       // Con captura, el pointerup llega aunque el dedo se corra del botón.
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -83,6 +104,7 @@ export function PressButton({
       // jsdom y navegadores viejos no implementan la captura: solo se pierde
       // la robustez del gesto largo, no la funcionalidad.
     }
+    if (!repeatOnHold) return;
     stopRepeat();
     timersRef.current.delay = window.setTimeout(() => {
       timersRef.current.interval = window.setInterval(
@@ -98,8 +120,9 @@ export function PressButton({
       disabled={disabled}
       aria-label={ariaLabel}
       onPointerDown={handlePointerDown}
-      onPointerUp={stopRepeat}
-      onPointerCancel={stopRepeat}
+      onPointerUp={(event) => stopPointer(event.pointerId)}
+      onPointerCancel={(event) => stopPointer(event.pointerId)}
+      onLostPointerCapture={(event) => stopPointer(event.pointerId)}
       onClick={(event) => {
         if (!disabled && event.detail === 0) onPress();
       }}

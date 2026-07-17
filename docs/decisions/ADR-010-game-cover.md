@@ -1,6 +1,11 @@
 # ADR-010 — Portada de juego: `howToPlay` en el contrato
 
-**Estado:** aceptada · Julio 2026
+**Estado:** aceptada, enmendada por ADR-011 · Julio 2026
+
+> Nota vigente: `howToPlay` pasó a ser obligatorio en `GameMetadata` y los
+> metadatos se movieron de `index.ts` a `metadata.ts`. Esto permite construir
+> la portada sin cargar la UI/lógica y hace que un módulo incompleto falle al
+> compilar. El contexto de abajo conserva la decisión original.
 
 ## Contexto
 
@@ -17,22 +22,17 @@ de contrato.
 
 ## Decisión
 
-Se agrega **`howToPlay?: string`** a `GameMetadata`: un párrafo corto (2–4
+Se agrega **`howToPlay: string`** a `GameMetadata`: un párrafo corto (2–4
 oraciones, español rioplatense como todo texto visible) que explica el
 objetivo del juego y cómo se interactúa (toque y teclado cuando aplica). El
 shell lo muestra en la **portada del juego** — la fase de selección de modo,
 rediseñada: ícono grande, nombre, descripción, "¿Cómo se juega?" y el
 selector de modos.
 
-- **Opcional en el tipo** (retrocompatible, mismo criterio que ADR-006): un
-  `GameModule` sin `howToPlay` sigue compilando y la portada simplemente no
-  muestra la sección.
-- **Obligatorio en la práctica para el catálogo**: el test de contrato del
-  registro (`registry.test.ts`) exige `howToPlay` no vacío en todo juego
-  registrado — igual que ya exige `description`. El generador `new-game` lo
-  incluye en su plantilla.
-- El texto vive en `index.ts` junto al resto de los metadatos, no en el
-  `ui.tsx`: es contenido, no interfaz.
+- **Obligatorio en el tipo y en el test del catálogo**: un módulo incompleto
+  falla durante el desarrollo y no llega a una portada sin instrucciones.
+- El texto vive en `metadata.ts` junto al resto de los metadatos, no en
+  `ui.tsx`: es contenido disponible sin cargar la interfaz.
 
 ## Consecuencias
 

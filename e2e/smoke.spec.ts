@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 // Humo E2E (PRD 5.6): los flujos centrales del producto en un navegador real.
 // Cada spec arranca de cero (localStorage limpio) para ser determinística.
@@ -11,13 +11,14 @@ test.beforeEach(async ({ page }) => {
 
 test('el catálogo muestra todos los juegos y la navegación', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
-  // Una tarjeta por juego registrado (los enlaces a /game/). Playwright corre
-  // en Node sin el pipeline de assets de Vite, así que no puede importar
-  // registry.ts directamente (rompe en el import de los icon.svg) — este
-  // número se actualiza a mano al sumar un juego, no participa del criterio
-  // de éxito de PRD 5.5 (que solo exige no tocar src/shell/ ni src/core/).
+  // Una tarjeta por juego registrado. El contrato unitario valida la paridad
+  // exacta del registro; acá se evita duplicar un número que quedaría obsoleto
+  // cada vez que el generador suma un módulo.
   const cards = page.locator('a[href*="#/game/"]');
-  await expect(cards).toHaveCount(28);
+  const hrefs = await cards.evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+  expect(hrefs.length).toBeGreaterThan(0);
+  expect(new Set(hrefs).size).toBe(hrefs.length);
+  expect(hrefs.every((href) => href?.includes('#/game/'))).toBe(true);
   // Navegación: botones-ícono del encabezado (sin barra inferior).
   await expect(page.getByRole('link', { name: 'Estadísticas' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Configuración' })).toBeVisible();
@@ -133,6 +134,29 @@ test('salir de una partida pide confirmación y Escape la cancela', async ({ pag
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
   // La partida sigue: el tablero está presente.
   await expect(page.locator('canvas')).toBeVisible();
+});
+
+test('Back del navegador confirma y registra el abandono', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('a[href*="#/game/cascada"]').click();
+  await page.getByRole('button', { name: 'Jugar' }).tap();
+
+  await page.evaluate(() => history.back());
+  const firstDialog = page.getByRole('alertdialog');
+  await expect(firstDialog).toBeVisible();
+  await firstDialog.getByRole('button', { name: 'Seguir jugando' }).tap();
+  await expect(page.locator('canvas')).toBeVisible();
+
+  await page.evaluate(() => history.back());
+  const finalDialog = page.getByRole('alertdialog');
+  await expect(finalDialog).toBeVisible();
+  await finalDialog.getByRole('button', { name: 'Salir' }).tap();
+  await expect(page.getByRole('heading', { name: 'Desafíos Mentales' })).toBeVisible();
+
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('dm:results') ?? '{}'));
+  expect(stored.results).toEqual(
+    expect.arrayContaining([expect.objectContaining({ gameId: 'cascada', completed: false })]),
+  );
 });
 
 test('configuración: los toggles cambian de estado', async ({ page }) => {

@@ -7,8 +7,8 @@
 // definen los temas (src/styles/index.css), así el canvas pinta siempre con
 // la paleta del tema vigente sin conocer ningún valor.
 //
-// Se lee al montar el componente: la preferencia de tema solo puede cambiar
-// en la pantalla de Configuración, nunca en medio de una partida.
+// Los canvas leen estos tokens al montar y vuelven a resolverlos cuando cambia
+// `data-theme`: el modo `system` sí puede variar con una partida abierta.
 
 export type ColorToken =
   | 'bg'

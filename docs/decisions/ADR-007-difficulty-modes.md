@@ -1,6 +1,10 @@
 # ADR-007 — Dificultades y modos de juego (reemplaza los 5 niveles)
 
-**Estado:** aceptada · Julio 2026
+**Estado:** aceptada, enmendada por ADR-011 · Julio 2026
+
+> ADR-011 elimina `GameMode.params` de los metadatos para que el catálogo no
+> importe lógica de juego. Los parámetros concretos siguen existiendo dentro
+> de cada módulo y se resuelven a partir de `ModeId`.
 
 ## Contexto
 
@@ -23,7 +27,6 @@ export interface GameMode {
   id: ModeId;
   label: string; // "Fácil", "Tranquilo"... — siempre desde core/modes.ts
   description?: string; // una línea, solo para los modos especiales
-  params: Record<string, number | string | boolean>;
 }
 
 // GameMetadata.modes reemplaza a GameMetadata.levels

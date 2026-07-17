@@ -1,27 +1,6 @@
 import type { GameModule } from '../../core/contract';
-import { buildModes } from '../../core/modes';
-import icon from './icon.svg';
-import { MODE_PARAMS, PROGRESSIVE_PARAMS } from './logic';
+import { metadata } from './metadata';
 import { AnagramsGame } from './ui';
 
-export const anagrams: GameModule = {
-  metadata: {
-    id: 'anagrams',
-    name: 'Anagramas',
-    category: 'words',
-    description: 'Reordená las fichas de letras hasta formar la palabra oculta.',
-    howToPlay:
-      'Las letras de la palabra están desordenadas: tocá las fichas en orden para armarla en los casilleros. Si te trabás, tocá un casillero para devolver esa letra a la bandeja y probá otro camino.',
-    version: '1.0.0',
-    modes: buildModes({
-      easy: MODE_PARAMS.easy,
-      medium: MODE_PARAMS.medium,
-      hard: MODE_PARAMS.hard,
-      zen: MODE_PARAMS.zen,
-      progressive: PROGRESSIVE_PARAMS,
-    }),
-    estimatedSeconds: 120,
-    icon,
-  },
-  Component: AnagramsGame,
-};
+export const anagrams: GameModule = { metadata, Component: AnagramsGame };
+export default anagrams;

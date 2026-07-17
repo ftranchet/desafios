@@ -2,6 +2,53 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [Unreleased]
+
+Auditoría integral de robustez, alta de juegos, persistencia, accesibilidad,
+responsive y consistencia documental. La decisión arquitectónica se registra
+en ADR-011; la versión se definirá recién al preparar el release.
+
+### Agregado
+
+- **Alta transaccional de juegos**: `npm run new-game` valida IDs e
+  identificadores reservados, escapa y exige un nombre visible único, aplica un
+  lock contra altas concurrentes, exige marcadores explícitos del registro,
+  soporta `--dry-run` y revierte carpetas parciales. Tests de integración
+  trabajan sobre repositorios temporales y cubren copy hostil, registro
+  inválido, duplicados, concurrencia y simulación sin escrituras.
+- **Matriz E2E acotada**: la suite completa corre en celular Chromium y los
+  casos `@responsive` se repiten en 320 px, celular horizontal, tablet,
+  escritorio y WebKit. Toda excepción de página o `console.error` falla el
+  caso que la produjo.
+- Tests dirigidos a validación de modos, persistencia defensiva, primitivas de
+  puntero/teclado y foco de diálogos.
+
+### Cambiado
+
+- **Registro diferido (ADR-011)**: cada juego separa `metadata.ts` del módulo
+  interactivo; el catálogo carga solo metadata/íconos y usa `import()` al abrir
+  la ruta. Una falla al evaluar la UI o lógica interactiva ya no impide iniciar
+  la app y el bundle inicial deja de crecer con toda la implementación del
+  catálogo.
+- CI y deploy comparten formato, sintaxis/lint, tipos, Vitest, build y E2E;
+  Pages write/OIDC quedan limitados al job de publicación y el build recibe
+  solo Pages read para configurar el artifact. Se declara el rango de Node
+  compatible y `npm run check` como puerta de calidad integral. Un audit de
+  dependencias de runtime bloquea vulnerabilidades altas/críticas y Dependabot
+  propone actualizaciones periódicas de npm y GitHub Actions.
+- PRD, README, reglas de contribución y ADR-010 se alinean con modos,
+  `howToPlay` obligatorio, temas, metadata separada y el flujo por branch/PR.
+
+### Corregido
+
+- Fronteras de datos y preferencias más defensivas: modos heredados del
+  prototipo ya no son válidos, el cierre de partida usa un resultado saneado e
+  idempotente y la persistencia contempla datos corruptos e invalida su caché
+  ante cambios de otras pestañas.
+- Interacciones compartidas más seguras ante repetición, cancelación de puntero
+  y diálogos: se evita ejecutar acciones después de deshabilitar un control y
+  se restaura el foco al cerrar una confirmación.
+
 ## [0.38.0] — Rediseño de navegación y flujo de entrada al juego
 
 A partir de feedback directo del product owner: sin barra inferior, portada
