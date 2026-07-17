@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -17,30 +15,40 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.13
           cache: npm
       - run: npm ci
+      - run: npm run audit
+      - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
-      - run: npm run build
+      - run: npm run build:bundle
       # E2E de humo contra el build que se va a publicar (PRD 5.6).
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e:run
         env:
           CI: 'true'
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

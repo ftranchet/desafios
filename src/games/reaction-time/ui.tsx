@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { useAutoFocus } from '../../core/ui';
 import {
+  REACTION_WINDOW_MS,
   buildResult,
   createRoundPlans,
   getModeParams,
@@ -10,8 +10,7 @@ import {
   type RoundPlan,
 } from './logic';
 
-const REACTION_WINDOW_MS = 1200;
-const FEEDBACK_DURATION_MS = 350;
+const FEEDBACK_DURATION_MS = 650;
 
 type Phase = 'intro' | 'waiting' | 'target' | 'decoy' | 'feedback';
 
@@ -25,9 +24,9 @@ const PHASE_BG: Record<Exclude<Phase, 'feedback'>, string> = {
 export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   const params = getModeParams(config.mode);
 
-  // Foco al área de juego: Espacio/Enter empiezan y responden desde el
-  // arranque, sin exigir un clic previo (RNF-11).
-  const containerRef = useAutoFocus<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startButtonRef = useRef<HTMLButtonElement>(null);
+  const startedRef = useRef(false);
   const plansRef = useRef<RoundPlan[]>([]);
   const outcomesRef = useRef<RoundOutcome[]>([]);
   const roundStartRef = useRef(0);
@@ -47,6 +46,13 @@ export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [roundIndex, setRoundIndex] = useState(0);
   const [lastOutcome, setLastOutcome] = useState<RoundOutcome | null>(null);
+
+  // En la introducción el único control enfocable es el botón real. Al
+  // comenzar (y al iniciar cada ronda), el foco vuelve al área de reacción.
+  useEffect(() => {
+    if (phase === 'intro') startButtonRef.current?.focus();
+    else if (phase === 'waiting') containerRef.current?.focus();
+  }, [phase]);
 
   function clearRoundTimers() {
     if (roundTimersRef.current.change !== null) window.clearTimeout(roundTimersRef.current.change);
@@ -118,6 +124,8 @@ export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   }
 
   function beginGame() {
+    if (startedRef.current) return;
+    startedRef.current = true;
     plansRef.current = createRoundPlans(config.mode, config.seed ?? Date.now());
     outcomesRef.current = [];
     sessionStartRef.current = performance.now();
@@ -132,59 +140,120 @@ export function ReactionTimeGame({ config, onFinish, audio }: GameProps) {
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.repeat) return;
+    // Un Enter/Espacio sobre el botón nativo de inicio genera su propio click.
+    // Ignorar eventos que burbujean evita empezar dos veces desde el root.
+    if (event.target !== event.currentTarget || event.repeat || phase === 'intro') return;
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
-      if (phase === 'intro') beginGame();
-      else handleTap();
+      handleTap();
     }
   }
 
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0 || event.isPrimary === false) return;
+    handleTap();
+  }
+
   const background = phase === 'feedback' ? feedbackBackground(lastOutcome) : PHASE_BG[phase];
+  const usesSolidBackground = phase === 'target' || phase === 'decoy' || phase === 'feedback';
+  const foreground = usesSolidBackground ? 'text-bg' : 'text-text-primary';
+  const isReactionPhase = phase === 'waiting' || phase === 'target' || phase === 'decoy';
+  const signal = isReactionPhase ? SIGNALS[phase] : null;
+  const announcement =
+    signal?.ariaLabel ??
+    (phase === 'feedback' && lastOutcome ? feedbackText(lastOutcome) : null);
 
   return (
     <div
-      ref={containerRef}
-      className={`flex h-full min-h-[70dvh] flex-col items-center justify-center gap-6 p-6 ${background}`}
-      role="button"
-      tabIndex={0}
-      aria-label="Área de juego: tocá cuando cambie a turquesa"
+      className={`relative flex h-full min-h-[70dvh] flex-col ${background}`}
       data-phase={phase}
       data-round={roundIndex}
-      onPointerDown={handleTap}
-      onKeyDown={handleKeyDown}
     >
-      {phase === 'intro' && (
-        <div className="flex flex-col items-center gap-4 text-center">
-          <p className="max-w-xs text-base text-text-primary">
-            Tocá la pantalla apenas se ponga <span className="text-accent-primary">turquesa</span>.
-            Si se pone <span className="text-accent-error">roja</span>, no toques.
+      <div
+        ref={containerRef}
+        className={`flex min-h-[70dvh] flex-1 flex-col items-center justify-center gap-6 p-6 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset ${
+          usesSolidBackground ? 'focus-visible:ring-bg' : 'focus-visible:ring-accent-primary'
+        }`}
+        role={isReactionPhase ? 'button' : undefined}
+        tabIndex={phase === 'intro' ? -1 : 0}
+        aria-label={isReactionPhase ? signal?.ariaLabel : undefined}
+        onPointerDown={handlePointerDown}
+        onKeyDown={handleKeyDown}
+      >
+        {phase === 'intro' && (
+          <div className="flex flex-col items-center gap-4 text-center">
+            <p className="max-w-xs text-base text-text-primary">
+              Tocá cuando aparezca <strong>¡Ahora!</strong> con un círculo. Si aparece una cruz con
+              <strong> No toques</strong>, esperá la ronda siguiente.
+            </p>
+            <button
+              ref={startButtonRef}
+              type="button"
+              className="min-h-touch min-w-touch rounded-lg bg-accent-primary px-6 py-3 font-display text-base font-bold text-bg transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              onClick={beginGame}
+            >
+              Empezar
+            </button>
+          </div>
+        )}
+
+        {phase !== 'intro' && (
+          <p className={`font-display text-sm font-semibold ${foreground}`}>
+            Ronda {roundIndex + 1} / {params.rounds}
           </p>
-          <button
-            type="button"
-            className="min-h-touch min-w-touch rounded-lg bg-accent-primary px-6 py-3 font-display text-base font-bold text-bg"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={beginGame}
-          >
-            Empezar
-          </button>
-        </div>
-      )}
+        )}
 
-      {phase !== 'intro' && (
-        <p className="font-display text-sm font-semibold text-text-secondary">
-          Ronda {roundIndex + 1} / {params.rounds}
-        </p>
-      )}
+        {signal && (
+          <div className={foreground}>
+            <span aria-hidden="true" className="block font-display text-5xl font-extrabold">
+              {signal.icon}
+            </span>
+            <p className="mt-2 font-display text-xl font-extrabold">{signal.title}</p>
+            <p className="mt-1 text-sm font-semibold">{signal.hint}</p>
+          </div>
+        )}
 
-      {phase === 'feedback' && lastOutcome && (
-        <p className="font-display text-xl font-extrabold text-text-primary">
-          {feedbackText(lastOutcome)}
+        {phase === 'feedback' && lastOutcome && (
+          <p className="font-display text-xl font-extrabold text-bg">
+            {feedbackText(lastOutcome)}
+          </p>
+        )}
+      </div>
+
+      {announcement && (
+        <p
+          role="status"
+          aria-live={signal ? 'assertive' : 'polite'}
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {announcement}
         </p>
       )}
     </div>
   );
 }
+
+const SIGNALS = {
+  waiting: {
+    icon: '…',
+    title: 'Esperá',
+    hint: 'No toques todavía',
+    ariaLabel: 'Esperá. No toques todavía.',
+  },
+  target: {
+    icon: '●',
+    title: '¡Ahora!',
+    hint: 'Tocá la pantalla',
+    ariaLabel: '¡Ahora! Tocá la pantalla.',
+  },
+  decoy: {
+    icon: '×',
+    title: 'No toques',
+    hint: 'Es un señuelo',
+    ariaLabel: 'No toques. Es un señuelo.',
+  },
+} as const;
 
 function feedbackBackground(outcome: RoundOutcome | null): string {
   if (!outcome) return 'bg-surface';
@@ -192,11 +261,12 @@ function feedbackBackground(outcome: RoundOutcome | null): string {
 }
 
 function feedbackText(outcome: RoundOutcome): string {
+  if (outcome.timing === 'early') return 'Muy pronto';
   if (outcome.isDecoy) {
     return outcome.correct ? '¡Bien esquivado!' : 'Era señuelo';
   }
   if (!outcome.correct) {
-    return outcome.reactionMs === null ? 'Muy lento' : 'Muy pronto';
+    return 'Muy lento';
   }
   return `${outcome.reactionMs} ms`;
 }

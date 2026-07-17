@@ -1,7 +1,9 @@
 // Todos los textos visibles al usuario, centralizados acá (RNF-07) para
 // facilitar una futura traducción. Español con voseo (Argentina, PRD 10.6).
 
-export const CATEGORY_LABELS: Record<string, string> = {
+import type { Category } from '../core/contract';
+
+export const CATEGORY_LABELS: Record<Category, string> = {
   memory: 'Memoria',
   logic: 'Lógica',
   math: 'Matemática',
@@ -36,6 +38,7 @@ export const strings = {
     howToPlay: '¿Cómo se juega?',
   },
   game: {
+    loading: 'Cargando juego…',
     quit: 'Salir',
     quitConfirmTitle: '¿Salir de la partida?',
     quitConfirmBody: 'Se va a perder el progreso de esta partida.',
@@ -78,11 +81,11 @@ export const strings = {
       'Se preselecciona al entrar a cualquier juego. "Última" recuerda el último modo que jugaste en cada juego.',
     defaultDifficultyLast: 'Última',
     exportData: 'Exportar datos',
-    exportDataHint: 'Descargá tus partidas y récords en un archivo JSON.',
+    exportDataHint: 'Descargá tus partidas, récords y preferencias en un archivo JSON.',
     clearData: 'Borrar todos los datos',
     clearConfirmTitle: '¿Borrar todos los datos?',
     clearConfirmBody:
-      'Se van a eliminar todos los récords, partidas e historial. Esta acción no se puede deshacer.',
+      'Se van a eliminar récords, partidas, favoritos y preferencias. Esta acción no se puede deshacer.',
     clearConfirmAccept: 'Borrar todo',
     clearConfirmCancel: 'Cancelar',
     clearConfirmFinalTitle: 'Confirmá de nuevo',

@@ -4,17 +4,24 @@
   "version": "0.38.0",
   "type": "module",
   "license": "GPL-3.0-only",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && npm run build:bundle",
+    "build:bundle": "vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "node --check scripts/new-game.mjs && node --check scripts/new-game.test.mjs && node --check scripts/generate-icons.mjs && eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "audit": "npm audit --omit=dev --audit-level=high",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "new-game": "node scripts/new-game.mjs"
+    "test:e2e": "npm run build && npm run test:e2e:run",
+    "test:e2e:run": "playwright test",
+    "new-game": "node scripts/new-game.mjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build:bundle && npm run test:e2e:run"
   },
   "dependencies": {
     "@fontsource/inter": "^5.1.0",

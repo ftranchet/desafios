@@ -55,6 +55,6 @@ export default defineConfig({
     // Node por defecto (lógica pura); los tests que necesitan DOM (smoke de
     // render, persistencia) lo piden por archivo con `@vitest-environment jsdom`.
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
   },
 });

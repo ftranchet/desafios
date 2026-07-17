@@ -27,8 +27,8 @@ const TAP_THRESHOLD = 10; // px: por debajo de esto un toque cuenta como "tap" (
 const FLICK_THRESHOLD = 40; // px hacia abajo: un envión que dispara la caída rápida
 
 // Colores del sistema — el canvas necesita valores de color reales, no puede
-// consumir clases de Tailwind. Se resuelven del tema activo al montar
-// (ADR-009), en vez de copiar los hex de tailwind.config.ts a mano. Una
+// consumir clases de Tailwind. Se resuelven del tema activo (ADR-009), en vez
+// de copiar los hex de tailwind.config.ts a mano. Una
 // entrada por tipo de pieza, en el orden de PIECE_ORDER (I,O,T,S,Z,J,L):
 // usa los 7 colores "vivos" de la paleta.
 interface BoardColors {
@@ -133,13 +133,16 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     lastCol: number;
     moved: boolean;
   } | null>(null);
-  // Paleta del tema activo, resuelta una vez al montar: el tema no puede
-  // cambiar en medio de una partida (se elige en Configuración).
-  const colorsRef = useRef<BoardColors>(readBoardColors());
+  // Paleta del tema activo. `system` puede cambiar mientras la partida sigue
+  // abierta, por eso se actualiza al mutar data-theme en <html>. useState usa
+  // inicializador perezoso: getComputedStyle no se repite en cada tick/render.
+  const [initialColors] = useState<BoardColors>(readBoardColors);
+  const colorsRef = useRef<BoardColors>(initialColors);
 
   const [score, setScore] = useState(0);
   const [stage, setStage] = useState(1);
   const [nextType, setNextType] = useState<PieceType | undefined>(undefined);
+  const [, setPaletteRevision] = useState(0);
 
   function render(state: CascadaState) {
     stateRef.current = state;
@@ -187,6 +190,7 @@ export function CascadaGame({ config, onFinish }: GameProps) {
   }
 
   useEffect(() => {
+    colorsRef.current = readBoardColors();
     const dpr = window.devicePixelRatio || 1;
     const canvas = canvasRef.current;
     if (canvas) {
@@ -199,9 +203,24 @@ export function CascadaGame({ config, onFinish }: GameProps) {
     const initial = createInitialState(config.mode, config.seed ?? Date.now());
     sessionStartRef.current = performance.now();
     render(initial);
+
+    const themeObserver = new MutationObserver(() => {
+      colorsRef.current = readBoardColors();
+      const current = stateRef.current;
+      const currentCtx = canvasRef.current?.getContext('2d');
+      if (current && currentCtx) drawState(currentCtx, current, colorsRef.current);
+      // La vista previa también usa la paleta, fuera del canvas.
+      setPaletteRevision((revision) => revision + 1);
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
     scheduleTick(initial.intervalMs);
 
     return () => {
+      themeObserver.disconnect();
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -56,6 +56,11 @@ export default {
       // entre lg y xl ya alcanza para títulos, este tamaño es exclusivo de
       // lo que necesita pesar más que cualquier título de sección.
       '2xl': ['2.75rem', { lineHeight: '1.15' }],
+      // Escala de estímulos de juego. Estas clases ya se consumen en Stroop,
+      // N-back y Tiempo de reacción; declararlas evita que Tailwind las omita
+      // por haber reemplazado (en vez de extendido) la escala predeterminada.
+      '3xl': ['clamp(2rem, 12vw, 3rem)', { lineHeight: '1.05' }],
+      '5xl': ['clamp(3rem, 16vw, 3.5rem)', { lineHeight: '1' }],
     },
     extend: {
       screens: {

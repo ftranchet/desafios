@@ -24,15 +24,16 @@ const SEED = 42;
 describe('smoke de render: todos los juegos montan en todos sus modos', () => {
   for (const game of GAMES) {
     for (const mode of game.metadata.modes) {
-      it(`${game.metadata.id} en modo ${mode.id} monta y desmonta`, () => {
-        const { unmount } = render(
-          <game.Component
+      it(`${game.metadata.id} en modo ${mode.id} carga, monta y desmonta`, async () => {
+        const { Component } = await game.load();
+        const { container, unmount } = render(
+          <Component
             config={{ mode: mode.id, seed: SEED }}
             onFinish={() => {}}
             onQuit={() => {}}
           />,
         );
-        expect(document.body.textContent).toBeDefined();
+        expect(container.firstElementChild).not.toBeNull();
         unmount();
       });
     }

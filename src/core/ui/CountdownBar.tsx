@@ -11,11 +11,11 @@ interface CountdownBarProps {
 
 export function CountdownBar({ durationMs, running, resetKey }: CountdownBarProps) {
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
+    <div aria-hidden="true" className="h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
       {running && (
         <div
           key={resetKey}
-          className="h-full rounded-full bg-accent-primary"
+          className="countdown-bar-fill h-full rounded-full bg-accent-primary"
           style={{ animation: `shrink-width ${durationMs}ms linear forwards` }}
         />
       )}

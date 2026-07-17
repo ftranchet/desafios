@@ -1,9 +1,10 @@
 # PRD — Desafíos Mentales
 
-**Documento de requisitos de producto (PRD)** · Versión 0.10 · Julio 2026
-**Estado:** Fase 0, Fase 1 y Fase 2 entregadas. Usabilidad táctil/teclado auditada (10.7), shell robustecido (5.6), catálogo listo para escalar (ADR-005/006, generador, E2E), sistema de dificultad renovado (sección 7, ADR-007) y pulido visual con color por categoría y movimiento (ADR-008). Catálogo en curso de expansión con los clones de LinkedIn Games/Elevate (sección 11.3): ver `CHANGELOG.md` para el detalle juego por juego, más actualizado que esta tabla de versiones.
-**Destino:** este documento vive en `docs/PRD.md` del repositorio y es la fuente de verdad para las sesiones de desarrollo con Claude Code.
+**Documento de requisitos de producto (PRD)** · Versión 0.13 · Julio 2026
+**Estado:** Fases 0–2 entregadas y catálogo de 28 juegos. El sistema vigente incluye dificultades y modos (ADR-007), temas claro/oscuro (ADR-009), portada explicativa (ADR-010), registro con carga diferida y alta transaccional (ADR-011), tests de contrato y smoke E2E responsive. La sección 14 conserva el plan histórico; no representa trabajo pendiente.
+**Fuentes:** este PRD fija requisitos y arquitectura; `docs/decisions/` registra decisiones y sus cambios; `docs/design-system.md` gobierna lo visual; `CHANGELOG.md` describe el estado entregado juego por juego. Ante una contradicción, manda la decisión aceptada más reciente y después el código verificado por tests.
 
+<!-- prettier-ignore -->
 | Versión | Fecha      | Cambios                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0.1     | Julio 2026 | Borrador inicial                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -18,12 +19,13 @@
 | 0.10    | Julio 2026 | El encabezado de este documento había quedado desactualizado (seguía diciendo "0.9" y describía un catálogo de 8 juegos) mientras el catálogo creció a más de 25 en sesiones sucesivas — las secciones 7, 11 y 11.3 sí se habían ido actualizando en el camino, solo el encabezado no. Se corrige y se deja constancia de que `CHANGELOG.md` es la fuente más al día para el estado juego por juego: este documento fija arquitectura y decisiones, no un inventario en tiempo real            |
 | 0.11    | Julio 2026 | **ADR-009 — sistema de diseño**: los tokens de color pasan a una capa semántica sobre variables CSS con dos temas — claro (default, estilo Elevate) y oscuro (la paleta histórica) — más la opción "Sistema"; sección 10.1 actualizada. Nace `docs/design-system.md` como fuente única de referencia visual (roles de tokens, layout responsive, anatomía de componentes)                                                                                                                     |
 | 0.12    | Julio 2026 | Rediseño de navegación y flujo de entrada (feedback del product owner): sin barra inferior — Estadísticas/Configuración por botones-ícono del encabezado del catálogo, con "Volver" etiquetado; desaparece la franja "Seguir jugando"; **ADR-010** — portada de juego con `howToPlay` en el contrato; dificultad por defecto en Configuración (RF-03 actualizado); sección 10.7.5 actualizada                                                                                              |
+| 0.13    | Julio 2026 | Auditoría de robustez y escalabilidad: **ADR-011** separa metadatos y carga diferida; el generador valida IDs/copy, soporta `--dry-run` y revierte altas parciales; CI cubre formato y una matriz E2E acotada con Chromium/WebKit; se corrigen contradicciones históricas de este documento.                                                                                                                                            |
 
 ---
 
 ## 1. Visión
 
-**Desafíos Mentales** es una colección de juegos mentales para celular —matemática, lógica, memoria, velocidad, razonamiento espacial— con una estética **minimalista y moderna**, construida como **sistema modular y extensible**: cada juego es un módulo independiente que se enchufa a una plataforma común (el "shell") que resuelve navegación, niveles de dificultad, puntajes y estadísticas.
+**Desafíos Mentales** es una colección de juegos mentales para celular —matemática, lógica, memoria, velocidad, razonamiento espacial— con una estética **minimalista y moderna**, construida como **sistema modular y extensible**: cada juego es un módulo independiente que se enchufa a una plataforma común (el "shell") que resuelve navegación, dificultades y modos, puntajes y estadísticas.
 
 El proyecto persigue tres propósitos simultáneos:
 
@@ -43,11 +45,12 @@ La evidencia científica disponible indica que los juegos de "entrenamiento cere
 
 ### 2.1 Objetivos de la versión 1
 
+<!-- prettier-ignore -->
 | ID  | Objetivo                                                                                                                              |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| O1  | Shell funcional: catálogo de juegos, ejecución, 5 niveles de dificultad, puntajes y estadísticas locales                              |
-| O2  | Arquitectura donde **agregar un juego nuevo no requiere modificar el shell** (solo crear una carpeta y registrar una línea)           |
-| O3  | Tres juegos publicados que validen el contrato técnico y las prioridades del catálogo                                                 |
+| O1  | Shell funcional: catálogo, ejecución, tres dificultades y modos especiales por juego, puntajes y estadísticas locales                |
+| O2  | Arquitectura donde **agregar un juego no requiere modificar el shell**; el generador crea el módulo y actualiza el registro de forma segura |
+| O3  | Catálogo amplio que valide el contrato con distintos arquetipos; actualmente 28 juegos                                                 |
 | O4  | Instalable en el celular como aplicación web progresiva (Progressive Web App), funcionando sin conexión                               |
 | O5  | Repositorio público con documentación suficiente para que un tercero replique el flujo completo con Claude Code                       |
 | O6  | Identidad visual minimalista consistente entre juegos construidos en sesiones distintas, garantizada por tokens de diseño compartidos |
@@ -74,8 +77,8 @@ Cada propuesta de funcionalidad nueva se contrasta contra esta lista antes de en
 Casos de uso centrales:
 
 1. Abrir la app y empezar una partida en menos de 10 segundos.
-2. Elegir juego, elegir nivel, jugar, ver resultado y récord.
-3. Consultar estadísticas: récords por juego y nivel, historial reciente, racha de días jugados.
+2. Elegir juego, elegir dificultad o modo, jugar, ver resultado y récord.
+3. Consultar estadísticas: récords por juego y modo, historial reciente, racha de días jugados.
 4. Jugar sin conexión a internet.
 5. Exportar los propios datos como archivo JSON (transparencia y portabilidad).
 
@@ -137,10 +140,10 @@ Casos de uso centrales:
 └─────────────────────────────────────────────┘
 ```
 
-- **Catálogo (home):** grilla de juegos con su ícono, filtro por categoría y acceso al último jugado.
-- **Pantalla de juego:** monta el componente del juego, muestra encabezado común (nombre, nivel, pausa, salir).
+- **Catálogo (home):** grilla de juegos con ícono, filtro por categoría, favoritos y accesos a estadísticas/configuración.
+- **Pantalla de juego:** portada explicativa, selector de modo, carga diferida del componente, encabezado común y salida con confirmación.
 - **Resultado de partida:** puntaje obtenido, récord previo, indicación de récord nuevo, botón de revancha.
-- **Estadísticas:** récords por juego y nivel, historial de últimas partidas, racha de días.
+- **Estadísticas:** récords por juego y modo, historial de últimas partidas y racha de días.
 - **Configuración:** sonido, vibración, reducción de animaciones, exportar datos (JSON), borrar datos.
 
 ### 5.2 Contrato de módulo de juego (pieza central del sistema)
@@ -160,7 +163,6 @@ export interface GameMode {
   id: ModeId;
   label: string; // "Fácil", "Tranquilo"... — siempre desde core/modes.ts (buildModes)
   description?: string; // Una línea, solo para los modos especiales
-  params: Record<string, number | string | boolean>;
 }
 
 export interface GameMetadata {
@@ -168,8 +170,9 @@ export interface GameMetadata {
   name: string; // Nombre visible, en español
   category: Category;
   description: string; // Una línea, en español
+  howToPlay: string; // Objetivo + interacción para la portada (ADR-010)
   version: string;
-  modes: GameMode[]; // easy/medium/hard obligatorios; zen/progressive opcionales (ADR-007)
+  modes: readonly GameMode[]; // easy/medium/hard obligatorios; especiales opcionales
   estimatedSeconds: number; // Duración típica de una partida
   icon: string; // Ruta al ícono vectorial del juego
 }
@@ -210,6 +213,11 @@ export interface GameModule {
   metadata: GameMetadata;
   Component: React.ComponentType<GameProps>;
 }
+
+export interface GameDefinition {
+  metadata: GameMetadata; // Disponible al construir el catálogo
+  load(): Promise<GameModule>; // UI y lógica cargadas al abrir la ruta
+}
 ```
 
 Notas de diseño:
@@ -222,16 +230,15 @@ Notas de diseño:
 ### 5.3 Registro de juegos
 
 ```typescript
-// src/core/registry.ts
-import { quickMath } from '../games/quick-math';
-import { cifras } from '../games/cifras';
-import { snake } from '../games/snake';
+// src/core/registry.ts (forma simplificada; los marcadores son del generador)
+import { metadata as quickMathMetadata } from '../games/quick-math/metadata';
+// new-game:metadata-imports
 
-export const GAMES: GameModule[] = [
-  quickMath,
-  cifras,
-  snake,
-  // Agregar un juego = importar y sumar una línea acá. Nada más.
+export const GAMES: readonly GameDefinition[] = [
+  defineGame(quickMathMetadata, () =>
+    import('../games/quick-math').then(({ default: game }) => game),
+  ),
+  // new-game:entries
 ];
 ```
 
@@ -242,7 +249,7 @@ export const GAMES: GameModule[] = [
 export interface StorageService {
   saveResult(result: GameResult): void;
   getResults(gameId?: string): GameResult[];
-  getBest(gameId: string, level: number): GameResult | null;
+  getBest(gameId: string, mode: ModeId): GameResult | null;
   getStreak(): number; // Días consecutivos con al menos una partida
   exportAll(): string; // JSON completo
   clearAll(): void;
@@ -251,37 +258,39 @@ export interface StorageService {
 
 ### 5.5 Flujo para agregar un juego nuevo (repetible en una sesión de Claude Code)
 
-**Atajo (v0.7):** `npm run new-game <game-id> ["Nombre visible"]` genera los pasos 1, 2, 4 y 5 como esqueleto compilable, testeado y ya registrado — con los patrones de interacción de la sección 10.7 y el kit de ADR-005 aplicados. Queda reemplazar la mecánica de ejemplo, el ícono y los metadatos.
+**Atajo (ADR-011):** `npm run new-game -- <game-id> ["Nombre visible"] --dry-run` valida ID, nombre visible único y registro sin escribir. Al repetir sin `--dry-run`, un lock exclusivo serializa altas concurrentes; prepara todos los archivos y la nueva versión del registro antes de publicar cambios y, si una operación falla, revierte la carpeta parcial.
 
 1. Crear la carpeta `src/games/<game-id>/`.
-2. Implementar `logic.ts` (funciones puras, con semilla), `ui.tsx` (componente que implementa `GameProps`) e `index.ts` (exporta el `GameModule`).
+2. Implementar `logic.ts` (funciones puras, con semilla), `ui.tsx` (`GameProps`), `metadata.ts` e `index.ts` (export nombrado y default del `GameModule`).
 3. Dibujar el ícono vectorial del juego (sección 10.4).
 4. Escribir `logic.test.ts` con semilla fija.
-5. Registrar el módulo en `src/core/registry.ts` (una línea).
-6. Verificar la checklist de terminado (sección 12.3).
+5. Dejar que el generador registre metadata + loader mediante sus marcadores; no editar el registro a mano durante un alta normal.
+6. Reemplazar todo copy de esqueleto: el test de contrato lo rechaza deliberadamente para que un placeholder no llegue a producción.
+7. Verificar la checklist de terminado (sección 12.3).
 
-**Criterio de éxito arquitectónico:** este flujo se completa sin tocar ningún archivo del shell.
+**Criterio de éxito arquitectónico:** el autor no toca el shell ni edita core a mano; el único cambio de core es la actualización controlada del registro que realiza el generador.
 
 ### 5.6 Garantías de robustez del shell (v0.6)
 
 El objetivo del sistema es que agregar juegos sea de bajo riesgo. Estas garantías, verificadas por tests, definen qué puede romper un juego defectuoso — y qué no puede romper jamás:
 
-1. **Aislamiento de fallas.** El componente de cada juego se monta dentro de un _error boundary_ (`GameErrorBoundary`): una excepción durante el render o un ciclo de vida del juego muestra un panel de falla con salida al catálogo, con el shell, los récords y la navegación intactos. El peor caso de un juego roto es ese panel, nunca una pantalla en blanco.
-2. **Frontera desconfiada.** El shell no confía en el `GameResult` que emite un juego: normaliza `gameId` y `level` con lo que él mismo montó (un `buildResult` copiado de otro juego no puede corromper récords ajenos), y la capa de persistencia rechaza resultados sin forma válida y normaliza números no finitos o negativos (un puntaje `NaN` no envenena las comparaciones de récord).
-3. **Persistencia acotada y tolerante.** El historial persiste con esquema versionado (con lectura del formato legado), está acotado a `MAX_STORED_RESULTS` con retención del mejor resultado por (juego, nivel) — el historial es finito, los récords no caducan —, la lectura descarta entradas corruptas en vez de romper, y la escritura tolera cuota llena o modo privado sin tirar excepción: fallar al persistir jamás rompe el cierre de una partida.
-4. **Contrato verificado por tests, automáticamente.** `registry.test.ts` valida los metadatos de todos los juegos registrados (id único en kebab-case, estructura de modos de ADR-007 con labels canónicos, textos visibles no vacíos, ícono, duración estimada) y `registry.render.test.tsx` monta el componente de cada juego con semilla fija **en cada modo que declara**. **Registrar un juego es quedar cubierto por la batería de tests del shell** — sin escribir ni un test extra.
-5. **CI en ramas.** Los checks completos (formato, lint, tipos, tests, build) corren en cada push a cualquier rama y en cada pull request (`ci.yml`), no solo en el deploy de `main` (`deploy.yml`): una rama rota se entera antes de mergear.
+1. **Carga aislada.** El catálogo importa metadata liviana; UI y lógica se cargan con `import()` al abrir el juego (ADR-011). Fallas de evaluación o descarga quedan dentro del flujo de recuperación de esa ruta y no impiden iniciar toda la app. `GameErrorBoundary` cubre render y ciclos de vida; eventos y promesas se validan en sus fronteras porque React no los captura.
+2. **Frontera desconfiada.** El shell normaliza una única vez el resultado desconocido, fija `gameId`/modo desde la sesión activa, rechaza formas inválidas y usa el mismo objeto saneado para persistencia, récord y presentación. El cierre de sesión es idempotente.
+3. **Persistencia acotada y tolerante.** El historial usa esquema versionado, lectura defensiva, retención finita de resultados y récords, copias inmutables y sincronización entre pestañas. Una falla de cuota o modo privado no debe impedir terminar una partida.
+4. **Contrato verificado por tests.** `registry.test.ts` valida metadata, copy real, modos y loaders; `registry.render.test.tsx` carga y monta cada módulo en cada modo declarado. Cada juego conserva además tests propios de lógica: el smoke del registro no los reemplaza.
+5. **CI en ramas.** Formato, sintaxis/lint, tipos, Vitest, build y E2E corren en ramas/pull requests y antes del deploy. La matriz completa se ejecuta una vez en celular Chromium; casos `@responsive` se repiten en 320 px, horizontal, tablet, escritorio y WebKit.
 
 ---
 
 ## 6. Requisitos funcionales
 
+<!-- prettier-ignore -->
 | ID    | Requisito                                                                                                                                                                         |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | RF-01 | El catálogo muestra todos los juegos registrados con ícono, nombre, categoría, descripción y récord personal                                                                      |
 | RF-02 | El catálogo permite filtrar por categoría                                                                                                                                         |
 | RF-03 | Antes de iniciar, el usuario elige dificultad (Fácil/Medio/Difícil) o un modo especial (Tranquilo/Progresivo) si el juego lo declara, desde la portada del juego (ícono, descripción y "¿Cómo se juega?" — ADR-010). Se preselecciona el último modo jugado, o la dificultad por defecto elegida en Configuración si el usuario fijó una |
-| RF-04 | Durante la partida hay botón de pausa (si el juego lo admite) y de salir con confirmación                                                                                         |
+| RF-04 | Durante la partida hay una salida siempre disponible con confirmación de abandono; cada juego decide si su mecánica necesita pausa                                                |
 | RF-05 | Al terminar, se muestra puntaje, récord previo del modo y si hubo récord nuevo (el modo Tranquilo no compite: sin récords)                                                        |
 | RF-06 | Todo resultado (incluidos abandonos) se persiste localmente                                                                                                                       |
 | RF-07 | La pantalla de estadísticas muestra récords por juego/modo, últimas 20 partidas y racha de días                                                                                   |
@@ -293,7 +302,7 @@ El objetivo del sistema es que agregar juegos sea de bajo riesgo. Estas garantí
 
 ## 7. Sistema de dificultad y modos (v0.8, ADR-007)
 
-**Tres dificultades** — Fácil, Medio, Difícil — definidas por **parámetros** en los metadatos (no por lógica condicional dispersa), más **dos modos especiales** que cada juego declara solo si tienen sentido en su mecánica:
+**Tres dificultades** — Fácil, Medio, Difícil — más **dos modos especiales** que cada juego declara solo si tienen sentido en su mecánica. `metadata.ts` publica únicamente la lista canónica construida por `buildModes()`; los parámetros concretos permanecen dentro de la lógica del juego para que el catálogo no tenga que cargarla (ADR-011):
 
 - **Tranquilo (`zen`)**: sin relojes que corran hacia atrás y sin game over. Cada juego lo interpreta: preguntas sin timer; en Snake chocar reacomoda la víbora y se sigue jugando; en Cascada el top-out limpia el tablero; en Simon fallar repite la ronda. **No compite**: sin récords ni "¡Récord nuevo!" — la partida queda en el historial y nada más.
 - **Progresivo (`progressive`)**: la partida recorre **10 grados** de dificultad. Los grados 1–8 interpolan el espacio Fácil→Difícil y los grados 9–10 **extrapolan más allá del Difícil actual** (curva común en `core/modes.ts`: `progressiveT`, `lerp`). En juegos de supervivencia el grado sube por logro (comidas, líneas) y se termina al perder; en juegos de preguntas la sesión es una rampa de longitud fija. Récord natural: puntaje con multiplicador por grado + métrica `maxStage` ("¿hasta dónde llegaste?").
@@ -313,14 +322,14 @@ Parámetros que escalan, ejemplos del patrón:
 
 Robustez para juegos nuevos (requisito del product owner): la estructura se declara con `buildModes()` (labels y orden canónicos — imposible desviarse), el test de contrato valida los modos de todo juego registrado, y el smoke de render monta cada juego **en cada modo que declara**.
 
-Cobertura del catálogo actual: **Aritmética, Snake, Cascada, Simon, Secuencias y Estimación** declaran los 5 modos (en Cascada el top-out de Tranquilo limpia el tablero; en Simon fallar repite la ronda y el Progresivo acelera la reproducción por grado). **Cifras** declara Tranquilo pero no Progresivo (es una ronda única de pensamiento, no un juego de rampa) y **Tiempo de reacción** solo las 3 dificultades (sin reloj no hay juego) — la demostración de que los modos se declaran donde tienen sentido.
+La cobertura exacta se obtiene del registro y sus tests, no de una lista copiada en este documento. Regla vigente: todos los juegos declaran Fácil/Medio/Difícil; Tranquilo y Progresivo aparecen únicamente cuando la mecánica define un comportamiento completo y testeado para ellos.
 
 ---
 
 ## 8. Puntaje, récords y estadísticas
 
-- Récord por combinación (juego, nivel).
-- Historial de las últimas partidas con fecha, nivel, puntaje y duración.
+- Récord por combinación (juego, modo); Tranquilo no compite.
+- Historial de las últimas partidas con fecha, modo, puntaje y duración.
 - **Racha de días:** días consecutivos con al menos una partida completada. Sin castigos ni presión: si se corta, se corta.
 - Exportación de todos los datos como JSON descargable (RF-08).
 - Sin comparación entre usuarios ni tablas globales (no-objetivo v1: sin backend).
@@ -329,6 +338,7 @@ Cobertura del catálogo actual: **Aritmética, Snake, Cascada, Simon, Secuencias
 
 ## 9. Requisitos no funcionales
 
+<!-- prettier-ignore -->
 | ID     | Requisito                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | RNF-01 | Funciona sin conexión tras la primera carga                                                                                                                                                                                                                                                                                                                                                                           |
@@ -337,7 +347,7 @@ Cobertura del catálogo actual: **Aritmética, Snake, Cascada, Simon, Secuencias
 | RNF-04 | Objetivos táctiles de al menos 44 píxeles                                                                                                                                                                                                                                                                                                                                                                             |
 | RNF-05 | Contraste de color nivel AA; la información nunca depende solo del color. La paleta se valida contra este requisito antes de fijarse (ADR-003)                                                                                                                                                                                                                                                                        |
 | RNF-06 | Opción de reducir animaciones (respeta también la preferencia del sistema operativo)                                                                                                                                                                                                                                                                                                                                  |
-| RNF-07 | Idioma español (Argentina); todos los textos centralizados en un archivo para facilitar futura traducción                                                                                                                                                                                                                                                                                                             |
+| RNF-07 | Idioma español (Argentina). Copy compartido centralizado en `src/i18n/es.ts`; copy específico de cada juego colocado en su módulo, sin obligar a tocar shell/core para traducir o agregar una mecánica                                                                                                                                                                                                                    |
 | RNF-08 | Privacidad total: cero telemetría, cero cuentas, cero datos fuera del dispositivo                                                                                                                                                                                                                                                                                                                                     |
 | RNF-09 | Compatible con Chrome y Safari móviles (últimas dos versiones); usable también en escritorio                                                                                                                                                                                                                                                                                                                          |
 | RNF-10 | Licencia GNU General Public License v3.0 ✓                                                                                                                                                                                                                                                                                                                                                                            |
@@ -347,7 +357,7 @@ Cobertura del catálogo actual: **Aritmética, Snake, Cascada, Simon, Secuencias
 
 ## 10. Dirección visual y sonora
 
-**Identidad: minimalismo moderno sobre tema oscuro.** ✓ (v0.3 — reemplaza el pixel art de la v0.2, que no funcionaba estéticamente; ver ADR-004). La personalidad viene de una paleta acotada y una tipografía sobria con jerarquía clara por peso; la sensación de calidad viene de la disciplina minimalista: pocos elementos por pantalla, mucho espacio vacío, geometría suave y consistente. Nada de ruido visual: ni sprites recargados, ni bordes duros, ni decoración que no aporte información.
+**Identidad: minimalismo moderno con temas claro y oscuro.** ✓ El tema claro es el default y el oscuro conserva la paleta histórica (ADR-009). La personalidad viene de una paleta acotada y una tipografía sobria con jerarquía clara por peso; la calidad depende de pocos elementos por pantalla, espacio útil, geometría suave y consistencia. Nada de decoración que no aporte información.
 
 ### 10.1 Sistema de tokens (contrato visual)
 
@@ -359,14 +369,14 @@ Los tokens viven en la configuración de Tailwind (`tailwind.config`). Ningún j
 
 ### 10.2 Tipografía por roles
 
-- **Una sola familia** (candidata: "Inter", de Google Fonts, self-hosted). "Display/HUD" y "cuerpo" son roles de peso y tamaño dentro de la misma tipografía, no fuentes distintas — títulos, puntajes y marcadores en pesos bold/extrabold; descripciones, instrucciones y configuración en peso regular/semibold.
+- **Una sola familia:** Inter self-hosted mediante `@fontsource`. "Display/HUD" y "cuerpo" son roles de peso y tamaño dentro de la misma tipografía, no fuentes distintas — títulos, puntajes y marcadores en pesos bold/extrabold; descripciones, instrucciones y configuración en peso regular/semibold.
 - Escala tipográfica corta y explícita (4-5 tamaños), definida en los tokens.
 
 ### 10.3 Renderizado y movimiento
 
 - Geometría suave: esquinas redondeadas consistentes en tarjetas, botones y diálogos (sin bordes duros a 0).
 - Superficies livianas: bordes finos o directamente diferencia de tono entre fondo/superficie, sin recargar de contorno.
-- Sin gradientes ni sombras difusas — como mucho, una sombra sutil para separar un panel flotante (por ejemplo un diálogo de confirmación) del resto.
+- Sin gradientes decorativos arbitrarios. La elevación usa solo `shadow-card` y `shadow-raised`, tokenizadas por tema; un tercer nivel de sombra exige revisar la jerarquía.
 - Animaciones con curvas suaves (`ease`), no a pasos. Siempre subordinadas a RNF-06: con "reducir animaciones" activo, se desactivan.
 
 ### 10.4 Elemento distintivo (signature)
@@ -454,15 +464,13 @@ La secuencia es deliberada: la prioridad del product owner es Tetris, Snake y ma
 
 Las **mecánicas** de juego en general no gozan de protección de derechos de autor, pero los **nombres, marcas registradas y la estética** sí pueden estarlo. El caso Tetris Holding contra Xio Interactive (2012) llegó a proteger incluso el aspecto visual de Tetris. Regla práctica del proyecto: mecánicas inspiradas sí; **nombres, gráficos, sonidos y paletas siempre originales**. Por eso el clon de Tetris se llama "Cascada" y el estilo Wordle se llama "Palabra del día". Esto es una consideración práctica estándar, no asesoramiento legal.
 
-### 11.3 Backlog nuevo: clones de LinkedIn Games y Elevate
+### 11.3 Plan de juegos inspirados en LinkedIn Games y Elevate
 
-Propuesta (julio 2026, sin implementar todavía): 9 juegos inspirados en los
-minijuegos de LinkedIn (Queens, Tango, Zip, Patches, Mini Sudoku) y los daily
-puzzles de Elevate (Daily Crossword, Daily Colorlink, Daily Crossmath, Daily
-Wordbend). Análisis en profundidad, nombres propuestos, estrategia de
-generación por juego y orden de implementación sugerido en
-`docs/game-plans/linkedin-elevate-clones.md` — no se repite acá para no
-duplicar mantenimiento.
+`docs/game-plans/linkedin-elevate-clones.md` conserva el análisis y orden
+propuesto. Parte del plan ya fue entregada —por ejemplo Minisudoku, Coronas y
+Sol y luna—, por lo que no debe leerse como inventario de pendientes. El estado
+real de cada entrega vive en `CHANGELOG.md`; el plan conserva decisiones de
+mecánica, nombres originales y estrategia de generación.
 
 ---
 
@@ -472,13 +480,13 @@ duplicar mantenimiento.
 
 - **`CLAUDE.md`** (raíz): instrucciones permanentes para el agente. Contenido mínimo: leer `docs/PRD.md` antes de tareas de producto; respetar el contrato de la sección 5.2 y los tokens de la sección 10.1 sin modificarlos salvo decisión explícita; convenciones de la sección 12.2; correr lint, tests y build antes de dar por cerrada una tarea; una unidad de valor por sesión.
 - **`docs/PRD.md`**: este documento.
-- **`docs/decisions/`**: registros de decisiones de arquitectura (Architecture Decision Records, ADR). Un archivo breve por decisión con formato: contexto → opciones → decisión → consecuencias. Iniciales: ADR-001 (stack), ADR-002 (contrato de módulo), ADR-003 (paleta y tipografía definitivas).
-- **`README.md`**: presentación del proyecto, captura de pantalla, enlace a la app publicada, cómo correr localmente, cómo agregar un juego, licencia.
+- **`docs/decisions/`**: registros de decisiones de arquitectura (ADR-001 a ADR-011). Un archivo por decisión con contexto, decisión y consecuencias; las enmiendas enlazan la ADR que reemplaza o ajusta el criterio anterior.
+- **`README.md`**: presentación, enlace a la app publicada, entorno local, alta segura de juegos, flujo por pull request y licencia.
 
 ### 12.2 Convenciones de código
 
 - TypeScript en modo estricto; prohibido `any`.
-- Código, archivos e identificadores en inglés; textos visibles al usuario en español, centralizados. ✓
+- Código, archivos e identificadores en inglés; textos visibles al usuario en español. Copy del shell en `src/i18n/es.ts`; copy propio de una mecánica en su módulo. ✓
 - Lógica de juego en funciones puras (`logic.ts`), sin dependencias de React ni del navegador.
 - Toda aleatoriedad pasa por el servicio de semilla del core.
 - Colores, fuentes y escalas solo desde los tokens de Tailwind (sección 10.1).
@@ -494,13 +502,13 @@ duplicar mantenimiento.
 - [ ] Funciona con toque y con mouse/teclado, aplicando los patrones de interacción de la sección 10.7 (acción en `pointerdown`, auto-foco al montar, atajos de teclado, keypad propio si pide números).
 - [ ] Sin errores de tipos ni de linter; build de producción pasa.
 - [ ] Tests de `logic.ts` con semilla fija pasan (mínimo: generación de partida, validación de jugada, cálculo de puntaje).
-- [ ] Registrado en `registry.ts` con metadatos completos en español.
-- [ ] Probado en un celular real (no solo en el navegador de escritorio).
+- [ ] Generado/registrado sin editar los marcadores a mano; `metadata.ts` no conserva `TODO` ni "Esqueleto generado".
+- [ ] Probado con teclado y toque en vertical y horizontal; idealmente también en un celular real.
 - [ ] Entrada agregada al `CHANGELOG.md`.
 
 ### 12.4 Ritmo de trabajo sugerido
 
-Una sesión de Claude Code = una unidad de valor (un juego nuevo, o una mejora acotada del shell). Antes de cerrar cada sesión: lint + tests + build + verificación en el celular + commit + push (que dispara el despliegue automático).
+Una sesión de agente = una unidad de valor (un juego nuevo o una mejora acotada). Antes de cerrar: `npm run format`, `npm run check`, verificación manual cuando corresponda y entrada en `CHANGELOG.md`. El trabajo se publica en una rama y un pull request; solo integrar en `main` dispara el deploy público.
 
 ---
 
@@ -514,39 +522,42 @@ desafios-mentales/
 ├── LICENSE                    # GNU General Public License v3.0
 ├── docs/
 │   ├── PRD.md                 # Este documento
-│   └── decisions/             # ADR-001, ADR-002, ADR-003, ...
+│   └── decisions/             # ADR-001 ... ADR-011
 ├── src/
-│   ├── core/                  # contract.ts, registry.ts, storage.ts, random.ts, timer.ts
+│   ├── core/                  # contrato, registro/loaders, storage, random, audio y kit UI
 │   ├── shell/                 # Catálogo, pantalla de juego, resultados, estadísticas, configuración
 │   ├── games/
 │   │   ├── quick-math/
-│   │   │   ├── index.ts       # Exporta el GameModule
+│   │   │   ├── metadata.ts    # Copy, modos, versión e ícono para el catálogo
+│   │   │   ├── index.ts       # Export nombrado + default del GameModule
 │   │   │   ├── logic.ts       # Lógica pura, testeable
 │   │   │   ├── ui.tsx         # Componente (implementa GameProps)
 │   │   │   ├── icon.svg       # Ícono vectorial
 │   │   │   └── logic.test.ts
 │   │   ├── cifras/
 │   │   └── snake/
-│   └── i18n/                  # Textos en español centralizados
-├── public/                    # manifest.json ("Desafíos Mentales"), íconos, service worker
+│   └── i18n/                  # Copy compartido del shell
+├── public/                    # Íconos estáticos; manifest/SW se generan desde VitePWA
 ├── tailwind.config.ts         # Tokens de diseño (paleta, tipografía, escalas)
 └── .github/workflows/
-    └── deploy.yml              # Build + deploy a GitHub Pages en cada push a main
+    ├── ci.yml                  # Checks en ramas y pull requests
+    └── deploy.yml              # Checks + GitHub Pages al integrar en main
 ```
 
 ---
 
 ## 14. Roadmap por fases
 
-Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta para este flujo de trabajo.
+Registro histórico de la planificación inicial, expresado en sesiones de agente. Las fases 0–2 ya fueron entregadas; los extras que también se concretaron se documentan en el changelog.
 
+<!-- prettier-ignore -->
 | Fase                                        | Contenido                                                                                                                                                                                                                                                                                                                                                                                                                                             | Sesiones estimadas |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------: |
 | **Fase 0 — Fundaciones**                    | Repo, tooling (Vite + TypeScript + ESLint + Prettier + Vitest + Tailwind), shell navegable con catálogo, contrato e infraestructura del core, tokens de diseño y ADR-003 (paleta y tipografía definitivas), CI/CD a GitHub Pages, `CLAUDE.md`, ADR-001 y ADR-002, PWA básica instalable. Incluye el juego trivial de validación **"Tiempo de reacción"** ✓ (tocar cuando cambia el color; mide milisegundos) para probar el contrato de punta a punta |        2–3         |
-| **Fase 1 — MVP**                            | Aritmética contra reloj, Cifras y Snake; persistencia de resultados; pantalla de resultados y estadísticas básicas; 5 niveles por juego                                                                                                                                                                                                                                                                                                               |        3–5         |
+| **Fase 1 — MVP**                            | Aritmética contra reloj, Cifras y Snake; persistencia de resultados; pantalla de resultados y estadísticas básicas; dificultades parametrizadas                                                                                                                                                                                                                                                                                                       |        3–5         |
 | **Fase 2 — Cascada y expansión matemática** | **Cascada (clon de Tetris)** como primera entrega, sobre el bucle de tiempo real validado por Snake; luego Secuencias numéricas, Estimación relámpago y Simon; racha de días; exportación JSON                                                                                                                                                                                                                                                        |        4–6         |
 | **Fase 3 — Empaquetado móvil (opcional)**   | Capacitor → Android primero (evaluar iOS después según costo/beneficio), íconos y splash, publicación en Google Play                                                                                                                                                                                                                                                                                                                                  |        2–4         |
-| **Fase 4 — Extras (opcional)**              | Puzzle diario compartible, logros, sonido chiptune refinado, generador propio de sudokus, modo progresivo, tema claro                                                                                                                                                                                                                                                                                                                                 |      continua      |
+| **Fase 4 — Extras (opcional)**              | Puzzle diario compartible, logros, nuevos juegos y mejoras de audio/generación; modo Progresivo y tema claro ya fueron entregados                                                                                                                                                                                                                                                                                                                      |      continua      |
 
 ---
 
@@ -554,7 +565,7 @@ Estimación en **sesiones de Claude Code**, no en semanas: es la unidad honesta 
 
 **Arquitectónicas (las que más importan en este proyecto):**
 
-- Agregar un juego P1/P2 requiere modificar cero archivos del shell (solo la línea del registro).
+- Agregar un juego requiere cero cambios del shell y ninguna edición manual de core: el generador aplica de forma transaccional la entrada de metadata + loader.
 - Un juego de complejidad Baja se completa en 1 sesión de Claude Code; uno de complejidad Media, en 2.
 
 **De producto:**

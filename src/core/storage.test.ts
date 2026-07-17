@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { streakFromDates } from './storage';
 
-// Prueba pura de la racha (sin localStorage). Se fija un "ahora" conocido para
-// que las fechas relativas sean determinísticas. Todo en UTC, igual que la app.
-const NOW = Date.parse('2026-07-02T12:00:00.000Z');
-const DAY = 24 * 60 * 60 * 1000;
+// Prueba pura de la racha (sin localStorage). Se usa mediodía local para que
+// las fechas sigan el calendario del usuario aun alrededor de cambios DST.
+const NOW = new Date(2026, 6, 2, 12).getTime();
 
 function keyDaysAgo(days: number): string {
-  return new Date(NOW - days * DAY).toISOString().slice(0, 10);
+  const date = new Date(NOW);
+  date.setDate(date.getDate() - days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 describe('streakFromDates', () => {
@@ -34,5 +38,9 @@ describe('streakFromDates', () => {
   it('devuelve 0 si el último día jugado fue anteayer (racha perdida)', () => {
     const dates = new Set([keyDaysAgo(2), keyDaysAgo(3)]);
     expect(streakFromDates(dates, NOW)).toBe(0);
+  });
+
+  it('rechaza un instante actual inválido', () => {
+    expect(streakFromDates(new Set([keyDaysAgo(0)]), Number.NaN)).toBe(0);
   });
 });

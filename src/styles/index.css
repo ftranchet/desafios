@@ -174,3 +174,31 @@
     width: 0%;
   }
 }
+
+/* Respeta barras/notches en PWA standalone y en celulares apaisados. */
+.safe-area-shell {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+/* Los contenedores interactivos de juego también necesitan una señal de foco
+   visible; no todos son botones nativos ni usan una utilidad Tailwind propia. */
+[tabindex='0']:focus-visible {
+  outline: 2px solid rgb(var(--color-accent-primary));
+  outline-offset: -3px;
+}
+
+/* La regla global de movimiento reducido completa una animación de 100% a 0%
+   casi al instante. Para una barra puramente complementaria es menos confuso
+   dejarla llena y confiar en el contador numérico accesible que la acompaña. */
+@media (prefers-reduced-motion: reduce) {
+  .countdown-bar-fill {
+    animation: none !important;
+  }
+}
+
+.reduce-animations .countdown-bar-fill {
+  animation: none !important;
+}

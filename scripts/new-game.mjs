@@ -1,62 +1,396 @@
 #!/usr/bin/env node
-// Generador de esqueleto de juego (PRD 5.5): crea src/games/<id>/ con
-// logic.ts, ui.tsx, index.ts, logic.test.ts e icon.svg siguiendo los patrones
-// de interacción de PRD 10.7 y el kit de ADR-005, y registra el módulo en
-// src/core/registry.ts. El esqueleto compila, pasa lint y queda cubierto por
-// el test de contrato y el smoke de render sin escribir nada extra.
+// Generador transaccional de módulos de juego.
 //
-// Uso: npm run new-game <game-id> ["Nombre visible"]
-//   ej: npm run new-game memorama "Memorama"
+// Uso:
+//   npm run new-game -- <game-id> ["Nombre visible"] [--dry-run]
+//
+// El registro expone marcadores explícitos para evitar modificar por accidente
+// otro array o bloque de imports. Todos los archivos se preparan en directorios
+// temporales y recién se publican cuando la entrada de registro ya fue validada.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const REGISTRY = join(ROOT, 'src', 'core', 'registry.ts');
+const DEFAULT_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const IMPORT_MARKER = '// new-game:metadata-imports';
+const ENTRY_MARKER = '// new-game:entries';
+const MAX_ID_LENGTH = 64;
+const MAX_NAME_LENGTH = 80;
 
-const id = process.argv[2];
-const visibleName = process.argv[3] ?? null;
+// Palabras reservadas o contextuales que no conviene generar como export de
+// un módulo TypeScript estricto (incluye keywords nuevas como `using`).
+const RESERVED_IDENTIFIERS = new Set([
+  'abstract',
+  'any',
+  'arguments',
+  'as',
+  'asserts',
+  'async',
+  'await',
+  'bigint',
+  'boolean',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'constructor',
+  'debugger',
+  'declare',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'enum',
+  'eval',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'function',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'instanceof',
+  'interface',
+  'is',
+  'keyof',
+  'let',
+  'metadata',
+  'module',
+  'new',
+  'never',
+  'null',
+  'number',
+  'object',
+  'override',
+  'package',
+  'private',
+  'protected',
+  'prototype',
+  'public',
+  'readonly',
+  'require',
+  'return',
+  'static',
+  'string',
+  'super',
+  'switch',
+  'symbol',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'type',
+  'typeof',
+  'undefined',
+  'unique',
+  'unknown',
+  'using',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+]);
 
-function fail(message) {
-  console.error(`✗ ${message}`);
-  process.exit(1);
+export class NewGameError extends Error {}
+
+function countOccurrences(source, value) {
+  return source.split(value).length - 1;
 }
 
-if (!id) fail('Falta el id del juego. Uso: npm run new-game <game-id> ["Nombre visible"]');
-if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id))
-  fail(`El id tiene que ser kebab-case (minúsculas, dígitos y guiones): "${id}" no lo es.`);
+function toCamelCase(id) {
+  return id.replace(/-([a-z0-9])/g, (_, character) => character.toUpperCase());
+}
 
-const gameDir = join(ROOT, 'src', 'games', id);
-if (existsSync(gameDir)) fail(`Ya existe src/games/${id}/.`);
+function toPascalCase(identifier) {
+  return identifier.charAt(0).toUpperCase() + identifier.slice(1);
+}
 
-const registrySource = readFileSync(REGISTRY, 'utf8');
-if (registrySource.includes(`'../games/${id}'`)) fail(`"${id}" ya está registrado en registry.ts.`);
+function asTypeScriptString(value) {
+  // JSON produce un literal de string válido y evita que nombres con comillas,
+  // backticks o `${...}` se conviertan en código generado.
+  return JSON.stringify(value).replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
+}
 
-const camel = id.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
-const pascal = camel.charAt(0).toUpperCase() + camel.slice(1);
-const name = visibleName ?? pascal;
+export function validateGameId(rawId) {
+  if (typeof rawId !== 'string' || rawId.length === 0) {
+    throw new NewGameError(
+      'Falta el id del juego. Uso: npm run new-game -- <game-id> ["Nombre visible"] [--dry-run]',
+    );
+  }
+  if (rawId.length > MAX_ID_LENGTH) {
+    throw new NewGameError(`El id no puede superar ${MAX_ID_LENGTH} caracteres.`);
+  }
+  if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(rawId)) {
+    throw new NewGameError(
+      `El id debe ser kebab-case y empezar con una letra minúscula: "${rawId}" no es válido.`,
+    );
+  }
 
-// ---------------------------------------------------------------------------
-// Plantillas. La mecánica de ejemplo (contar toques exactos) es a propósito
-// trivial: muestra la estructura completa — lógica pura con semilla, kit de
-// interacción, contrato — para reemplazarla por la mecánica real.
-// ---------------------------------------------------------------------------
+  const identifier = toCamelCase(rawId);
+  if (!/^[A-Za-z][A-Za-z0-9]*$/.test(identifier) || RESERVED_IDENTIFIERS.has(identifier)) {
+    throw new NewGameError(`El id "${rawId}" genera el identificador reservado "${identifier}".`);
+  }
 
-const logicTs = `import type { GameConfig, GameResult, ModeId } from '../../core/contract';
+  return { id: rawId, camel: identifier, pascal: toPascalCase(identifier) };
+}
+
+export function validateVisibleName(rawName, fallback) {
+  if (rawName === null || rawName === undefined) return fallback;
+
+  const name = rawName.trim();
+  if (name.length === 0) throw new NewGameError('El nombre visible no puede estar vacío.');
+  if (name.length > MAX_NAME_LENGTH) {
+    throw new NewGameError(`El nombre visible no puede superar ${MAX_NAME_LENGTH} caracteres.`);
+  }
+  const containsForbiddenCharacter = [...name].some((character) => {
+    const codePoint = character.codePointAt(0);
+    return (
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029
+    );
+  });
+  if (containsForbiddenCharacter) {
+    throw new NewGameError('El nombre visible no puede contener caracteres de control ni saltos.');
+  }
+  return name;
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Lee de forma segura el literal de `name` de metadata.ts sin ejecutar el
+ * módulo. La propiedad debe ser un string estático: el catálogo necesita poder
+ * auditar nombres duplicados antes de escribir un alta nueva.
+ */
+export function extractMetadataName(source) {
+  const property = /(?:^|\n)[\t ]*name[\t ]*:[\t ]*/.exec(source);
+  if (!property) throw new NewGameError('metadata.ts no declara un campo name estático.');
+
+  let index = property.index + property[0].length;
+  const quote = source[index];
+  if (quote !== "'" && quote !== '"') {
+    throw new NewGameError('metadata.ts debe declarar name como un literal de string.');
+  }
+  index += 1;
+
+  let value = '';
+  const simpleEscapes = {
+    b: '\b',
+    f: '\f',
+    n: '\n',
+    r: '\r',
+    t: '\t',
+    v: '\v',
+    0: '\0',
+    "'": "'",
+    '"': '"',
+    '\\': '\\',
+  };
+
+  while (index < source.length) {
+    const character = source[index];
+    if (character === quote) return value;
+    if (character === '\n' || character === '\r') {
+      throw new NewGameError('El literal name de metadata.ts no puede contener saltos.');
+    }
+    if (character !== '\\') {
+      value += character;
+      index += 1;
+      continue;
+    }
+
+    index += 1;
+    const escaped = source[index];
+    if (escaped === undefined) break;
+    if (escaped === '\n') {
+      index += 1;
+      continue;
+    }
+    if (escaped === '\r') {
+      index += source[index + 1] === '\n' ? 2 : 1;
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(simpleEscapes, escaped)) {
+      value += simpleEscapes[escaped];
+      index += 1;
+      continue;
+    }
+    if (escaped === 'x') {
+      const hexadecimal = source.slice(index + 1, index + 3);
+      if (!/^[\da-f]{2}$/i.test(hexadecimal)) {
+        throw new NewGameError('metadata.ts contiene un escape hexadecimal inválido en name.');
+      }
+      value += String.fromCodePoint(Number.parseInt(hexadecimal, 16));
+      index += 3;
+      continue;
+    }
+    if (escaped === 'u') {
+      if (source[index + 1] === '{') {
+        const close = source.indexOf('}', index + 2);
+        const hexadecimal = close === -1 ? '' : source.slice(index + 2, close);
+        const codePoint = Number.parseInt(hexadecimal, 16);
+        if (!/^[\da-f]{1,6}$/i.test(hexadecimal) || codePoint > 0x10ffff) {
+          throw new NewGameError('metadata.ts contiene un escape Unicode inválido en name.');
+        }
+        value += String.fromCodePoint(codePoint);
+        index = close + 1;
+        continue;
+      }
+      const hexadecimal = source.slice(index + 1, index + 5);
+      if (!/^[\da-f]{4}$/i.test(hexadecimal)) {
+        throw new NewGameError('metadata.ts contiene un escape Unicode inválido en name.');
+      }
+      value += String.fromCodePoint(Number.parseInt(hexadecimal, 16));
+      index += 5;
+      continue;
+    }
+
+    // JavaScript interpreta `\z` como `z`; conservar ese comportamiento sin
+    // evaluar código alcanza para comparar el texto visible.
+    value += escaped;
+    index += 1;
+  }
+
+  throw new NewGameError('metadata.ts contiene un literal name sin cerrar.');
+}
+
+function normalizedVisibleName(name) {
+  return name.trim().toLocaleLowerCase('es-AR');
+}
+
+export function assertUniqueVisibleName(gamesRoot, proposedName) {
+  let gameDirectories;
+  try {
+    gameDirectories = readdirSync(gamesRoot, { withFileTypes: true });
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+    if (code === 'ENOENT') return;
+    throw new NewGameError(`No se pudo revisar los nombres existentes: ${errorMessage(error)}`);
+  }
+
+  const normalizedProposedName = normalizedVisibleName(proposedName);
+  for (const entry of gameDirectories) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+    const metadataPath = join(gamesRoot, entry.name, 'metadata.ts');
+    let existingName;
+    try {
+      existingName = extractMetadataName(readFileSync(metadataPath, 'utf8'));
+    } catch (error) {
+      throw new NewGameError(
+        `No se pudo validar ${entry.name}/metadata.ts: ${errorMessage(error)}`,
+      );
+    }
+    if (normalizedVisibleName(existingName) === normalizedProposedName) {
+      throw new NewGameError(
+        `El nombre visible "${proposedName}" ya pertenece al juego "${entry.name}".`,
+      );
+    }
+  }
+}
+
+export function parseCliArgs(args) {
+  const positional = [];
+  let dryRun = false;
+
+  for (const argument of args) {
+    if (argument === '--dry-run') {
+      if (dryRun) throw new NewGameError('La opción --dry-run está repetida.');
+      dryRun = true;
+    } else if (argument.startsWith('-')) {
+      throw new NewGameError(`Opción desconocida: ${argument}`);
+    } else {
+      positional.push(argument);
+    }
+  }
+
+  if (positional.length > 2) {
+    throw new NewGameError('Se esperaba un id y, opcionalmente, un nombre visible.');
+  }
+
+  const identifiers = validateGameId(positional[0]);
+  return {
+    ...identifiers,
+    name: validateVisibleName(positional[1], identifiers.pascal),
+    dryRun,
+  };
+}
+
+function normalizeOptions(options) {
+  const identifiers = validateGameId(options?.id);
+  if (options?.camel !== undefined && options.camel !== identifiers.camel) {
+    throw new NewGameError('El identificador derivado no coincide con el id del juego.');
+  }
+  if (options?.pascal !== undefined && options.pascal !== identifiers.pascal) {
+    throw new NewGameError('El nombre de componente derivado no coincide con el id del juego.');
+  }
+  return {
+    ...identifiers,
+    name: validateVisibleName(options?.name, identifiers.pascal),
+    dryRun: options?.dryRun === true,
+  };
+}
+
+export function updateRegistrySource(registrySource, options) {
+  const { id, camel } = normalizeOptions(options);
+  if (countOccurrences(registrySource, IMPORT_MARKER) !== 1) {
+    throw new NewGameError(`registry.ts debe contener exactamente un marcador ${IMPORT_MARKER}.`);
+  }
+  if (countOccurrences(registrySource, ENTRY_MARKER) !== 1) {
+    throw new NewGameError(`registry.ts debe contener exactamente un marcador ${ENTRY_MARKER}.`);
+  }
+  if (registrySource.includes(`../games/${id}/metadata`)) {
+    throw new NewGameError(`"${id}" ya está registrado en registry.ts.`);
+  }
+  const metadataBinding = `${camel}Metadata`;
+  if (new RegExp(`\\b${metadataBinding}\\b`).test(registrySource)) {
+    throw new NewGameError(
+      `El id "${id}" colisiona con el identificador ya registrado "${metadataBinding}".`,
+    );
+  }
+
+  const importLine = `import { metadata as ${metadataBinding} } from '../games/${id}/metadata';`;
+  const entryLine = `  defineGame(${metadataBinding}, () =>\n    import('../games/${id}').then(({ default: game }) => game),\n  ),`;
+
+  return registrySource
+    .replace(IMPORT_MARKER, `${IMPORT_MARKER}\n${importLine}`)
+    .replace(ENTRY_MARKER, `${ENTRY_MARKER}\n${entryLine}`);
+}
+
+export function buildGameFiles(options) {
+  const { id, camel, pascal, name } = normalizeOptions(options);
+  const idLiteral = asTypeScriptString(id);
+  const nameLiteral = asTypeScriptString(name);
+
+  const logicTs = `import type { GameConfig, GameResult, ModeId } from '../../core/contract';
 import { createRng, randomInt } from '../../core/random';
 
-// Lógica pura de "${name}" — sin React ni DOM (PRD 4.2.3).
-// Esqueleto generado por \`npm run new-game\`: reemplazá la mecánica de
-// ejemplo (contar toques exactos) por la real, manteniendo la estructura.
-
-export interface LevelParams extends Record<string, number> {
+// Lógica pura, sin React ni DOM. Reemplazá la mecánica de ejemplo por la real.
+export interface LevelParams {
   goalMin: number;
   goalMax: number;
 }
 
-// Las tres dificultades obligatorias (ADR-007). Para sumar Tranquilo o
-// Progresivo: agregá los parámetros acá y declaralos en buildModes (index.ts).
 export const MODE_PARAMS: Record<'easy' | 'medium' | 'hard', LevelParams> = {
   easy: { goalMin: 3, goalMax: 5 },
   medium: { goalMin: 8, goalMax: 12 },
@@ -93,7 +427,7 @@ export function computeScore(state: GameState): number {
 
 export function buildResult(config: GameConfig, state: GameState, durationMs: number): GameResult {
   return {
-    gameId: '${id}',
+    gameId: ${idLiteral},
     mode: config.mode,
     score: computeScore(state),
     completed: true,
@@ -104,33 +438,38 @@ export function buildResult(config: GameConfig, state: GameState, durationMs: nu
 }
 `;
 
-const uiTsx = `import { useRef, useState, type KeyboardEvent } from 'react';
+  const uiTsx = `import { useRef, useState, type KeyboardEvent } from 'react';
 import type { GameProps } from '../../core/contract';
-import { PressButton, useAutoFocus } from '../../core/ui';
+import { GameLayout, PressButton, useAutoFocus } from '../../core/ui';
 import { buildResult, createInitialState, registerTap, type GameState } from './logic';
-
-// Interfaz de "${name}" — esqueleto generado por \`npm run new-game\`.
-// Aplica los patrones de PRD 10.7: auto-foco del contenedor, PressButton
-// (acción en pointerdown + teclado), atajos de teclado propios.
 
 export function ${pascal}Game({ config, onFinish, audio }: GameProps) {
   const containerRef = useAutoFocus<HTMLDivElement>();
   const sessionStartRef = useRef(performance.now());
+  const finishedRef = useRef(false);
   const [state, setState] = useState<GameState>(() =>
     createInitialState(config.mode, config.seed ?? Date.now()),
   );
+  const stateRef = useRef(state);
 
   function tap() {
+    if (finishedRef.current) return;
     audio?.play('success');
-    setState(registerTap);
+    const next = registerTap(stateRef.current);
+    stateRef.current = next;
+    setState(next);
   }
 
   function finish() {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     const durationMs = Math.round(performance.now() - sessionStartRef.current);
-    onFinish(buildResult(config, state, durationMs));
+    onFinish(buildResult(config, stateRef.current, durationMs));
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    // Los PressButton resuelven su propio teclado; no dupliques su click sintético.
+    if (event.target !== event.currentTarget) return;
     if (event.key === ' ') {
       event.preventDefault();
       tap();
@@ -143,58 +482,75 @@ export function ${pascal}Game({ config, onFinish, audio }: GameProps) {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-[70vh] flex-col items-center justify-center gap-6 p-6 focus:outline-none"
+      className="flex min-h-[70dvh] w-full flex-col items-center p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary short:min-h-0 short:p-2"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <p className="max-w-xs text-center text-base text-text-primary">
-        Tocá el botón exactamente {state.goal} veces y enviá. Con teclado: Espacio suma, Enter
-        envía.
-      </p>
-      <p className="font-display text-xl font-extrabold text-text-primary">{state.taps}</p>
-      <PressButton ariaLabel="Sumar un toque" onPress={tap} className="px-10">
-        Tocar
-      </PressButton>
-      <PressButton variant="primary" ariaLabel="Enviar" onPress={finish} className="px-8">
-        Enviar
-      </PressButton>
+      <GameLayout
+        hud={
+          <p className="font-display text-xl font-extrabold text-text-primary">
+            {state.taps} / {state.goal}
+          </p>
+        }
+        board={
+          <p className="max-w-xs text-center text-base text-text-primary">
+            Tocá el botón exactamente {state.goal} veces. Con teclado: Espacio suma, Enter envía.
+          </p>
+        }
+        panel={
+          <div className="flex w-full flex-col gap-3">
+            <PressButton ariaLabel="Sumar un toque" onPress={tap} className="w-full px-10">
+              Tocar
+            </PressButton>
+            <PressButton
+              variant="primary"
+              ariaLabel="Enviar"
+              onPress={finish}
+              className="w-full px-8"
+            >
+              Enviar
+            </PressButton>
+          </div>
+        }
+      />
     </div>
   );
 }
 `;
 
-const indexTs = `import type { GameModule } from '../../core/contract';
+  const metadataTs = `import type { GameMetadata } from '../../core/contract';
 import { buildModes } from '../../core/modes';
 import icon from './icon.svg';
-import { MODE_PARAMS } from './logic';
-import { ${pascal}Game } from './ui';
 
-export const ${camel}: GameModule = {
-  metadata: {
-    id: '${id}',
-    name: '${name}',
-    // TODO: elegí la categoría real: memory | logic | math | speed | spatial | words
-    category: 'logic',
-    // TODO: una línea en español que describa la mecánica real.
-    description: 'Esqueleto generado: contá los toques exactos y enviá.',
-    // TODO: 2-4 oraciones — objetivo + interacción — para la portada (ADR-010).
-    howToPlay:
-      'Esqueleto generado: tocá el botón exactamente la cantidad de veces que pide el objetivo y enviá. Con teclado: Espacio suma, Enter envía.',
-    version: '0.1.0',
-    // Tranquilo/Progresivo se declaran acá cuando el juego los implemente.
-    modes: buildModes({
-      easy: MODE_PARAMS.easy,
-      medium: MODE_PARAMS.medium,
-      hard: MODE_PARAMS.hard,
-    }),
-    estimatedSeconds: 60,
-    icon,
-  },
-  Component: ${pascal}Game,
+export const metadata: GameMetadata = {
+  id: ${idLiteral},
+  name: ${nameLiteral},
+  // TODO: elegí la categoría real: memory | logic | math | speed | spatial | words.
+  category: 'logic',
+  // TODO: reemplazá la descripción y las instrucciones junto con la mecánica.
+  description: 'Esqueleto generado: contá los toques exactos y enviá.',
+  howToPlay:
+    'Esqueleto generado: tocá el botón exactamente la cantidad de veces indicada y enviá.',
+  version: '0.1.0',
+  modes: buildModes(),
+  estimatedSeconds: 60,
+  icon,
 };
 `;
 
-const logicTest = `import { describe, expect, it } from 'vitest';
+  const indexTs = `import type { GameModule } from '../../core/contract';
+import { metadata } from './metadata';
+import { ${pascal}Game } from './ui';
+
+export const ${camel}: GameModule = {
+  metadata,
+  Component: ${pascal}Game,
+};
+
+export default ${camel};
+`;
+
+  const logicTest = `import { describe, expect, it } from 'vitest';
 import {
   buildResult,
   computeScore,
@@ -203,11 +559,9 @@ import {
   registerTap,
 } from './logic';
 
-// Tests con semilla fija (PRD 12.3): generación, jugada y puntaje.
-
 const SEED = 123;
 
-describe('${id}: generación', () => {
+describe(${idLiteral} + ': generación', () => {
   it('misma semilla, misma partida', () => {
     expect(createInitialState('medium', SEED)).toEqual(createInitialState('medium', SEED));
   });
@@ -222,7 +576,7 @@ describe('${id}: generación', () => {
   });
 });
 
-describe('${id}: jugada y puntaje', () => {
+describe(${idLiteral} + ': jugada y puntaje', () => {
   it('registerTap incrementa sin mutar el estado anterior', () => {
     const state = createInitialState('easy', SEED);
     const next = registerTap(state);
@@ -232,7 +586,7 @@ describe('${id}: jugada y puntaje', () => {
 
   it('puntaje máximo al acertar exacto, decreciente al pasarse', () => {
     let state = createInitialState('easy', SEED);
-    for (let i = 0; i < state.goal; i += 1) state = registerTap(state);
+    for (let index = 0; index < state.goal; index += 1) state = registerTap(state);
     expect(computeScore(state)).toBe(100);
     expect(computeScore(registerTap(state))).toBeLessThan(100);
   });
@@ -240,7 +594,7 @@ describe('${id}: jugada y puntaje', () => {
   it('buildResult emite un GameResult válido', () => {
     const state = createInitialState('easy', SEED);
     const result = buildResult({ mode: 'easy', seed: SEED }, state, 1234);
-    expect(result.gameId).toBe('${id}');
+    expect(result.gameId).toBe(${idLiteral});
     expect(result.mode).toBe('easy');
     expect(Number.isFinite(result.score)).toBe(true);
     expect(result.completed).toBe(true);
@@ -248,42 +602,151 @@ describe('${id}: jugada y puntaje', () => {
 });
 `;
 
-// Glifo genérico con la paleta del sistema (reemplazar por uno propio, 10.4).
-const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <circle cx="16" cy="16" r="11" fill="none" stroke="#3fd0c9" stroke-width="2.5" />
-  <circle cx="16" cy="16" r="4.5" fill="#ffcd4b" />
+  const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="8.5" fill="none" stroke="#3fd0c9" stroke-width="2" />
+  <circle cx="12" cy="12" r="3.5" fill="#ffcd4b" />
 </svg>
 `;
 
-// ---------------------------------------------------------------------------
+  return new Map([
+    ['logic.ts', logicTs],
+    ['ui.tsx', uiTsx],
+    ['metadata.ts', metadataTs],
+    ['index.ts', indexTs],
+    ['logic.test.ts', logicTest],
+    ['icon.svg', iconSvg],
+  ]);
+}
 
-mkdirSync(gameDir, { recursive: true });
-writeFileSync(join(gameDir, 'logic.ts'), logicTs);
-writeFileSync(join(gameDir, 'ui.tsx'), uiTsx);
-writeFileSync(join(gameDir, 'index.ts'), indexTs);
-writeFileSync(join(gameDir, 'logic.test.ts'), logicTest);
-writeFileSync(join(gameDir, 'icon.svg'), iconSvg);
+function cleanup(path) {
+  if (!path || !existsSync(path)) return true;
+  try {
+    rmSync(path, { recursive: true, force: true });
+    return true;
+  } catch {
+    // El error original es más útil. Los temporales incluyen pid y timestamp,
+    // por lo que tampoco pueden sobrescribir un alta posterior.
+    return false;
+  }
+}
 
-// Registro: import después del último import de juegos, entrada antes de `];`.
-const lines = registrySource.split('\n');
-const lastImportIndex = lines.reduce(
-  (acc, line, i) => (line.startsWith('import {') && line.includes("'../games/") ? i : acc),
-  -1,
-);
-if (lastImportIndex === -1) fail('No se encontraron imports de juegos en registry.ts.');
-lines.splice(lastImportIndex + 1, 0, `import { ${camel} } from '../games/${id}';`);
-const closeIndex = lines.findIndex((line) => line.trim() === '];');
-if (closeIndex === -1) fail('No se encontró el cierre del array GAMES en registry.ts.');
-lines.splice(closeIndex, 0, `  ${camel},`);
-writeFileSync(REGISTRY, lines.join('\n'));
+export function createGame(options, root = DEFAULT_ROOT, operations = {}) {
+  const normalizedOptions = normalizeOptions(options);
+  const absoluteRoot = resolve(root);
+  const gamesRoot = join(absoluteRoot, 'src', 'games');
+  const gameDir = join(gamesRoot, normalizedOptions.id);
+  const registryPath = join(absoluteRoot, 'src', 'core', 'registry.ts');
+  const lockDir = join(dirname(registryPath), '.new-game.lock');
 
-console.log(`✓ src/games/${id}/ creado y registrado en registry.ts.
+  if (existsSync(gameDir)) {
+    throw new NewGameError(`Ya existe src/games/${normalizedOptions.id}/.`);
+  }
 
-Próximos pasos (PRD 5.5 y checklist 12.3):
-  1. Reemplazá la mecánica de ejemplo en logic.ts (funciones puras, con semilla).
-  2. Construí la interfaz real en ui.tsx con el kit de core/ui (patrones 10.7).
-  3. Completá categoría, descripción y duración estimada en index.ts.
-  4. Dibujá el ícono propio en icon.svg (paleta del sistema, 10.4).
-  5. Ajustá logic.test.ts a la mecánica real (semilla fija).
-  6. npm run test — el contrato y el smoke de render ya te cubren.
+  let registrySource;
+  try {
+    registrySource = readFileSync(registryPath, 'utf8');
+  } catch (error) {
+    throw new NewGameError(`No se pudo leer src/core/registry.ts: ${errorMessage(error)}`);
+  }
+
+  updateRegistrySource(registrySource, normalizedOptions);
+  const files = buildGameFiles(normalizedOptions);
+  assertUniqueVisibleName(gamesRoot, normalizedOptions.name);
+
+  if (normalizedOptions.dryRun) {
+    return { gameDir, registryPath, files: [...files.keys()], dryRun: true };
+  }
+
+  mkdirSync(gamesRoot, { recursive: true });
+  try {
+    // mkdir sin `recursive` funciona como un lock exclusivo entre procesos: un
+    // solo generador puede validar y publicar el registro a la vez.
+    mkdirSync(lockDir);
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+    if (code === 'EEXIST') {
+      throw new NewGameError(
+        'Ya hay otra alta de juego en curso. Si ningún proceso sigue activo, eliminá src/core/.new-game.lock y reintentá.',
+      );
+    }
+    throw new NewGameError(`No se pudo tomar el lock del generador: ${errorMessage(error)}`);
+  }
+
+  let stagedGameDir = null;
+  let stagedRegistryDir = null;
+  let gamePublished = false;
+
+  try {
+    // Revalidar bajo lock cierra la carrera entre la simulación inicial y la
+    // publicación: otro proceso no puede dejar una carpeta o registro nuevo en
+    // medio de esta transacción.
+    if (existsSync(gameDir)) {
+      throw new NewGameError(`Ya existe src/games/${normalizedOptions.id}/.`);
+    }
+    assertUniqueVisibleName(gamesRoot, normalizedOptions.name);
+    const lockedRegistrySource = readFileSync(registryPath, 'utf8');
+    const lockedNextRegistrySource = updateRegistrySource(lockedRegistrySource, normalizedOptions);
+
+    stagedGameDir = mkdtempSync(join(gamesRoot, `.${normalizedOptions.id}-`));
+    stagedRegistryDir = mkdtempSync(join(dirname(registryPath), '.new-game-registry-'));
+    const stagedRegistryPath = join(stagedRegistryDir, 'registry.ts');
+    for (const [filename, source] of files) {
+      writeFileSync(join(stagedGameDir, filename), source, { encoding: 'utf8', flag: 'wx' });
+    }
+    writeFileSync(stagedRegistryPath, lockedNextRegistrySource, { encoding: 'utf8', flag: 'wx' });
+
+    // La carpeta se publica primero. Si el reemplazo atómico del registro
+    // falla, se elimina la carpeta para volver al estado inicial.
+    renameSync(stagedGameDir, gameDir);
+    gamePublished = true;
+    (operations.publishRegistry ?? renameSync)(stagedRegistryPath, registryPath);
+  } catch (error) {
+    const rolledBack = !gamePublished || cleanup(gameDir);
+    const recovery = rolledBack
+      ? 'no se conservaron cambios parciales'
+      : `no se pudo revertir ${gameDir}; revisalo antes de reintentar`;
+    throw new NewGameError(`No se pudo crear el juego; ${recovery}: ${errorMessage(error)}`);
+  } finally {
+    cleanup(stagedGameDir);
+    cleanup(stagedRegistryDir);
+    if (!cleanup(lockDir)) {
+      console.warn(`No se pudo liberar el lock ${lockDir}; el alta sí terminó.`);
+    }
+  }
+
+  return { gameDir, registryPath, files: [...files.keys()], dryRun: false };
+}
+
+export function runCli(args, root = DEFAULT_ROOT) {
+  const options = parseCliArgs(args);
+  const result = createGame(options, root);
+
+  if (result.dryRun) {
+    console.log(`✓ Simulación válida: se crearían src/games/${options.id}/ y su registro.`);
+    console.log(`  Archivos: ${result.files.join(', ')}`);
+    return;
+  }
+
+  console.log(`✓ src/games/${options.id}/ creado y registrado de forma transaccional.
+
+Próximos pasos:
+  1. Reemplazá la mecánica de ejemplo y sus metadatos: mientras conserven
+     "Esqueleto generado", el test de contrato falla a propósito.
+  2. Dibujá el ícono propio con los tokens del sistema.
+  3. Ampliá logic.test.ts con casos límite de la mecánica real.
+  4. Probá toque, teclado, celular vertical y celular horizontal.
+  5. npm run format && npm run check — lint, tipos, tests, build y E2E.
 `);
+}
+
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : null;
+if (invokedPath === fileURLToPath(import.meta.url)) {
+  try {
+    runCli(process.argv.slice(2));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`✗ ${message}`);
+    process.exitCode = 1;
+  }
+}

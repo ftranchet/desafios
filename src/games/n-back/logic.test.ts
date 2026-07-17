@@ -54,10 +54,14 @@ describe('generateSession', () => {
     }
   });
 
-  it('isMatch es falso en las primeras n posiciones de cada secuencia', () => {
+  it('las primeras n posiciones son preparación y no piden una respuesta trivial', () => {
     const trials = generateSession('hard', SEED);
     const n = MODE_PARAMS.hard.n;
-    for (let i = 0; i < n; i += 1) expect(trials[i]!.isMatch).toBe(false);
+    for (let i = 0; i < n; i += 1) {
+      expect(trials[i]!.isMatch).toBe(false);
+      expect(trials[i]!.requiresResponse).toBe(false);
+    }
+    expect(trials[n]!.requiresResponse).toBe(true);
   });
 
   it('isMatch coincide exactamente con comparar contra la posición n atrás', () => {
@@ -81,6 +85,8 @@ describe('generateSession', () => {
     for (const stage of stages) {
       const stageTrials = trials.filter((t) => t.stage === stage);
       const n = stageTrials[0]!.n;
+      expect(stageTrials.slice(0, n).every((trial) => !trial.requiresResponse)).toBe(true);
+      expect(stageTrials.slice(n).every((trial) => trial.requiresResponse)).toBe(true);
       for (let i = n; i < stageTrials.length; i += 1) {
         expect(stageTrials[i]!.isMatch).toBe(stageTrials[i]!.symbol === stageTrials[i - n]!.symbol);
       }
@@ -105,6 +111,7 @@ describe('computeScore', () => {
   const trial = (stage: number, seconds: number): Trial => ({
     symbol: 0,
     isMatch: true,
+    requiresResponse: true,
     n: 2,
     stage,
     seconds,
@@ -132,6 +139,21 @@ describe('computeScore', () => {
     expect(score).toBe(200);
   });
 
+  it('las muestras de preparación no suman ni cuentan como respuestas', () => {
+    const trials: Trial[] = [
+      { ...trial(1, 3), requiresResponse: false },
+      trial(1, 3),
+    ];
+    const answers: AnswerRecord[] = [
+      { correct: true, responseMs: null },
+      { correct: true, responseMs: 1000 },
+    ];
+    const { score, metrics } = computeScore('easy', answers, trials);
+    expect(score).toBe(133);
+    expect(metrics.correct).toBe(1);
+    expect(metrics.incorrect).toBe(0);
+  });
+
   it('progresivo: el grado multiplica el puntaje', () => {
     const trials = [trial(1, 10), trial(10, 10)];
     const answers: AnswerRecord[] = [
@@ -153,6 +175,6 @@ describe('buildResult', () => {
     expect(result.mode).toBe('easy');
     expect(result.completed).toBe(true);
     expect(Number.isFinite(result.score)).toBe(true);
-    expect(result.metrics.correct).toBe(trials.length);
+    expect(result.metrics.correct).toBe(trials.filter((trial) => trial.requiresResponse).length);
   });
 });

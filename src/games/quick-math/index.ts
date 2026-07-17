@@ -1,27 +1,6 @@
 import type { GameModule } from '../../core/contract';
-import { buildModes } from '../../core/modes';
-import icon from './icon.svg';
-import { MODE_PARAMS, PROGRESSIVE_PARAMS } from './logic';
+import { metadata } from './metadata';
 import { QuickMathGame } from './ui';
 
-export const quickMath: GameModule = {
-  metadata: {
-    id: 'quick-math',
-    name: 'Aritmética contra reloj',
-    category: 'math',
-    description: 'Resolvé operaciones antes de que se acabe el tiempo.',
-    howToPlay:
-      'Resolvé la operación y escribí el resultado con el teclado numérico antes de que se agote la barra de tiempo; confirmá con ✓. En escritorio podés tipear los dígitos y confirmar con Enter.',
-    version: '2.0.0',
-    modes: buildModes({
-      easy: MODE_PARAMS.easy,
-      medium: MODE_PARAMS.medium,
-      hard: MODE_PARAMS.hard,
-      zen: MODE_PARAMS.zen,
-      progressive: PROGRESSIVE_PARAMS,
-    }),
-    estimatedSeconds: 120,
-    icon,
-  },
-  Component: QuickMathGame,
-};
+export const quickMath: GameModule = { metadata, Component: QuickMathGame };
+export default quickMath;

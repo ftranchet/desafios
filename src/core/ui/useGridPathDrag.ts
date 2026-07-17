@@ -59,6 +59,8 @@ export interface UseGridPathDragResult {
   onPointerDown(event: ReactPointerEvent): void;
   onPointerMove(event: ReactPointerEvent): void;
   onPointerUp(event: ReactPointerEvent): void;
+  onPointerCancel(event: ReactPointerEvent): void;
+  onLostPointerCapture(event: ReactPointerEvent): void;
   reset(): void;
 }
 
@@ -70,6 +72,7 @@ export function useGridPathDrag(options: UseGridPathDragOptions): UseGridPathDra
   // pointermove antes de que React re-renderice, y cada uno necesita ver el
   // trazo que dejó el anterior, no el de useState de este render.
   const pathRef = useRef<CellCoord[]>([]);
+  const activePointerRef = useRef<number | null>(null);
 
   const commit = useCallback((next: CellCoord[]) => {
     pathRef.current = next;
@@ -77,17 +80,26 @@ export function useGridPathDrag(options: UseGridPathDragOptions): UseGridPathDra
   }, []);
 
   const reset = useCallback(() => {
+    activePointerRef.current = null;
     setIsDragging(false);
     commit([]);
   }, [commit]);
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent) => {
+      if (
+        event.button !== 0 ||
+        event.isPrimary === false ||
+        activePointerRef.current !== null
+      ) {
+        return;
+      }
       const cell = cellAt(event.clientX, event.clientY);
       if (!cell) return;
       // El botón/tablero no roba el foco del contenedor del juego (mismo
       // criterio que PressButton), y el teclado físico sigue funcionando.
       event.preventDefault();
+      activePointerRef.current = event.pointerId;
       try {
         event.currentTarget.setPointerCapture(event.pointerId);
       } catch {
@@ -102,20 +114,32 @@ export function useGridPathDrag(options: UseGridPathDragOptions): UseGridPathDra
 
   const handlePointerMove = useCallback(
     (event: ReactPointerEvent) => {
-      if (!isDragging) return;
+      if (activePointerRef.current !== event.pointerId) return;
       const cell = cellAt(event.clientX, event.clientY);
       if (!cell) return;
       const next = extendPath(pathRef.current, cell, isAdjacent);
       if (next !== pathRef.current) commit(next);
     },
-    [isDragging, cellAt, isAdjacent, commit],
+    [cellAt, isAdjacent, commit],
   );
 
-  const handlePointerUp = useCallback(() => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    onPathEnd?.(pathRef.current);
-  }, [isDragging, onPathEnd]);
+  const handlePointerUp = useCallback(
+    (event: ReactPointerEvent) => {
+      if (activePointerRef.current !== event.pointerId) return;
+      activePointerRef.current = null;
+      setIsDragging(false);
+      onPathEnd?.(pathRef.current);
+    },
+    [onPathEnd],
+  );
+
+  const handlePointerCancel = useCallback(
+    (event: ReactPointerEvent) => {
+      if (activePointerRef.current !== event.pointerId) return;
+      reset();
+    },
+    [reset],
+  );
 
   return {
     path,
@@ -123,6 +147,8 @@ export function useGridPathDrag(options: UseGridPathDragOptions): UseGridPathDra
     onPointerDown: handlePointerDown,
     onPointerMove: handlePointerMove,
     onPointerUp: handlePointerUp,
+    onPointerCancel: handlePointerCancel,
+    onLostPointerCapture: handlePointerCancel,
     reset,
   };
 }

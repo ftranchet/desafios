@@ -27,66 +27,166 @@ export interface StorageService {
   clearAll(): void;
 }
 
-// Forma mínima de un GameResult v2 (solo tipos): lo que se exige al guardar.
-// Un número no finito NO invalida la forma — eso lo corrige sanitizeResult,
-// porque descartar la partida entera por un bug de puntaje sería peor.
-function hasResultShape(value: unknown): value is GameResult {
-  if (typeof value !== 'object' || value === null) return false;
-  const r = value as Record<string, unknown>;
-  return (
-    typeof r.gameId === 'string' &&
-    r.gameId.length > 0 &&
-    isModeId(r.mode) &&
-    typeof r.score === 'number' &&
-    typeof r.completed === 'boolean' &&
-    typeof r.timestamp === 'string'
-  );
+interface NormalizeResultOptions {
+  // El shell conoce estos dos valores por la ruta y la selección activa. Al
+  // proveerlos no confía en la identidad devuelta por un módulo de juego.
+  identity?: Pick<GameResult, 'gameId' | 'mode'>;
+  fallbackDurationMs?: number;
+  fallbackTimestamp?: string;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+}
+
+function normalizeFiniteNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : fallback;
+}
+
+function isValidTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && Number.isFinite(Date.parse(value));
+}
+
+function normalizeMetrics(value: unknown): Record<string, number> | null {
+  if (!isPlainRecord(value)) return null;
+  const metrics: Record<string, number> = {};
+  for (const [key, metric] of Object.entries(value)) {
+    if (typeof metric === 'number' && Number.isFinite(metric)) metrics[key] = metric;
+  }
+  return metrics;
+}
+
+/**
+ * Valida y crea una copia segura de un resultado en la frontera del shell.
+ * Sin identidad confiable (lectura/escritura de storage) exige la estructura
+ * completa. Con identidad confiable degrada campos rotos a valores inocuos,
+ * de modo que un juego defectuoso nunca rompa la pantalla de resultado.
+ */
+function normalizeGameResultUnsafe(
+  value: unknown,
+  options: NormalizeResultOptions = {},
+): GameResult | null {
+  const hasTrustedIdentity = options.identity !== undefined;
+  if (!isPlainRecord(value) && !hasTrustedIdentity) return null;
+  const result = isPlainRecord(value) ? value : {};
+
+  const gameId = options.identity?.gameId ?? result.gameId;
+  const mode = options.identity?.mode ?? result.mode;
+  if (typeof gameId !== 'string' || gameId.trim().length === 0 || !isModeId(mode)) return null;
+
+  if (!hasTrustedIdentity) {
+    if (
+      typeof result.score !== 'number' ||
+      typeof result.completed !== 'boolean' ||
+      typeof result.durationMs !== 'number' ||
+      !isValidTimestamp(result.timestamp)
+    ) {
+      return null;
+    }
+  }
+
+  const metrics = normalizeMetrics(result.metrics);
+  if (!metrics && !hasTrustedIdentity) return null;
+
+  const fallbackTimestamp = isValidTimestamp(options.fallbackTimestamp)
+    ? options.fallbackTimestamp
+    : new Date().toISOString();
+  const timestamp = isValidTimestamp(result.timestamp) ? result.timestamp : fallbackTimestamp;
+  const fallbackDurationMs = normalizeFiniteNumber(options.fallbackDurationMs, 0);
+
+  return {
+    gameId,
+    mode,
+    score: normalizeFiniteNumber(result.score, 0),
+    completed: result.completed === true,
+    durationMs: normalizeFiniteNumber(result.durationMs, fallbackDurationMs),
+    metrics: metrics ?? {},
+    timestamp,
+  };
+}
+
+export function normalizeGameResult(
+  value: unknown,
+  options: NormalizeResultOptions = {},
+): GameResult | null {
+  try {
+    return normalizeGameResultUnsafe(value, options);
+  } catch {
+    // También tolera proxies/objetos con getters hostiles. Cuando el shell
+    // aporta identidad se devuelve una partida incompleta segura; al leer
+    // storage se descarta la entrada.
+    const identity = options.identity;
+    if (
+      !identity ||
+      typeof identity.gameId !== 'string' ||
+      identity.gameId.trim().length === 0 ||
+      !isModeId(identity.mode)
+    ) {
+      return null;
+    }
+    return {
+      ...identity,
+      score: 0,
+      completed: false,
+      durationMs: normalizeFiniteNumber(options.fallbackDurationMs, 0),
+      metrics: {},
+      timestamp: isValidTimestamp(options.fallbackTimestamp)
+        ? options.fallbackTimestamp
+        : new Date().toISOString(),
+    };
+  }
 }
 
 // Migra/valida una entrada leída del almacenamiento. Devuelve el resultado en
 // esquema v2, o null si la entrada está corrupta (se descarta sin romper).
 function migrateStoredEntry(value: unknown): GameResult | null {
-  if (typeof value !== 'object' || value === null) return null;
-  const r = value as Record<string, unknown>;
-  const baseValid =
-    typeof r.gameId === 'string' &&
-    r.gameId.length > 0 &&
-    typeof r.score === 'number' &&
-    Number.isFinite(r.score) &&
-    typeof r.completed === 'boolean' &&
-    typeof r.timestamp === 'string';
-  if (!baseValid) return null;
+  if (!isPlainRecord(value)) return null;
+  const r = value;
 
-  if (isModeId(r.mode)) return value as GameResult;
+  if (isModeId(r.mode)) return normalizeGameResult(r);
 
   // Esquema v1 / legado: nivel numérico 1–5 → modo equivalente (ADR-007).
-  if (typeof r.level === 'number' && Number.isFinite(r.level)) {
+  if (
+    typeof r.level === 'number' &&
+    Number.isInteger(r.level) &&
+    r.level >= 1 &&
+    r.level <= 5
+  ) {
     const migrated: Record<string, unknown> = { ...r, mode: levelToMode(r.level) };
     delete migrated.level;
-    return migrated as unknown as GameResult;
+    return normalizeGameResult(migrated);
   }
   return null;
-}
-
-// Normaliza números fuera de rango (NaN/Infinity/negativos) sin descartar la
-// partida: un juego con un bug de puntaje no corrompe las comparaciones de
-// récord (NaN > x es siempre false y getBest quedaría mintiendo en silencio).
-function sanitizeResult(result: GameResult): GameResult {
-  const finite = (n: number) => (Number.isFinite(n) ? n : 0);
-  const score = Math.max(0, finite(result.score));
-  const durationMs = Math.max(0, finite(result.durationMs));
-  if (score !== result.score || durationMs !== result.durationMs) {
-    console.warn('GameResult con números fuera de rango; se normaliza:', result);
-  }
-  return { ...result, score, durationMs };
 }
 
 // Caché del JSON parseado: el catálogo y las estadísticas consultan resultados
 // una vez por juego/modo, y sin caché cada consulta re-parsea todo el
 // almacenamiento. Se invalida en cada escritura de esta misma pestaña.
 let cachedResults: GameResult[] | null = null;
+let futureSchemaDetected = false;
+let storageListenerInstalled = false;
+
+function cloneResult(result: GameResult): GameResult {
+  return { ...result, metrics: { ...result.metrics } };
+}
+
+// Otra pestaña puede cambiar o borrar los resultados. Invalidar la caché evita
+// que una escritura posterior parta de una fotografía obsoleta y los pise.
+function ensureStorageListener(): void {
+  if (storageListenerInstalled || typeof window === 'undefined') return;
+  window.addEventListener('storage', (event) => {
+    if (event.key === RESULTS_KEY || event.key === null) {
+      cachedResults = null;
+      futureSchemaDetected = false;
+    }
+  });
+  storageListenerInstalled = true;
+}
 
 function readResults(): GameResult[] {
+  ensureStorageListener();
   if (cachedResults) return cachedResults;
   let raw: string | null = null;
   try {
@@ -94,19 +194,29 @@ function readResults(): GameResult[] {
   } catch {
     return [];
   }
-  if (!raw) return [];
+  if (!raw) {
+    futureSchemaDetected = false;
+    return [];
+  }
   try {
     const parsed: unknown = JSON.parse(raw);
     let entries: unknown[] = [];
     if (Array.isArray(parsed)) {
       // Formato legado (v0.x): el array pelado, sin envoltorio de versión.
+      futureSchemaDetected = false;
       entries = parsed;
-    } else if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      Array.isArray((parsed as { results?: unknown }).results)
-    ) {
-      entries = (parsed as { results: unknown[] }).results;
+    } else if (isPlainRecord(parsed)) {
+      const schemaVersion = parsed.schemaVersion;
+      // No intentamos interpretar datos escritos por una versión futura: una
+      // lectura conservadora evita reescribirlos con un esquema más viejo,
+      // aunque el formato futuro ya no use una propiedad `results`.
+      if (typeof schemaVersion === 'number' && schemaVersion > SCHEMA_VERSION) {
+        futureSchemaDetected = true;
+        cachedResults = [];
+        return cachedResults;
+      }
+      futureSchemaDetected = false;
+      if (Array.isArray(parsed.results)) entries = parsed.results;
     }
     cachedResults = entries.map(migrateStoredEntry).filter((r): r is GameResult => r !== null);
   } catch {
@@ -117,6 +227,10 @@ function readResults(): GameResult[] {
 
 function writeResults(results: GameResult[]): void {
   cachedResults = results;
+  if (futureSchemaDetected) {
+    console.warn('No se sobrescriben resultados creados por una versión futura de la app.');
+    return;
+  }
   try {
     localStorage.setItem(RESULTS_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, results }));
   } catch (error) {
@@ -145,51 +259,56 @@ export function trimResults(results: GameResult[]): GameResult[] {
   return [...oldBests, ...recent];
 }
 
-function toDateKey(timestamp: string): string {
-  return timestamp.slice(0, 10); // "YYYY-MM-DD" de un ISO 8601
+function dateKeyFromDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function dateKeyFromMs(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 10);
+function toDateKey(timestamp: string): string {
+  return dateKeyFromDate(new Date(timestamp));
 }
 
 /**
  * Cuenta la racha de días consecutivos con al menos una partida, a partir de un
- * conjunto de claves de fecha ("YYYY-MM-DD", UTC) y el instante actual. Función
+ * conjunto de claves de fecha local ("YYYY-MM-DD") y el instante actual. Función
  * pura para testear sin `localStorage`. Si todavía no se jugó hoy, la racha
  * sigue viva desde ayer — solo se corta al saltear un día completo.
  */
 export function streakFromDates(completedDates: Set<string>, nowMs: number): number {
-  if (completedDates.size === 0) return 0;
+  if (completedDates.size === 0 || !Number.isFinite(nowMs)) return 0;
 
-  let cursorMs = nowMs;
+  const cursor = new Date(nowMs);
   // Si hoy no hay partida, la racha no se rompe todavía: empezar a contar ayer.
-  if (!completedDates.has(dateKeyFromMs(cursorMs))) {
-    cursorMs -= DAY_MS;
+  if (!completedDates.has(dateKeyFromDate(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
   }
 
   let streak = 0;
-  while (completedDates.has(dateKeyFromMs(cursorMs))) {
+  while (completedDates.has(dateKeyFromDate(cursor))) {
     streak += 1;
-    cursorMs -= DAY_MS;
+    cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
 }
 
 export const storage: StorageService = {
   saveResult(result) {
-    if (!hasResultShape(result)) {
+    const normalized = normalizeGameResult(result);
+    if (!normalized) {
       console.warn('GameResult inválido; no se persiste:', result);
       return;
     }
-    writeResults(trimResults([...readResults(), sanitizeResult(result)]));
+    if (normalized.score !== result.score || normalized.durationMs !== result.durationMs) {
+      console.warn('GameResult con números fuera de rango; se normaliza:', result);
+    }
+    writeResults(trimResults([...readResults(), normalized]));
   },
 
   getResults(gameId) {
     const results = readResults();
-    return gameId ? results.filter((r) => r.gameId === gameId) : results;
+    return (gameId ? results.filter((r) => r.gameId === gameId) : results).map(cloneResult);
   },
 
   getBest(gameId, mode) {
@@ -200,12 +319,12 @@ export const storage: StorageService = {
       (r) => r.gameId === gameId && r.mode === mode && r.completed,
     );
     if (candidates.length === 0) return null;
-    return candidates.reduce((best, r) => (r.score > best.score ? r : best));
+    return cloneResult(candidates.reduce((best, r) => (r.score > best.score ? r : best)));
   },
 
   getStreak() {
-    // Se trabaja en UTC de punta a punta para que coincida con el timestamp
-    // ISO 8601 de GameResult y evitar corrimientos de día por huso horario.
+    // La racha representa días del calendario del usuario, no días UTC. Esto
+    // evita que una partida nocturna cuente para mañana en zonas como UTC-3.
     const completedDates = new Set(
       readResults()
         .filter((r) => r.completed)
@@ -227,11 +346,15 @@ export const storage: StorageService = {
   },
 
   clearAll() {
-    cachedResults = null;
+    futureSchemaDetected = false;
     try {
       localStorage.removeItem(RESULTS_KEY);
-    } catch {
-      // Sin acceso al almacenamiento no hay nada que borrar.
+      cachedResults = null;
+    } catch (error) {
+      // Aunque el navegador deniegue removeItem, la sesión actual debe quedar
+      // limpia y no volver a mostrar el valor que no pudo borrarse.
+      cachedResults = [];
+      console.warn('No se pudo borrar el historial persistido:', error);
     }
   },
 };

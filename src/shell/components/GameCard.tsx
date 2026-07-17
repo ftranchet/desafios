@@ -17,10 +17,10 @@ export function GameCard({ metadata, bestScore, isFavorite, onToggleFavorite }: 
     // El botón de favorito es hermano del Link (no anidado dentro), posicionado
     // encima con absolute: evita anidar un <button> dentro de un <a> y un toque
     // ahí nunca navega, sin necesitar preventDefault/stopPropagation.
-    <div className="relative">
+    <div className="relative h-full">
       <Link
         to={`/game/${metadata.id}`}
-        className="flex flex-col gap-2 rounded-xl border border-surface-alt bg-surface p-4 pr-11 shadow-card transition hover:border-accent-primary/60 active:scale-[0.98] focus:outline-none focus-visible:border-accent-primary"
+        className="flex h-full flex-col gap-2 rounded-xl border border-surface-alt bg-surface p-4 pr-11 shadow-card transition hover:border-accent-primary/60 active:scale-[0.98] focus:outline-none focus-visible:border-accent-primary focus-visible:ring-2 focus-visible:ring-accent-primary"
       >
         {/* El ícono es decorativo (RNF-05): la categoría está en texto más abajo. */}
         <GameIconChip metadata={metadata} />
@@ -30,7 +30,7 @@ export function GameCard({ metadata, bestScore, isFavorite, onToggleFavorite }: 
           <span className={accent.text}>{CATEGORY_LABELS[metadata.category]}</span>
           {/* Sin partidas todavía pesa menos que un récord real: no compite
               con la descripción del juego por atención (jerarquía, ADR-008). */}
-          <span className={bestScore === null ? 'text-text-secondary/70' : 'text-text-secondary'}>
+          <span className="text-text-secondary">
             {bestScore === null ? strings.catalog.noScore : strings.catalog.bestScore(bestScore)}
           </span>
         </div>

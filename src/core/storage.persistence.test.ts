@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameResult } from './contract';
-import { MAX_STORED_RESULTS, storage, trimResults } from './storage';
+import { MAX_STORED_RESULTS, normalizeGameResult, storage, trimResults } from './storage';
 
 // Tests de la capa de persistencia real (con el localStorage de jsdom):
 // esquema v2 por modo (ADR-007), migración desde v1/legado (niveles 1-5),
@@ -75,6 +75,42 @@ describe('persistencia: ida y vuelta (esquema v2)', () => {
     );
     expect(storage.getResults()).toHaveLength(1);
   });
+
+  it('no interpreta ni sobrescribe un esquema de una versión futura', () => {
+    // La forma futura es deliberadamente distinta: la protección depende de
+    // la versión, no de que todavía exista `results`.
+    const futurePayload = JSON.stringify({ schemaVersion: 99, payload: [makeResult()] });
+    localStorage.setItem(RESULTS_KEY, futurePayload);
+    expect(storage.getResults()).toEqual([]);
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    storage.saveResult(makeResult({ score: 321 }));
+    expect(localStorage.getItem(RESULTS_KEY)).toBe(futurePayload);
+    expect(storage.getResults()).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it('devuelve copias para que un consumidor no pueda mutar el caché', () => {
+    storage.saveResult(makeResult({ metrics: { hits: 4 } }));
+    const [leaked] = storage.getResults();
+    expect(leaked).toBeDefined();
+    if (!leaked) throw new Error('Falta el resultado guardado');
+    leaked.score = 9999;
+    leaked.metrics.hits = 9999;
+
+    expect(storage.getResults()[0]).toMatchObject({ score: 100, metrics: { hits: 4 } });
+  });
+
+  it('invalida el caché cuando otra pestaña cambia la clave', () => {
+    storage.saveResult(makeResult({ score: 10 }));
+    localStorage.setItem(
+      RESULTS_KEY,
+      JSON.stringify({ schemaVersion: 2, results: [makeResult({ score: 77 })] }),
+    );
+    window.dispatchEvent(new StorageEvent('storage', { key: RESULTS_KEY }));
+
+    expect(storage.getResults()[0]?.score).toBe(77);
+  });
 });
 
 describe('persistencia: migración desde el esquema de niveles (v1/legado)', () => {
@@ -102,6 +138,14 @@ describe('persistencia: migración desde el esquema de niveles (v1/legado)', () 
       JSON.stringify({ schemaVersion: 1, results: [makeV1Result(3, 77)] }),
     );
     expect(storage.getBest('quick-math', 'medium')?.score).toBe(77);
+  });
+
+  it('descarta niveles legados fuera del dominio entero 1–5', () => {
+    localStorage.setItem(
+      RESULTS_KEY,
+      JSON.stringify([makeV1Result(0, 10), makeV1Result(2.5, 20), makeV1Result(6, 30)]),
+    );
+    expect(storage.getResults()).toEqual([]);
   });
 
   it('los récords migrados sobreviven a la primera escritura v2', () => {
@@ -138,6 +182,50 @@ describe('persistencia: saneo de resultados', () => {
     warn.mockRestore();
   });
 
+  it('descarta entradas persistidas con fecha, duración o métricas inválidas', () => {
+    localStorage.setItem(
+      RESULTS_KEY,
+      JSON.stringify({
+        schemaVersion: 2,
+        results: [
+          makeResult({ timestamp: 'fecha-inválida' }),
+          { ...makeResult(), durationMs: 'cinco segundos' },
+          { ...makeResult(), metrics: [] },
+        ],
+      }),
+    );
+    expect(storage.getResults()).toEqual([]);
+  });
+
+  it('normaliza de forma segura un resultado hostil en la frontera del shell', () => {
+    const normalized = normalizeGameResult(
+      {
+        gameId: 'otro-juego',
+        mode: 'toString',
+        score: Number.POSITIVE_INFINITY,
+        completed: 'sí',
+        durationMs: -10,
+        metrics: { hits: 3, broken: Number.NaN, label: 'no' },
+        timestamp: 'fecha-inválida',
+      },
+      {
+        identity: { gameId: 'quick-math', mode: 'hard' },
+        fallbackDurationMs: 1500,
+        fallbackTimestamp: '2026-07-05T12:00:00.000Z',
+      },
+    );
+
+    expect(normalized).toEqual({
+      gameId: 'quick-math',
+      mode: 'hard',
+      score: 0,
+      completed: false,
+      durationMs: 0,
+      metrics: { hits: 3 },
+      timestamp: '2026-07-05T12:00:00.000Z',
+    });
+  });
+
   it('sobrevive a un localStorage que falla al escribir (cuota, modo privado)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -149,6 +237,20 @@ describe('persistencia: saneo de resultados', () => {
     expect(storage.getBest('quick-math', 'medium')?.score).toBe(99);
 
     setItem.mockRestore();
+    warn.mockRestore();
+  });
+
+  it('queda vacío en memoria aunque localStorage rechace el borrado', () => {
+    storage.saveResult(makeResult());
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const removeItem = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('Storage blocked');
+    });
+
+    expect(() => storage.clearAll()).not.toThrow();
+    expect(storage.getResults()).toEqual([]);
+
+    removeItem.mockRestore();
     warn.mockRestore();
   });
 });
